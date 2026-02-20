@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  /* Using :root for browser compatibility (requested @theme mapping applied here) */
+  /* ── Colours ── */
+  --color-primary: #E8A020; /* Primary gold */
+  --color-primary-light: #F0BC50;
+  --color-primary-dark: #C47D0E;
+
+  --color-accent: #C1440E; /* Terracotta accent */
+  --color-accent-light: #D4622A;
+  --color-accent-dark: #8B2E08; /* Deep clay dark */
+
+  --color-savanna: #D4A853; /* Savanna sand */
+
+  --color-bg: #0D0905; /* Background */
+  --color-bg-surface: #1A1208; /* Surface */
+  --color-bg-card: #221808; /* Card */
+
+  --color-border: #3D2E10;
+  --color-border-light: #C8A97A;
+
+  --color-text: #F5ECD7;
+  --color-text-muted: #A89070;
+  --color-text-dim: #6B5A40;
+
+  --color-success: #4CAF50;
+  --color-alert: #FF5722;
+  --color-warning: #FF9800;
+
+  /* ── Fonts ── */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* ── Border Radius ── */
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  /* ── Shadows ── */
+  --shadow-glow: 0 0 20px rgba(232, 160, 32, 0.4);
+  --shadow-glow-sm: 0 0 10px rgba(232, 160, 32, 0.3);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 16px 48px rgba(232, 160, 32, 0.2);
+  /* Set your page background photo here (example):
+     --bg-photo: url('/images/your-photo.jpg');
+     Leave as 'none' to keep only gradients. */
+  --bg-photo: url('/images/african-bg.jpg');
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #0D0905;
+    color: #F5ECD7;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Photo (if set) is layered beneath subtle radial gradients. Add a fallback URL to ensure the image loads. */
+    background-image: var(--bg-photo, url('/images/african-bg.jpg')),
+      radial-gradient(ellipse at 20% 30%, rgba(232, 160, 32, 0.10) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 70%, rgba(193, 68, 14, 0.08) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(212, 168, 83, 0.04) 0%, transparent 60%);
+    background-size: cover, auto, auto, auto;
+    background-position: center, center, center, center;
+    background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+    /* blend the photo with the radial gradients subtly */
+    background-blend-mode: overlay, normal, normal, normal;
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background-color: #0D0905; }
+  ::-webkit-scrollbar-thumb { background-color: rgba(232, 160, 32, 0.5); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background-color: #E8A020; }
+}
+
+@layer components {
+
+  .kente-stripe {
+    width: 100%;
+    height: 4px;
+    /* subtle kente-inspired stripe: 4px tall, repeats every 80px */
+    background: repeating-linear-gradient(
+      90deg,
+      #E8A020 0 20px,
+      #C1440E 20px 40px,
+      #D4A853 40px 60px,
+      #8B2E08 60px 80px
+    );
+    flex-shrink: 0;
+  }
+
+  /* Very subtle diagonal crosshatch used on section backgrounds */
+  .adinkra-bg {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(61,46,16,0.3) 0 1px,
+      transparent 1px 4px
+    );
+    /* keep it very subtle and lightweight */
+    background-repeat: repeat;
+    background-size: auto;
+  }
+
+  /* Mudcloth-style bottom border using a narrow repeating pattern */
+  .mudcloth-border {
+    border-bottom: 2px solid transparent;
+    border-image: repeating-linear-gradient(
+      90deg,
+      #E8A020 0 6px,
+      #3D2E10 6px 12px
+    ) 1 round;
+  }
+
+  .glass {
+    background-color: rgba(26, 18, 8, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(61, 46, 16, 0.6);
+    border-radius: 16px;
+  }
+
+  .glass-dark {
+    background-color: rgba(34, 24, 8, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(61, 46, 16, 0.4);
+    border-radius: 16px;
+  }
+
+  .culture-card {
+    background-color: rgba(26, 18, 8, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(232, 160, 32, 0.25);
+    border-radius: 16px;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .african-glow {
+    background: linear-gradient(135deg, #E8A020 0%, #D4A853 50%, #C1440E 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    color: var(--color-bg);
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 0 24px rgba(232, 160, 32, 0.5);
+    transform: scale(1.05);
+  }
+
+  .btn-primary:active { transform: scale(0.95); }
+
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: #F5ECD7;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    border: 1px solid #3D2E10;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .btn-ghost:hover {
+    border-color: #E8A020;
+    color: #E8A020;
+    box-shadow: 0 0 12px rgba(232, 160, 32, 0.2);
+  }
+
+  .input-field {
+    width: 100%;
+    background-color: #221808;
+    border: 1px solid #3D2E10;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    color: #F5ECD7;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .input-field::placeholder { color: #6B5A40; }
+
+  .input-field:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 10px rgba(232, 160, 32, 0.25);
+  }
+
+  .section { padding: 5rem 1rem; }
+
+  @media (min-width: 768px) { .section { padding: 5rem 2rem; } }
+  @media (min-width: 1024px) { .section { padding: 5rem 4rem; } }
+
+  .container-custom {
+    max-width: 80rem;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .adinkra-border {
+    border: 2px solid #E8A020;
+    border-image: repeating-linear-gradient(
+      45deg,
+      #E8A020,
+      #E8A020 5px,
+      #C1440E 5px,
+      #C1440E 10px
+    ) 1;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+}
