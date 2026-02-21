@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "African Animation Academy",
+  title: "AfricaFX",
   description: "Learn animation from scratch. Join Africa's premier animation learning platform — courses, challenges, community and more.",
   keywords: ["animation", "learn animation", "African animation", "online courses", "motion graphics"],
 };
