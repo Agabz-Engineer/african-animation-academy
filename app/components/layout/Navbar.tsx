@@ -8,28 +8,36 @@ export default function Navbar() {
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
       >
 
-        <Link href="/">
+        <Link href="/" className="group flex items-center gap-3">
           <div
-            className="w-14 h-10 rounded-xl border border-[#3D2E10] flex items-center justify-center gap-0 tracking-tight transition-all duration-200"
-            style={{ background: "#221808" }}
+            className="w-12 h-10 rounded-xl flex items-center justify-center overflow-hidden relative transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(232,160,32,0.5)]"
+            style={{
+              background: "linear-gradient(135deg, #221808, #2D1F0A)",
+              border: "1px solid rgba(232, 160, 32, 0.4)",
+            }}
           >
-            <span
-              className="text-lg font-bold"
-              style={{ color: "#E8A020", fontFamily: 'Space Grotesk, sans-serif' }}
-            >
-              A
+            <div
+              className="absolute inset-0"
+              style={{ background: "linear-gradient(135deg, rgba(232,160,32,0.08) 0%, transparent 60%)" }}
+            />
+            <div className="relative z-10 flex items-center tracking-tighter" style={{ letterSpacing: "-0.5px" }}>
+              <span className="font-black text-base tracking-tight" style={{ color: "#E8A020", fontFamily: "Space Grotesk, sans-serif" }}>A</span>
+              <span className="font-black text-base tracking-tight" style={{ color: "#F5ECD7", fontFamily: "Space Grotesk, sans-serif" }}>F</span>
+              <span className="font-black text-base tracking-tight" style={{ color: "#C1440E", fontFamily: "Space Grotesk, sans-serif" }}>X</span>
+            </div>
+          </div>
+          <div className="flex flex-col leading-tight">
+            <span className="font-bold text-sm" style={{ color: "#F5ECD7", fontFamily: "Space Grotesk, sans-serif" }}>
+              African Animation
             </span>
             <span
-              className="text-xl font-bold"
-              style={{ color: "#C1440E", fontFamily: 'Space Grotesk, sans-serif' }}
+              className="font-bold text-sm bg-clip-text text-transparent"
+              style={{
+                fontFamily: "Space Grotesk, sans-serif",
+                backgroundImage: "linear-gradient(90deg, #E8A020, #C1440E)",
+              }}
             >
-              A
-            </span>
-            <span
-              className="text-lg font-bold"
-              style={{ color: "#D4A853", fontFamily: 'Space Grotesk, sans-serif' }}
-            >
-              A
+              Academy
             </span>
           </div>
         </Link>
@@ -42,3 +50,4 @@ export default function Navbar() {
     </nav>
   );
 }
+

@@ -3,388 +3,388 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 type SkillLevel = "beginner" | "intermediate" | "advanced" | null;
-type Goal = string;
 
 const SKILL_LEVELS = [
-  {
-    id: "beginner",
-    label: "Beginner",
-    desc: "I'm new to animation",
-    emoji: "🌱",
-  },
-  {
-    id: "intermediate",
-    label: "Intermediate",
-    desc: "I know the basics",
-    emoji: "🚀",
-  },
-  {
-    id: "advanced",
-    label: "Advanced",
-    desc: "I have real experience",
-    emoji: "⚡",
-  },
+  { id: "beginner", label: "Beginner", desc: "I am new to animation", Icon: Sprout },
+  { id: "intermediate", label: "Intermediate", desc: "I know the basics", Icon: Rocket },
+  { id: "advanced", label: "Advanced", desc: "I have real experience", Icon: Zap },
 ];
 
 const GOALS = [
-  { id: "career", label: "Switch to a career in animation", emoji: "💼" },
-  { id: "freelance", label: "Freelance and earn money", emoji: "💰" },
-  { id: "hobby", label: "Learn as a creative hobby", emoji: "🎨" },
-  { id: "studio", label: "Build my own studio", emoji: "🏢" },
+  { id: "career", label: "Switch to a career in animation", Icon: Briefcase },
+  { id: "freelance", label: "Freelance and earn money", Icon: DollarSign },
+  { id: "hobby", label: "Learn as a creative hobby", Icon: Palette },
+  { id: "studio", label: "Build my own studio", Icon: Building2 },
 ];
 
+const stepVariants = {
+  enter: { opacity: 0, x: 40 },
+  center: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -40 },
+};
+
 export default function SignupPage() {
-  const [step, setStep] = useState(1); // 1 = form, 2 = skill, 3 = goal
+  const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(null);
-  const [goal, setGoal] = useState<Goal>("");
+  const [goal, setGoal] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [googleMsg, setGoogleMsg] = useState(false);
 
   const handleStepOne = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-    setError("");
-    setStep(2);
+    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
+    setError(""); setStep(2);
   };
 
   const handleFinish = async () => {
+    if (!goal) return;
     setLoading(true);
-    // TODO: wire up Supabase signup
-    // const { error } = await supabase.auth.signUp({ email, password, options: { data: { name, skillLevel, goal } } });
-    setTimeout(() => setLoading(false), 1500); // placeholder
+    setError("");
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+          skill_level: skillLevel,
+          goal: goal,
+        },
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      window.location.href = "/dashboard";
+    }
   };
 
-  const stepVariants = {
-    enter: { opacity: 0, x: 40 },
-    center: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -40 },
+  const handleGoogle = () => {
+    setGoogleMsg(true);
+    setTimeout(() => setGoogleMsg(false), 3000);
   };
+
+  const strengthColor = password.length === 0 ? "#3D2E10" : password.length < 8 ? "#FF5722" : password.length < 12 ? "#FF9800" : "#4CAF50";
+  const strengthLabel = password.length === 0 ? "Enter a password" : password.length < 8 ? "Too short" : password.length < 12 ? "Fair" : password.length < 16 ? "Good" : "Strong";
 
   return (
-    <div className="min-h-screen bg-bg flex">
+    <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden" }}>
 
-      {/* ── Left Panel — Visual ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-dark" />
-        <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-accent/15 rounded-full blur-3xl" />
+      {/* ── Brown veil over background image ── */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        backgroundColor: "rgba(20, 9, 2, 0.84)",
+        backdropFilter: "blur(2px)",
+        WebkitBackdropFilter: "blur(2px)",
+        zIndex: 0,
+        pointerEvents: "none"
+      }} />
 
-        <div className="relative z-10 text-center px-12">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <div className="flex items-center justify-center gap-3 mb-12">
-              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center">
-                <span className="text-white font-display font-bold text-lg">A</span>
-              </div>
-              <span className="font-display font-bold text-2xl text-text">
-                African Animation Academy 
-              </span>
+      {/* ── Left Panel ── */}
+      <div
+        style={{ position: "relative", zIndex: 1 }}
+        className="hidden lg:flex lg:w-1/2 items-center justify-center px-12"
+      >
+        <div style={{
+          position: "absolute", top: "20%", left: "20%",
+          width: "300px", height: "300px",
+          background: "rgba(232,160,32,0.08)",
+          borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none"
+        }} />
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          style={{ textAlign: "center", position: "relative", zIndex: 1 }}
+        >
+          {/* AFX Logo */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "3rem" }}>
+            <div style={{
+              width: "48px", height: "40px", backgroundColor: "#221808",
+              border: "1px solid #3D2E10", borderRadius: "12px",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#E8A020" }}>A</span>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#C1440E" }}>F</span>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#D4A853" }}>X</span>
             </div>
-
-            <h2 className="font-display text-4xl font-bold text-text mb-6 leading-tight">
-              Your animation
-              <br />
-              <span className="gradient-text">journey starts here</span>
-            </h2>
-            <p className="text-text-muted text-lg leading-relaxed max-w-sm mx-auto">
-              Create your free account and get instant access to beginner courses, the community, and monthly challenges.
-            </p>
-
-            {/* Step indicator on left panel */}
-            <div className="flex justify-center gap-3 mt-12">
-              {[1, 2, 3].map((s) => (
-                <div
-                  key={s}
-                  className={`h-2 rounded-pill transition-all duration-300 ${
-                    step >= s ? "bg-gradient-primary w-8" : "bg-border w-2"
-                  }`}
-                />
-              ))}
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+              <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "0.875rem", color: "#F5ECD7" }}>African Animation</span>
+              <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "0.875rem", background: "linear-gradient(135deg,#E8A020,#C1440E)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>Academy</span>
             </div>
-            <p className="text-text-muted text-sm mt-3">Step {step} of 3</p>
-          </motion.div>
-        </div>
+          </div>
+
+          <h2 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2.5rem", lineHeight: 1.15, color: "#F5ECD7", marginBottom: "1.25rem" }}>
+            Your animation<br />
+            <span style={{ background: "linear-gradient(135deg,#E8A020,#C1440E)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              journey starts here
+            </span>
+          </h2>
+
+          <p style={{ color: "#A89070", fontSize: "1rem", lineHeight: 1.7, maxWidth: "300px", margin: "0 auto 2.5rem" }}>
+            Create your free account and get access to courses, the community, and monthly challenges.
+          </p>
+
+          {/* Step indicator */}
+          <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "0.75rem" }}>
+            {[1, 2, 3].map((s) => (
+              <div key={s} style={{
+                height: "6px", borderRadius: "999px",
+                width: step >= s ? "32px" : "8px",
+                background: step >= s ? "linear-gradient(90deg,#E8A020,#C1440E)" : "#3D2E10",
+                transition: "all 0.3s ease"
+              }} />
+            ))}
+          </div>
+          <p style={{ color: "#6B5A40", fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif" }}>Step {step} of 3</p>
+
+          <p style={{ fontFamily: "'Satoshi',sans-serif", fontStyle: "italic", color: "#D4A853", fontSize: "0.8rem", marginTop: "2rem" }}>
+            Proudly African. Globally Creative.
+          </p>
+        </motion.div>
       </div>
 
-      {/* ── Right Panel — Steps ── */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md">
+      {/* Vertical divider */}
+      <div className="hidden lg:block" style={{
+        position: "relative", zIndex: 1,
+        width: "1px", backgroundColor: "rgba(61,46,16,0.4)", alignSelf: "stretch"
+      }} />
+
+      {/* ── Right Panel ── */}
+      <div
+        style={{ position: "relative", zIndex: 1 }}
+        className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12"
+      >
+        <div style={{ width: "100%", maxWidth: "440px" }}>
 
           {/* Mobile logo */}
-          <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div className="w-9 h-9 bg-gradient-primary rounded-xl flex items-center justify-center">
-              <span className="text-white font-display font-bold">A</span>
+          <div className="flex items-center gap-3 mb-6 lg:hidden">
+            <div style={{ width: "40px", height: "34px", backgroundColor: "#221808", border: "1px solid #3D2E10", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, color: "#E8A020", fontSize: "0.85rem" }}>A</span>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, color: "#C1440E", fontSize: "0.95rem" }}>F</span>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, color: "#D4A853", fontSize: "0.85rem" }}>X</span>
             </div>
-            <span className="font-display font-bold text-xl text-text">
-              African Animation Academy
-            </span>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1rem" }}>Africa Fx</span>
           </div>
 
           {/* Mobile step bar */}
           <div className="flex gap-2 mb-8 lg:hidden">
             {[1, 2, 3].map((s) => (
-              <div
-                key={s}
-                className={`h-1.5 flex-1 rounded-pill transition-all duration-300 ${
-                  step >= s ? "bg-gradient-primary" : "bg-border"
-                }`}
-              />
+              <div key={s} style={{ flex: 1, height: "4px", borderRadius: "999px", background: step >= s ? "linear-gradient(90deg,#E8A020,#C1440E)" : "#3D2E10", transition: "all 0.3s ease" }} />
             ))}
           </div>
 
           <AnimatePresence mode="wait">
 
-            {/* ── STEP 1: Account Details ── */}
+            {/* ── STEP 1 ── */}
             {step === 1 && (
-              <motion.div
-                key="step1"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-              >
-                <h1 className="font-display text-3xl font-bold text-text mb-2">Create your account</h1>
-                <p className="text-text-muted mb-8">Free forever — no credit card needed</p>
+              <motion.div key="step1" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                  Create your account
+                </h1>
+                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                  Free forever — no credit card needed
+                </p>
 
                 {error && (
-                  <div className="bg-alert/10 border border-alert/30 text-alert rounded-xl px-4 py-3 mb-6 text-sm">
+                  <div style={{ background: "rgba(255,87,34,0.10)", border: "1px solid rgba(255,87,34,0.30)", color: "#FF5722", borderRadius: "12px", padding: "0.75rem 1rem", marginBottom: "1.5rem", fontSize: "0.875rem" }}>
                     {error}
                   </div>
                 )}
 
-                <form onSubmit={handleStepOne} className="space-y-5">
+                <form onSubmit={handleStepOne} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+                  {/* Name */}
                   <div>
-                    <label className="block text-sm font-medium text-text-muted mb-2">Full name</label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Your full name"
-                        required
-                        className="input-field pl-11"
-                      />
+                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Full name</label>
+                    <div style={{ position: "relative" }}>
+                      <User style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                      <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" required className="input-field" style={{ paddingLeft: "2.75rem" }} />
                     </div>
                   </div>
 
+                  {/* Email */}
                   <div>
-                    <label className="block text-sm font-medium text-text-muted mb-2">Email address</label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        required
-                        className="input-field pl-11"
-                      />
+                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Email address</label>
+                    <div style={{ position: "relative" }}>
+                      <Mail style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required className="input-field" style={{ paddingLeft: "2.75rem" }} />
                     </div>
                   </div>
 
+                  {/* Password */}
                   <div>
-                    <label className="block text-sm font-medium text-text-muted mb-2">Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Min. 8 characters"
-                        required
-                        className="input-field pl-11 pr-11"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Password</label>
+                    <div style={{ position: "relative" }}>
+                      <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                      <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 8 characters" required className="input-field" style={{ paddingLeft: "2.75rem", paddingRight: "2.75rem" }} />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#6B5A40" }}>
+                        {showPassword ? <EyeOff style={{ width: "16px", height: "16px" }} /> : <Eye style={{ width: "16px", height: "16px" }} />}
                       </button>
                     </div>
-                    {/* Password strength indicator */}
-                    <div className="flex gap-1 mt-2">
+                    {/* Strength bar */}
+                    <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
                       {[8, 12, 16].map((len, i) => (
-                        <div
-                          key={i}
-                          className={`h-1 flex-1 rounded-pill transition-all duration-300 ${
-                            password.length >= len
-                              ? i === 0 ? "bg-alert" : i === 1 ? "bg-warning" : "bg-success"
-                              : "bg-border"
-                          }`}
-                        />
+                        <div key={i} style={{ flex: 1, height: "3px", borderRadius: "999px", backgroundColor: password.length >= len ? strengthColor : "#3D2E10", transition: "background-color 0.3s" }} />
                       ))}
                     </div>
-                    <p className="text-text-dim text-xs mt-1">
-                      {password.length === 0 ? "Enter a password" : password.length < 8 ? "Too short" : password.length < 12 ? "Fair" : password.length < 16 ? "Good" : "Strong"}
-                    </p>
+                    <p style={{ color: "#6B5A40", fontSize: "0.75rem", marginTop: "4px", fontFamily: "'General Sans',sans-serif" }}>{strengthLabel}</p>
                   </div>
 
-                  <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base">
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
+                  <button type="submit" className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem" }}>
+                    Continue <ArrowRight style={{ width: "16px", height: "16px" }} />
                   </button>
                 </form>
 
-                {/* Divider */}
-                <div className="flex items-center gap-4 my-6">
-                  <div className="flex-1 h-px bg-border" />
-                  <span className="text-text-muted text-sm">or</span>
-                  <div className="flex-1 h-px bg-border" />
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem", margin: "1.5rem 0" }}>
+                  <div style={{ flex: 1, height: "1px", backgroundColor: "#3D2E10" }} />
+                  <span style={{ color: "#6B5A40", fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif" }}>or</span>
+                  <div style={{ flex: 1, height: "1px", backgroundColor: "#3D2E10" }} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="btn-ghost flex items-center justify-center gap-2 py-3 text-sm">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    Google
-                  </button>
-                  <button className="btn-ghost flex items-center justify-center gap-2 py-3 text-sm">
-                    <svg className="w-4 h-4" fill="#1877F2" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                    Facebook
-                  </button>
-                </div>
+                <button onClick={handleGoogle} className="btn-ghost" style={{ width: "100%", padding: "0.75rem", fontSize: "0.875rem", gap: "0.5rem" }}>
+                  <svg style={{ width: "16px", height: "16px" }} viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Continue with Google
+                </button>
 
-                <p className="text-center text-text-muted text-sm mt-8">
+                {googleMsg && (
+                  <div style={{ background: "rgba(232,160,32,0.10)", border: "1px solid rgba(232,160,32,0.30)", color: "#E8A020", borderRadius: "10px", padding: "0.6rem 1rem", marginTop: "0.75rem", fontSize: "0.8rem", textAlign: "center", fontFamily: "'General Sans',sans-serif" }}>
+                    Google login coming soon. Please sign up with email for now.
+                  </div>
+                )}
+
+                <p style={{ textAlign: "center", color: "#6B5A40", fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>
+                  Full social login coming soon
+                </p>
+
+                <p style={{ textAlign: "center", color: "#A89070", fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
                   Already have an account?{" "}
-                  <Link href="/login" className="text-primary hover:text-primary-light font-medium transition-colors">
-                    Sign in
-                  </Link>
+                  <Link href="/login" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>Sign in</Link>
                 </p>
               </motion.div>
             )}
 
-            {/* ── STEP 2: Skill Level ── */}
+            {/* ── STEP 2 — Skill Level ── */}
             {step === 2 && (
-              <motion.div
-                key="step2"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-              >
-                <button onClick={() => setStep(1)} className="flex items-center gap-2 text-text-muted hover:text-text transition-colors mb-8 text-sm">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back
+              <motion.div key="step2" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                <button onClick={() => setStep(1)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
+                  <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
-                <h1 className="font-display text-3xl font-bold text-text mb-2">What&apos;s your skill level?</h1>
-                <p className="text-text-muted mb-8">We&apos;ll personalise your learning path based on this</p>
+                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                  What&apos;s your skill level?
+                </h1>
+                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                  We&apos;ll personalise your learning path based on this
+                </p>
 
-                <div className="space-y-3">
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {SKILL_LEVELS.map((level) => (
                     <button
                       key={level.id}
                       onClick={() => setSkillLevel(level.id as SkillLevel)}
-                      className={`w-full glass p-5 flex items-center gap-4 text-left transition-all duration-200 hover:border-primary/50 ${
-                        skillLevel === level.id
-                          ? "border-primary shadow-glow-sm bg-primary/10"
-                          : "border-border/50"
-                      }`}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "1rem",
+                        padding: "1.25rem", borderRadius: "12px", textAlign: "left",
+                        cursor: "pointer", transition: "all 0.2s ease",
+                        background: skillLevel === level.id ? "rgba(232,160,32,0.10)" : "rgba(34,24,8,0.70)",
+                        border: skillLevel === level.id ? "1px solid rgba(232,160,32,0.50)" : "1px solid #3D2E10",
+                        backdropFilter: "blur(8px)"
+                      }}
                     >
-                      <span className="text-3xl">{level.emoji}</span>
-                      <div className="flex-1">
-                        <div className="font-display font-semibold text-text">{level.label}</div>
-                        <div className="text-text-muted text-sm mt-0.5">{level.desc}</div>
+                      <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(232,160,32,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <level.Icon style={{ width: "20px", height: "20px", color: "#E8A020" }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, color: "#F5ECD7", fontSize: "0.9rem" }}>{level.label}</div>
+                        <div style={{ color: "#A89070", fontSize: "0.8rem", marginTop: "2px" }}>{level.desc}</div>
                       </div>
                       {skillLevel === level.id && (
-                        <div className="w-6 h-6 bg-gradient-primary rounded-full flex items-center justify-center flex-shrink-0">
-                          <Check className="w-3.5 h-3.5 text-white" />
+                        <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Check style={{ width: "12px", height: "12px", color: "#0D0905" }} />
                         </div>
                       )}
                     </button>
                   ))}
                 </div>
 
-                <button
-                  onClick={() => skillLevel && setStep(3)}
-                  disabled={!skillLevel}
-                  className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base mt-8 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                  Continue
-                  <ArrowRight className="w-4 h-4" />
+                <button onClick={() => skillLevel && setStep(3)} disabled={!skillLevel} className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem", marginTop: "1.5rem", opacity: skillLevel ? 1 : 0.4 }}>
+                  Continue <ArrowRight style={{ width: "16px", height: "16px" }} />
                 </button>
               </motion.div>
             )}
 
-            {/* ── STEP 3: Goal ── */}
+            {/* ── STEP 3 — Goal ── */}
             {step === 3 && (
-              <motion.div
-                key="step3"
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-              >
-                <button onClick={() => setStep(2)} className="flex items-center gap-2 text-text-muted hover:text-text transition-colors mb-8 text-sm">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back
+              <motion.div key="step3" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                <button onClick={() => setStep(2)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
+                  <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
-                <h1 className="font-display text-3xl font-bold text-text mb-2">What&apos;s your goal?</h1>
-                <p className="text-text-muted mb-8">This helps us recommend the right courses for you</p>
+                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                  What&apos;s your goal?
+                </h1>
+                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                  This helps us recommend the right courses for you
+                </p>
 
-                <div className="space-y-3">
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {GOALS.map((g) => (
                     <button
                       key={g.id}
                       onClick={() => setGoal(g.id)}
-                      className={`w-full glass p-5 flex items-center gap-4 text-left transition-all duration-200 hover:border-primary/50 ${
-                        goal === g.id
-                          ? "border-primary shadow-glow-sm bg-primary/10"
-                          : "border-border/50"
-                      }`}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "1rem",
+                        padding: "1.25rem", borderRadius: "12px", textAlign: "left",
+                        cursor: "pointer", transition: "all 0.2s ease",
+                        background: goal === g.id ? "rgba(232,160,32,0.10)" : "rgba(34,24,8,0.70)",
+                        border: goal === g.id ? "1px solid rgba(232,160,32,0.50)" : "1px solid #3D2E10",
+                        backdropFilter: "blur(8px)"
+                      }}
                     >
-                      <span className="text-3xl">{g.emoji}</span>
-                      <div className="flex-1 font-display font-medium text-text">{g.label}</div>
+                      <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(232,160,32,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <g.Icon style={{ width: "20px", height: "20px", color: "#E8A020" }} />
+                      </div>
+                      <div style={{ flex: 1, fontFamily: "'General Sans',sans-serif", fontWeight: 500, color: "#F5ECD7", fontSize: "0.9rem" }}>{g.label}</div>
                       {goal === g.id && (
-                        <div className="w-6 h-6 bg-gradient-primary rounded-full flex items-center justify-center flex-shrink-0">
-                          <Check className="w-3.5 h-3.5 text-white" />
+                        <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Check style={{ width: "12px", height: "12px", color: "#0D0905" }} />
                         </div>
                       )}
                     </button>
                   ))}
                 </div>
 
-                <button
-                  onClick={() => goal && handleFinish()}
-                  disabled={!goal || loading}
-                  className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base mt-8 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      Create my account
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
+                <button onClick={() => goal && handleFinish()} disabled={!goal || loading} className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem", marginTop: "1.5rem", opacity: goal && !loading ? 1 : 0.4 }}>
+                  {loading
+                    ? <div style={{ width: "20px", height: "20px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                    : <>Create my account <ArrowRight style={{ width: "16px", height: "16px" }} /></>
+                  }
                 </button>
 
-                <p className="text-center text-text-muted text-xs mt-6">
+                <p style={{ textAlign: "center", color: "#6B5A40", fontSize: "0.75rem", marginTop: "1.5rem", fontFamily: "'General Sans',sans-serif" }}>
                   By signing up you agree to our{" "}
-                  <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>
+                  <Link href="/terms" style={{ color: "#E8A020", textDecoration: "none" }}>Terms</Link>
                   {" "}and{" "}
-                  <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+                  <Link href="/privacy" style={{ color: "#E8A020", textDecoration: "none" }}>Privacy Policy</Link>
                 </p>
               </motion.div>
             )}

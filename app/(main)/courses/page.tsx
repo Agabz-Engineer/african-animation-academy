@@ -23,16 +23,16 @@ export default function ComingSoon() {
 
       {/* Centered content */}
       <div className="flex flex-col items-center justify-center mt-16">
-        {/* AAA Logo Mark */}
+        {/* AFX Logo Mark */}
         <div className="flex flex-row items-end mb-6">
           <span className="font-bold text-5xl" style={{ color: '#E8A020', fontFamily: 'Space Grotesk, sans-serif' }}>A</span>
-          <span className="font-bold text-6xl mx-1" style={{ color: '#C1440E', fontFamily: 'Space Grotesk, sans-serif' }}>A</span>
-          <span className="font-bold text-5xl" style={{ color: '#D4A853', fontFamily: 'Space Grotesk, sans-serif' }}>A</span>
+          <span className="font-bold text-6xl mx-1" style={{ color: '#C1440E', fontFamily: 'Space Grotesk, sans-serif' }}>F</span>
+          <span className="font-bold text-5xl" style={{ color: '#D4A853', fontFamily: 'Space Grotesk, sans-serif' }}>X</span>
         </div>
         {/* Academy Name */}
         <div className="mb-4">
           <span className="font-bold text-2xl" style={{ color: '#F5ECD7', fontFamily: 'Space Grotesk, sans-serif' }}>
-            African Animation Academy
+            Africa Fx
           </span>
         </div>
         {/* Coming Soon Gradient Text */}
@@ -52,3 +52,5 @@ export default function ComingSoon() {
     </div>
   );
 }
+
+
