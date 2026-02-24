@@ -4,62 +4,41 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  BookOpen, Trophy, Flame, Clock, ChevronRight,
-  Users, Star, Play, BarChart2, Bell, Settings,
-  LogOut, CheckCircle
+  Home, BookOpen, Calendar, Image, Users, Tag,
+  User, Settings, LogOut, Search, Bell, Trophy,
+  Flame, Clock, ChevronRight, Camera, Play,
+  TrendingUp, Star, Filter
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-const quickLinks = [
-  { label: "Browse Courses", href: "/courses", icon: BookOpen, color: "#E8A020" },
-  { label: "Community", href: "/community", icon: Users, color: "#C1440E" },
-  { label: "Challenges", href: "/community/challenges", icon: Trophy, color: "#D4A853" },
-  { label: "My Progress", href: "/dashboard/progress", icon: BarChart2, color: "#E8A020" },
+const NAV_LINKS = [
+  { label: "Home", href: "/dashboard", icon: Home },
+  { label: "Courses", href: "/courses", icon: BookOpen },
+  { label: "Events", href: "/events", icon: Calendar },
+  { label: "Portfolio", href: "/portfolio", icon: Image },
+  { label: "Community", href: "/community", icon: Users },
+  { label: "Promo", href: "/promo", icon: Tag },
+  { label: "Profile", href: "/profile", icon: User },
 ];
 
-const recommendedCourses = [
-  {
-    title: "Fundamentals of Animation",
-    instructor: "Kwame Mensah",
-    level: "Beginner",
-    duration: "4h 30m",
-    lessons: 12,
-    color: "#E8A020",
-  },
-  {
-    title: "Character Design for Animation",
-    instructor: "Amara Diallo",
-    level: "Intermediate",
-    duration: "6h 15m",
-    lessons: 18,
-    color: "#C1440E",
-  },
-  {
-    title: "African Storytelling Techniques",
-    instructor: "Fatima Al-Hassan",
-    level: "Beginner",
-    duration: "3h 45m",
-    lessons: 10,
-    color: "#D4A853",
-  },
+const FILTER_TABS = ["Hot", "New", "Event"];
+
+const SHOWCASE_CARDS = [
+  { title: "Character Design", category: "Colorimetry", price: "99", tag: "Hot" },
+  { title: "Background Art", category: "Background", price: "199", tag: "New" },
+  { title: "Texture: Afro", category: "Texturing", price: "249", tag: "Hot" },
+  { title: "Clothing Design", category: "Clothing", price: "149", tag: "Event" },
 ];
 
-const recentActivity = [
-  { text: "New challenge posted: Character of the Month", time: "2 hours ago", icon: Trophy },
-  { text: "Kwame Mensah uploaded a new lesson", time: "5 hours ago", icon: Play },
-  { text: "Your forum post received 3 replies", time: "1 day ago", icon: Users },
-  { text: "Weekly streak milestone reached", time: "2 days ago", icon: Flame },
-];
-
-export default function DashboardPage() {
+export default function AnimatorDashboard() {
   const [user, setUser] = useState<{ email?: string; user_metadata?: { full_name?: string } } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("Hot");
+  const [activeNav, setActiveNav] = useState("Home");
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      setLoading(false);
     };
     getUser();
   }, []);
@@ -71,359 +50,269 @@ export default function DashboardPage() {
 
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Creative";
 
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  };
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{
-            width: "48px", height: "40px", backgroundColor: "#221808",
-            border: "1px solid #3D2E10", borderRadius: "12px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            margin: "0 auto 1rem"
-          }}>
-            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#E8A020" }}>A</span>
-            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#C1440E" }}>F</span>
-            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#D4A853" }}>X</span>
-          </div>
-          <div style={{ width: "32px", height: "32px", border: "2px solid #3D2E10", borderTopColor: "#E8A020", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" }} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ minHeight: "100vh", position: "relative", zIndex: 1 }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#0D0905", color: "#F5ECD7", fontFamily: "'Satoshi', sans-serif", position: "relative", zIndex: 1 }}>
 
-      {/* Brown veil */}
+      {/* ════════════════════════════
+          SIDEBAR
+      ════════════════════════════ */}
       <div style={{
-        position: "fixed", inset: 0,
-        backgroundColor: "rgba(13, 9, 5, 0.88)",
-        zIndex: 0, pointerEvents: "none"
-      }} />
+        width: "220px", flexShrink: 0,
+        backgroundColor: "#110A06",
+        borderRight: "1px solid #3D2E10",
+        display: "flex", flexDirection: "column",
+        position: "fixed", top: 0, left: 0, bottom: 0,
+        zIndex: 10
+      }}>
+        {/* Kente stripe */}
+        <div style={{ height: "4px", width: "100%", background: "repeating-linear-gradient(90deg,#E8A020 0px,#E8A020 20px,#C1440E 20px,#C1440E 40px,#D4A853 40px,#D4A853 60px,#8B2E08 60px,#8B2E08 80px)" }} />
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: "1280px", margin: "0 auto", padding: "2rem 1.5rem" }}>
-
-        {/* ── Top Bar ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2.5rem" }}>
-          <div>
-            <p style={{ color: "#A89070", fontSize: "0.875rem", fontFamily: "'General Sans',sans-serif", marginBottom: "4px" }}>
-              {greeting()},
-            </p>
-            <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.75rem", color: "#F5ECD7" }}>
-              {firstName} <span style={{ background: "linear-gradient(135deg,#E8A020,#C1440E)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>✦</span>
-            </h1>
+        {/* Logo + user */}
+        <div style={{ padding: "1.5rem 1.25rem", borderBottom: "1px solid #3D2E10" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1.25rem" }}>
+            <div style={{ width: "36px", height: "30px", backgroundColor: "#221808", border: "1px solid #3D2E10", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.75rem", color: "#E8A020" }}>A</span>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.85rem", color: "#C1440E" }}>F</span>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.75rem", color: "#D4A853" }}>X</span>
+            </div>
+            <div>
+              <div style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.8rem", color: "#F5ECD7" }}>Africa Fx</div>
+              <div style={{ fontSize: "0.65rem", color: "#6B5A40", fontFamily: "'General Sans',sans-serif" }}>Your art. Our identity.</div>
+            </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {/* Notification bell */}
-            <button style={{
-              width: "40px", height: "40px", borderRadius: "10px",
-              backgroundColor: "rgba(34,24,8,0.80)", border: "1px solid #3D2E10",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", color: "#A89070", position: "relative"
-            }}>
-              <Bell style={{ width: "16px", height: "16px" }} />
-              <div style={{
-                position: "absolute", top: "8px", right: "8px",
-                width: "8px", height: "8px", borderRadius: "50%",
-                background: "linear-gradient(135deg,#E8A020,#C1440E)"
-              }} />
-            </button>
-
-            {/* Settings */}
-            <Link href="/dashboard/settings" style={{
-              width: "40px", height: "40px", borderRadius: "10px",
-              backgroundColor: "rgba(34,24,8,0.80)", border: "1px solid #3D2E10",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#A89070", textDecoration: "none"
-            }}>
-              <Settings style={{ width: "16px", height: "16px" }} />
-            </Link>
-
-            {/* Logout */}
-            <button onClick={handleLogout} style={{
-              display: "flex", alignItems: "center", gap: "6px",
-              padding: "0.5rem 1rem", borderRadius: "10px",
-              backgroundColor: "rgba(34,24,8,0.80)", border: "1px solid #3D2E10",
-              cursor: "pointer", color: "#A89070", fontSize: "0.8rem",
-              fontFamily: "'General Sans',sans-serif"
-            }}>
-              <LogOut style={{ width: "14px", height: "14px" }} />
-              Sign out
-            </button>
-          </div>
-        </div>
-
-        {/* ── Stats Row ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-          {[
-            { label: "Courses Enrolled", value: "0", icon: BookOpen, color: "#E8A020" },
-            { label: "Lessons Completed", value: "0", icon: CheckCircle, color: "#C1440E" },
-            { label: "Day Streak", value: "1", icon: Flame, color: "#D4A853" },
-            { label: "Hours Learned", value: "0", icon: Clock, color: "#E8A020" },
-          ].map((stat) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              style={{
-                backgroundColor: "rgba(34,24,8,0.75)",
-                border: "1px solid #3D2E10",
-                borderRadius: "16px",
-                padding: "1.5rem",
-                backdropFilter: "blur(8px)",
-                display: "flex", alignItems: "center", gap: "1rem"
-              }}
-            >
-              <div style={{
-                width: "44px", height: "44px", borderRadius: "12px",
-                background: `rgba(${stat.color === "#E8A020" ? "232,160,32" : stat.color === "#C1440E" ? "193,68,14" : "212,168,83"},0.12)`,
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-              }}>
-                <stat.icon style={{ width: "20px", height: "20px", color: stat.color }} />
-              </div>
-              <div>
-                <div style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "#F5ECD7" }}>
-                  {stat.value}
-                </div>
-                <div style={{ color: "#A89070", fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif", marginTop: "2px" }}>
-                  {stat.label}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* ── Main Grid ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem" }} className="dashboard-grid">
-
-          {/* ── Left Column ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-
-            {/* Continue Learning */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              style={{
-                backgroundColor: "rgba(34,24,8,0.75)",
-                border: "1px solid #3D2E10",
-                borderRadius: "16px",
-                padding: "1.5rem",
-                backdropFilter: "blur(8px)"
-              }}
-            >
-              <h2 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "#F5ECD7", marginBottom: "1rem" }}>
-                Continue Learning
-              </h2>
-
-              <div style={{
-                background: "linear-gradient(135deg, rgba(232,160,32,0.08), rgba(193,68,14,0.08))",
-                border: "1px solid rgba(232,160,32,0.20)",
-                borderRadius: "12px", padding: "1.25rem",
-                display: "flex", alignItems: "center", gap: "1rem"
-              }}>
-                <div style={{
-                  width: "56px", height: "56px", borderRadius: "12px",
-                  background: "linear-gradient(135deg,#E8A020,#C1440E)",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                }}>
-                  <Play style={{ width: "24px", height: "24px", color: "#0D0905" }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ color: "#A89070", fontSize: "0.75rem", fontFamily: "'General Sans',sans-serif", marginBottom: "4px" }}>
-                    Your next lesson
-                  </p>
-                  <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1rem" }}>
-                    Enrol in a course to get started
-                  </p>
-                  <div style={{ marginTop: "0.75rem", height: "4px", borderRadius: "999px", backgroundColor: "#3D2E10" }}>
-                    <div style={{ width: "0%", height: "100%", borderRadius: "999px", background: "linear-gradient(90deg,#E8A020,#C1440E)" }} />
-                  </div>
-                  <p style={{ color: "#6B5A40", fontSize: "0.75rem", marginTop: "4px", fontFamily: "'General Sans',sans-serif" }}>
-                    0% complete
-                  </p>
-                </div>
-                <Link href="/courses" style={{
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  width: "36px", height: "36px", borderRadius: "10px",
-                  background: "linear-gradient(135deg,#E8A020,#C1440E)",
-                  flexShrink: 0, textDecoration: "none"
-                }}>
-                  <ChevronRight style={{ width: "16px", height: "16px", color: "#0D0905" }} />
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Recommended Courses */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              style={{
-                backgroundColor: "rgba(34,24,8,0.75)",
-                border: "1px solid #3D2E10",
-                borderRadius: "16px",
-                padding: "1.5rem",
-                backdropFilter: "blur(8px)"
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-                <h2 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "#F5ECD7" }}>
-                  Recommended For You
-                </h2>
-                <Link href="/courses" style={{ color: "#E8A020", fontSize: "0.8rem", textDecoration: "none", fontFamily: "'General Sans',sans-serif", display: "flex", alignItems: "center", gap: "4px" }}>
-                  View all <ChevronRight style={{ width: "14px", height: "14px" }} />
-                </Link>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {recommendedCourses.map((course, i) => (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: "1rem",
-                    padding: "1rem", borderRadius: "12px",
-                    backgroundColor: "rgba(13,9,5,0.50)",
-                    border: "1px solid rgba(61,46,16,0.50)",
-                    cursor: "pointer", transition: "all 0.2s ease"
-                  }}>
-                    <div style={{
-                      width: "44px", height: "44px", borderRadius: "10px", flexShrink: 0,
-                      background: `linear-gradient(135deg, ${course.color}, rgba(13,9,5,0.5))`,
-                      display: "flex", alignItems: "center", justifyContent: "center"
-                    }}>
-                      <BookOpen style={{ width: "20px", height: "20px", color: "#F5ECD7" }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, color: "#F5ECD7", fontSize: "0.9rem" }}>
-                        {course.title}
-                      </p>
-                      <p style={{ color: "#A89070", fontSize: "0.75rem", marginTop: "2px" }}>
-                        {course.instructor} · {course.lessons} lessons · {course.duration}
-                      </p>
-                    </div>
-                    <div style={{
-                      padding: "3px 10px", borderRadius: "999px", fontSize: "0.7rem",
-                      fontFamily: "'General Sans',sans-serif", fontWeight: 600,
-                      backgroundColor: `rgba(${course.color === "#E8A020" ? "232,160,32" : course.color === "#C1440E" ? "193,68,14" : "212,168,83"},0.12)`,
-                      color: course.color, flexShrink: 0
-                    }}>
-                      {course.level}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* ── Right Column ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-
-            {/* Quick Links */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-              style={{
-                backgroundColor: "rgba(34,24,8,0.75)",
-                border: "1px solid #3D2E10",
-                borderRadius: "16px",
-                padding: "1.5rem",
-                backdropFilter: "blur(8px)"
-              }}
-            >
-              <h2 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "#F5ECD7", marginBottom: "1rem" }}>
-                Quick Links
-              </h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
-                {quickLinks.map((link) => (
-                  <Link key={link.label} href={link.href} style={{
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                    gap: "0.5rem", padding: "1rem", borderRadius: "12px",
-                    backgroundColor: "rgba(13,9,5,0.50)", border: "1px solid rgba(61,46,16,0.50)",
-                    textDecoration: "none", transition: "all 0.2s ease"
-                  }}>
-                    <div style={{
-                      width: "36px", height: "36px", borderRadius: "10px",
-                      background: `rgba(${link.color === "#E8A020" ? "232,160,32" : link.color === "#C1440E" ? "193,68,14" : "212,168,83"},0.12)`,
-                      display: "flex", alignItems: "center", justifyContent: "center"
-                    }}>
-                      <link.icon style={{ width: "18px", height: "18px", color: link.color }} />
-                    </div>
-                    <span style={{ fontFamily: "'General Sans',sans-serif", fontSize: "0.75rem", fontWeight: 500, color: "#A89070", textAlign: "center" }}>
-                      {link.label}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Recent Activity */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.25 }}
-              style={{
-                backgroundColor: "rgba(34,24,8,0.75)",
-                border: "1px solid #3D2E10",
-                borderRadius: "16px",
-                padding: "1.5rem",
-                backdropFilter: "blur(8px)"
-              }}
-            >
-              <h2 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "#F5ECD7", marginBottom: "1rem" }}>
-                Recent Activity
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {recentActivity.map((item, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
-                    <div style={{
-                      width: "32px", height: "32px", borderRadius: "8px", flexShrink: 0,
-                      backgroundColor: "rgba(232,160,32,0.08)",
-                      display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px"
-                    }}>
-                      <item.icon style={{ width: "14px", height: "14px", color: "#E8A020" }} />
-                    </div>
-                    <div>
-                      <p style={{ fontFamily: "'Satoshi',sans-serif", fontSize: "0.8rem", color: "#F5ECD7", lineHeight: 1.5 }}>
-                        {item.text}
-                      </p>
-                      <p style={{ color: "#6B5A40", fontSize: "0.7rem", marginTop: "2px", fontFamily: "'General Sans',sans-serif" }}>
-                        {item.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Tagline */}
-            <div style={{ textAlign: "center", padding: "1rem" }}>
-              <p style={{ fontFamily: "'Satoshi',sans-serif", fontStyle: "italic", color: "#6B5A40", fontSize: "0.8rem" }}>
-                Proudly African. Globally Creative.
-              </p>
+          {/* Avatar */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.875rem", color: "#0D0905", flexShrink: 0 }}>
+              {firstName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.8rem", color: "#F5ECD7" }}>{firstName}</div>
+              <div style={{ fontSize: "0.65rem", color: "#6B5A40" }}>Animator</div>
             </div>
           </div>
         </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, padding: "1rem 0", overflowY: "auto" }}>
+          {NAV_LINKS.map((link) => (
+            <Link key={link.label} href={link.href} onClick={() => setActiveNav(link.label)} style={{
+              display: "flex", alignItems: "center", gap: "0.75rem",
+              padding: "0.75rem 1.25rem", textDecoration: "none",
+              color: activeNav === link.label ? "#E8A020" : "#A89070",
+              backgroundColor: activeNav === link.label ? "rgba(232,160,32,0.08)" : "transparent",
+              borderLeft: activeNav === link.label ? "3px solid #E8A020" : "3px solid transparent",
+              transition: "all 0.2s ease", fontSize: "0.875rem",
+              fontFamily: "'General Sans',sans-serif", fontWeight: activeNav === link.label ? 600 : 400
+            }}>
+              <link.icon style={{ width: "18px", height: "18px", flexShrink: 0 }} />
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Bottom */}
+        <div style={{ borderTop: "1px solid #3D2E10", padding: "1rem 0" }}>
+          <Link href="/settings" style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1.25rem", textDecoration: "none", color: "#6B5A40", fontSize: "0.875rem", fontFamily: "'General Sans',sans-serif" }}>
+            <Settings style={{ width: "16px", height: "16px" }} /> Settings
+          </Link>
+          <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1.25rem", width: "100%", background: "none", border: "none", cursor: "pointer", color: "#6B5A40", fontSize: "0.875rem", fontFamily: "'General Sans',sans-serif" }}>
+            <LogOut style={{ width: "16px", height: "16px" }} /> Log Out
+          </button>
+        </div>
       </div>
 
-      <style jsx global>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @media (max-width: 768px) {
-          .dashboard-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
+      {/* ════════════════════════════
+          MAIN CONTENT
+      ════════════════════════════ */}
+      <div style={{ marginLeft: "220px", flex: 1, display: "flex", flexDirection: "column" }}>
+
+        {/* Top Bar */}
+        <div style={{ position: "sticky", top: 0, zIndex: 9, backgroundColor: "rgba(13,9,5,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid #3D2E10", padding: "1rem 2rem", display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ marginRight: "auto" }}>
+            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "#E8A020" }}>Animated</span>
+            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.1rem", color: "#F5ECD7", marginLeft: "6px" }}>Collective</span>
+            <div style={{ fontSize: "0.7rem", color: "#6B5A40", fontFamily: "'General Sans',sans-serif" }}>Your art out identity</div>
+          </div>
+
+          <div style={{ position: "relative", flex: 1, maxWidth: "400px" }}>
+            <Search style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+            <input type="text" placeholder="Search courses, events, artists..." style={{ width: "100%", backgroundColor: "rgba(34,24,8,0.80)", border: "1px solid #3D2E10", borderRadius: "999px", padding: "0.6rem 1rem 0.6rem 2.75rem", color: "#F5ECD7", fontSize: "0.875rem", outline: "none", fontFamily: "'General Sans',sans-serif" }} />
+          </div>
+
+          <button style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: "rgba(34,24,8,0.80)", border: "1px solid #3D2E10", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", position: "relative" }}>
+            <Bell style={{ width: "16px", height: "16px", color: "#A89070" }} />
+            <div style={{ position: "absolute", top: "7px", right: "7px", width: "7px", height: "7px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)" }} />
+          </button>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "4px 10px", borderRadius: "999px", backgroundColor: "rgba(232,160,32,0.10)", border: "1px solid rgba(232,160,32,0.20)" }}>
+              <Flame style={{ width: "12px", height: "12px", color: "#E8A020" }} />
+              <span style={{ fontSize: "0.75rem", color: "#E8A020", fontFamily: "'General Sans',sans-serif", fontWeight: 600 }}>3 day streak</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "4px 10px", borderRadius: "999px", backgroundColor: "rgba(193,68,14,0.10)", border: "1px solid rgba(193,68,14,0.20)" }}>
+              <Trophy style={{ width: "12px", height: "12px", color: "#C1440E" }} />
+              <span style={{ fontSize: "0.75rem", color: "#C1440E", fontFamily: "'General Sans',sans-serif", fontWeight: 600 }}>Rank #42</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Page Content */}
+        <div style={{ padding: "2rem", flex: 1 }}>
+
+          {/* Filter Tabs */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+            {FILTER_TABS.map((tab) => (
+              <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "0.4rem 1.25rem", borderRadius: "999px", border: "none", cursor: "pointer", fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.875rem", transition: "all 0.2s ease", backgroundColor: activeTab === tab ? "#E8A020" : "rgba(34,24,8,0.80)", color: activeTab === tab ? "#0D0905" : "#A89070" }}>
+                {tab}
+              </button>
+            ))}
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px", color: "#6B5A40", fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif", cursor: "pointer" }}>
+              <Filter style={{ width: "14px", height: "14px" }} /> Filter
+            </div>
+          </div>
+
+          {/* Hero Banner Image Space */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{ width: "100%", height: "260px", borderRadius: "20px", backgroundColor: "rgba(34,24,8,0.60)", border: "2px dashed rgba(232,160,32,0.25)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginBottom: "1.5rem", position: "relative", overflow: "hidden", cursor: "pointer" }}
+          >
+            {/* Corner decorators */}
+            {[["top","left"],["top","right"],["bottom","left"],["bottom","right"]].map(([v,h], i) => (
+              <div key={i} style={{ position: "absolute", [v]: "12px", [h]: "12px", width: "20px", height: "20px", borderTop: v === "top" ? "2px solid #E8A020" : "none", borderBottom: v === "bottom" ? "2px solid #E8A020" : "none", borderLeft: h === "left" ? "2px solid #E8A020" : "none", borderRight: h === "right" ? "2px solid #E8A020" : "none", borderRadius: "2px" }} />
+            ))}
+
+            <div style={{ width: "56px", height: "56px", borderRadius: "16px", backgroundColor: "rgba(232,160,32,0.10)", border: "1px solid rgba(232,160,32,0.20)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
+              <Camera style={{ width: "24px", height: "24px", color: "#E8A020" }} />
+            </div>
+            <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#F5ECD7", marginBottom: "4px" }}>Featured Banner</p>
+            <p style={{ fontSize: "0.8rem", color: "#6B5A40", fontFamily: "'General Sans',sans-serif" }}>Recommended size: 1200 × 400px</p>
+
+            <div style={{ position: "absolute", right: "1.5rem", bottom: "1.5rem", width: "44px", height: "44px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Play style={{ width: "18px", height: "18px", color: "#0D0905", marginLeft: "2px" }} />
+            </div>
+
+            <div style={{ position: "absolute", left: "1.5rem", bottom: "1.5rem", display: "flex", alignItems: "center", gap: "8px" }}>
+              {["25 July 2025", "29 July 2025"].map((date, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", borderRadius: "8px", backgroundColor: "rgba(13,9,5,0.70)", border: "1px solid #3D2E10", fontSize: "0.75rem", color: "#A89070", fontFamily: "'General Sans',sans-serif" }}>
+                  <Calendar style={{ width: "12px", height: "12px" }} /> {date}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ position: "absolute", right: "1.5rem", top: "1.5rem", display: "flex", gap: "4px" }}>
+              {[1,2,3].map((i) => (
+                <div key={i} style={{ width: i === 2 ? "20px" : "8px", height: "8px", borderRadius: "999px", backgroundColor: i === 2 ? "#E8A020" : "#3D2E10" }} />
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Card Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+            {SHOWCASE_CARDS.map((card, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.08 }} whileHover={{ y: -4 }}
+                style={{ backgroundColor: "rgba(34,24,8,0.75)", border: "1px solid #3D2E10", borderRadius: "16px", overflow: "hidden", cursor: "pointer", transition: "border-color 0.2s ease" }}
+              >
+                {/* Image placeholder */}
+                <div style={{ width: "100%", height: "160px", backgroundColor: "rgba(13,9,5,0.60)", border: "2px dashed rgba(232,160,32,0.15)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                  <Camera style={{ width: "24px", height: "24px", color: "rgba(232,160,32,0.30)", marginBottom: "6px" }} />
+                  <span style={{ fontSize: "0.65rem", color: "#3D2E10", fontFamily: "'General Sans',sans-serif" }}>400 × 320px</span>
+                  <div style={{ position: "absolute", top: "8px", left: "8px", padding: "2px 8px", borderRadius: "999px", fontSize: "0.65rem", fontFamily: "'General Sans',sans-serif", fontWeight: 600, backgroundColor: card.tag === "Hot" ? "rgba(232,160,32,0.20)" : card.tag === "New" ? "rgba(76,175,80,0.20)" : "rgba(193,68,14,0.20)", color: card.tag === "Hot" ? "#E8A020" : card.tag === "New" ? "#4CAF50" : "#C1440E" }}>
+                    {card.tag}
+                  </div>
+                </div>
+                <div style={{ padding: "0.875rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                    <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.85rem", color: "#F5ECD7" }}>{card.title}</span>
+                    <Star style={{ width: "14px", height: "14px", color: "#E8A020" }} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "0.75rem", color: "#6B5A40", fontFamily: "'General Sans',sans-serif" }}>{card.category}</span>
+                    <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.875rem", color: "#E8A020" }}>${card.price}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Bottom Row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1.5rem" }}>
+
+            {/* Continue Learning */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}
+              style={{ backgroundColor: "rgba(34,24,8,0.75)", border: "1px solid #3D2E10", borderRadius: "16px", padding: "1.25rem" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: "#F5ECD7" }}>Continue Learning</h3>
+                <Link href="/courses" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.75rem", color: "#E8A020", textDecoration: "none", fontFamily: "'General Sans',sans-serif" }}>
+                  View all <ChevronRight style={{ width: "12px", height: "12px" }} />
+                </Link>
+              </div>
+              <div style={{ width: "100%", height: "100px", borderRadius: "12px", backgroundColor: "rgba(13,9,5,0.60)", border: "2px dashed rgba(232,160,32,0.15)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.875rem" }}>
+                <Camera style={{ width: "20px", height: "20px", color: "rgba(232,160,32,0.25)" }} />
+              </div>
+              <p style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.85rem", color: "#F5ECD7", marginBottom: "4px" }}>Enrol in a course to get started</p>
+              <div style={{ height: "4px", borderRadius: "999px", backgroundColor: "#3D2E10", marginBottom: "4px" }}>
+                <div style={{ width: "0%", height: "100%", borderRadius: "999px", background: "linear-gradient(90deg,#E8A020,#C1440E)" }} />
+              </div>
+              <p style={{ fontSize: "0.7rem", color: "#6B5A40", fontFamily: "'General Sans',sans-serif" }}>0% complete</p>
+            </motion.div>
+
+            {/* Recent Activity */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }}
+              style={{ backgroundColor: "rgba(34,24,8,0.75)", border: "1px solid #3D2E10", borderRadius: "16px", padding: "1.25rem" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: "#F5ECD7" }}>Recent Activity</h3>
+                <TrendingUp style={{ width: "16px", height: "16px", color: "#E8A020" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {[
+                  { text: "New challenge: Character of the Month", time: "2h ago", icon: Trophy },
+                  { text: "New lesson by Kwame Mensah", time: "5h ago", icon: Play },
+                  { text: "Your post got 3 replies", time: "1d ago", icon: Users },
+                  { text: "Weekly streak milestone reached!", time: "2d ago", icon: Flame },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
+                    <div style={{ width: "28px", height: "28px", borderRadius: "8px", backgroundColor: "rgba(232,160,32,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <item.icon style={{ width: "12px", height: "12px", color: "#E8A020" }} />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: "0.78rem", color: "#F5ECD7", fontFamily: "'Satoshi',sans-serif", lineHeight: 1.4 }}>{item.text}</p>
+                      <p style={{ fontSize: "0.68rem", color: "#6B5A40", fontFamily: "'General Sans',sans-serif", marginTop: "2px" }}>{item.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Stats Row */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginTop: "1.5rem" }}>
+            {[
+              { label: "Courses Enrolled", value: "0", icon: BookOpen, color: "#E8A020" },
+              { label: "Lessons Done", value: "0", icon: Clock, color: "#C1440E" },
+              { label: "Day Streak", value: "3", icon: Flame, color: "#D4A853" },
+              { label: "Community Rank", value: "#42", icon: Trophy, color: "#E8A020" },
+            ].map((stat, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.6 + i * 0.05 }}
+                style={{ backgroundColor: "rgba(34,24,8,0.75)", border: "1px solid #3D2E10", borderRadius: "14px", padding: "1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}
+              >
+                <div style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: `rgba(${stat.color === "#E8A020" ? "232,160,32" : stat.color === "#C1440E" ? "193,68,14" : "212,168,83"},0.12)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <stat.icon style={{ width: "16px", height: "16px", color: stat.color }} />
+                </div>
+                <div>
+                  <div style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.25rem", color: "#F5ECD7" }}>{stat.value}</div>
+                  <div style={{ fontSize: "0.7rem", color: "#A89070", fontFamily: "'General Sans',sans-serif" }}>{stat.label}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
