@@ -1,13 +1,5 @@
-import Navbar from "@/app/components/layout/Navbar";
-import Footer from "@/app/components/layout/Footer";
+import DashboardLayout from "@/app/components/ui/DashboardLayout";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
-  );
+  return <DashboardLayout>{children}</DashboardLayout>;
 }
-
