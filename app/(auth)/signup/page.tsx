@@ -3,10 +3,26 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap, Film, Clapperboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type SkillLevel = "beginner" | "intermediate" | "advanced" | null;
+type AccountType = "animator" | "studio" | null;
+
+const ACCOUNT_TYPES = [
+  {
+    id: "animator",
+    label: "I am an Animator",
+    desc: "I want to learn, grow my skills and build my portfolio",
+    Icon: Film,
+  },
+  {
+    id: "studio",
+    label: "I am an Animation Studio",
+    desc: "I want to find talent, post projects and grow my team",
+    Icon: Clapperboard,
+  },
+];
 
 const SKILL_LEVELS = [
   { id: "beginner", label: "Beginner", desc: "I am new to animation", Icon: Sprout },
@@ -27,12 +43,15 @@ const stepVariants = {
   exit: { opacity: 0, x: -40 },
 };
 
+const TOTAL_STEPS = 4;
+
 export default function SignupPage() {
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [accountType, setAccountType] = useState<AccountType>(null);
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(null);
   const [goal, setGoal] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,7 +61,8 @@ export default function SignupPage() {
   const handleStepOne = (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
-    setError(""); setStep(2);
+    setError("");
+    setStep(2);
   };
 
   const handleFinish = async () => {
@@ -56,6 +76,7 @@ export default function SignupPage() {
       options: {
         data: {
           full_name: name,
+          account_type: accountType,
           skill_level: skillLevel,
           goal: goal,
         },
@@ -81,28 +102,20 @@ export default function SignupPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden" }}>
 
-      {/* ── Brown veil over background image ── */}
+      {/* Brown veil */}
       <div style={{
-        position: "absolute",
-        inset: 0,
+        position: "absolute", inset: 0,
         backgroundColor: "rgba(20, 9, 2, 0.84)",
         backdropFilter: "blur(2px)",
         WebkitBackdropFilter: "blur(2px)",
-        zIndex: 0,
-        pointerEvents: "none"
+        zIndex: 0, pointerEvents: "none"
       }} />
 
       {/* ── Left Panel ── */}
-      <div
-        style={{ position: "relative", zIndex: 1 }}
+      <div style={{ position: "relative", zIndex: 1 }}
         className="hidden lg:flex lg:w-1/2 items-center justify-center px-12"
       >
-        <div style={{
-          position: "absolute", top: "20%", left: "20%",
-          width: "300px", height: "300px",
-          background: "rgba(232,160,32,0.08)",
-          borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none"
-        }} />
+        <div style={{ position: "absolute", top: "20%", left: "20%", width: "300px", height: "300px", background: "rgba(232,160,32,0.08)", borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none" }} />
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -112,11 +125,7 @@ export default function SignupPage() {
         >
           {/* AFX Logo */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "3rem" }}>
-            <div style={{
-              width: "48px", height: "40px", backgroundColor: "#221808",
-              border: "1px solid #3D2E10", borderRadius: "12px",
-              display: "flex", alignItems: "center", justifyContent: "center"
-            }}>
+            <div style={{ width: "48px", height: "40px", backgroundColor: "#221808", border: "1px solid #3D2E10", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#E8A020" }}>A</span>
               <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#C1440E" }}>F</span>
               <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#D4A853" }}>X</span>
@@ -140,7 +149,7 @@ export default function SignupPage() {
 
           {/* Step indicator */}
           <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "0.75rem" }}>
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div key={s} style={{
                 height: "6px", borderRadius: "999px",
                 width: step >= s ? "32px" : "8px",
@@ -149,7 +158,7 @@ export default function SignupPage() {
               }} />
             ))}
           </div>
-          <p style={{ color: "#6B5A40", fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif" }}>Step {step} of 3</p>
+          <p style={{ color: "#6B5A40", fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif" }}>Step {step} of {TOTAL_STEPS}</p>
 
           <p style={{ fontFamily: "'Satoshi',sans-serif", fontStyle: "italic", color: "#D4A853", fontSize: "0.8rem", marginTop: "2rem" }}>
             Proudly African. Globally Creative.
@@ -158,14 +167,10 @@ export default function SignupPage() {
       </div>
 
       {/* Vertical divider */}
-      <div className="hidden lg:block" style={{
-        position: "relative", zIndex: 1,
-        width: "1px", backgroundColor: "rgba(61,46,16,0.4)", alignSelf: "stretch"
-      }} />
+      <div className="hidden lg:block" style={{ position: "relative", zIndex: 1, width: "1px", backgroundColor: "rgba(61,46,16,0.4)", alignSelf: "stretch" }} />
 
       {/* ── Right Panel ── */}
-      <div
-        style={{ position: "relative", zIndex: 1 }}
+      <div style={{ position: "relative", zIndex: 1 }}
         className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12"
       >
         <div style={{ width: "100%", maxWidth: "440px" }}>
@@ -182,14 +187,14 @@ export default function SignupPage() {
 
           {/* Mobile step bar */}
           <div className="flex gap-2 mb-8 lg:hidden">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div key={s} style={{ flex: 1, height: "4px", borderRadius: "999px", background: step >= s ? "linear-gradient(90deg,#E8A020,#C1440E)" : "#3D2E10", transition: "all 0.3s ease" }} />
             ))}
           </div>
 
           <AnimatePresence mode="wait">
 
-            {/* ── STEP 1 ── */}
+            {/* ── STEP 1 — Account Details ── */}
             {step === 1 && (
               <motion.div key="step1" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
@@ -206,8 +211,6 @@ export default function SignupPage() {
                 )}
 
                 <form onSubmit={handleStepOne} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-
-                  {/* Name */}
                   <div>
                     <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Full name</label>
                     <div style={{ position: "relative" }}>
@@ -216,7 +219,6 @@ export default function SignupPage() {
                     </div>
                   </div>
 
-                  {/* Email */}
                   <div>
                     <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Email address</label>
                     <div style={{ position: "relative" }}>
@@ -225,7 +227,6 @@ export default function SignupPage() {
                     </div>
                   </div>
 
-                  {/* Password */}
                   <div>
                     <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Password</label>
                     <div style={{ position: "relative" }}>
@@ -235,7 +236,6 @@ export default function SignupPage() {
                         {showPassword ? <EyeOff style={{ width: "16px", height: "16px" }} /> : <Eye style={{ width: "16px", height: "16px" }} />}
                       </button>
                     </div>
-                    {/* Strength bar */}
                     <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
                       {[8, 12, 16].map((len, i) => (
                         <div key={i} style={{ flex: 1, height: "3px", borderRadius: "999px", backgroundColor: password.length >= len ? strengthColor : "#3D2E10", transition: "background-color 0.3s" }} />
@@ -282,7 +282,7 @@ export default function SignupPage() {
               </motion.div>
             )}
 
-            {/* ── STEP 2 — Skill Level ── */}
+            {/* ── STEP 2 — Account Type ── */}
             {step === 2 && (
               <motion.div key="step2" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <button onClick={() => setStep(1)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
@@ -290,10 +290,70 @@ export default function SignupPage() {
                 </button>
 
                 <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
-                  What&apos;s your skill level?
+                  Who are you?
                 </h1>
                 <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
-                  We&apos;ll personalise your learning path based on this
+                  This helps us tailor your experience on Africa Fx
+                </p>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {ACCOUNT_TYPES.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => setAccountType(type.id as AccountType)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "1.25rem",
+                        padding: "1.5rem", borderRadius: "16px", textAlign: "left",
+                        cursor: "pointer", transition: "all 0.2s ease",
+                        background: accountType === type.id ? "rgba(232,160,32,0.10)" : "rgba(34,24,8,0.70)",
+                        border: accountType === type.id ? "1px solid rgba(232,160,32,0.50)" : "1px solid #3D2E10",
+                        backdropFilter: "blur(8px)"
+                      }}
+                    >
+                      <div style={{
+                        width: "52px", height: "52px", borderRadius: "14px", flexShrink: 0,
+                        background: accountType === type.id ? "linear-gradient(135deg,#E8A020,#C1440E)" : "rgba(232,160,32,0.10)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "all 0.2s ease"
+                      }}>
+                        <type.Icon style={{ width: "24px", height: "24px", color: accountType === type.id ? "#0D0905" : "#E8A020" }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1.1rem", marginBottom: "4px" }}>{type.label}</div>
+                        <div style={{ color: "#A89070", fontSize: "0.8rem", lineHeight: 1.5 }}>{type.desc}</div>
+                      </div>
+                      {accountType === type.id && (
+                        <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Check style={{ width: "12px", height: "12px", color: "#0D0905" }} />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => accountType && setStep(3)}
+                  disabled={!accountType}
+                  className="btn-primary"
+                  style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem", marginTop: "1.5rem", opacity: accountType ? 1 : 0.4 }}
+                >
+                  Continue <ArrowRight style={{ width: "16px", height: "16px" }} />
+                </button>
+              </motion.div>
+            )}
+
+            {/* ── STEP 3 — Skill Level (only for animators) ── */}
+            {step === 3 && (
+              <motion.div key="step3" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                <button onClick={() => setStep(2)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
+                  <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
+                </button>
+
+                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                  {accountType === "studio" ? "Studio size?" : "What's your skill level?"}
+                </h1>
+                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                  {accountType === "studio" ? "Help us understand your studio better" : "We'll personalise your learning path based on this"}
                 </p>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -326,16 +386,16 @@ export default function SignupPage() {
                   ))}
                 </div>
 
-                <button onClick={() => skillLevel && setStep(3)} disabled={!skillLevel} className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem", marginTop: "1.5rem", opacity: skillLevel ? 1 : 0.4 }}>
+                <button onClick={() => skillLevel && setStep(4)} disabled={!skillLevel} className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem", marginTop: "1.5rem", opacity: skillLevel ? 1 : 0.4 }}>
                   Continue <ArrowRight style={{ width: "16px", height: "16px" }} />
                 </button>
               </motion.div>
             )}
 
-            {/* ── STEP 3 — Goal ── */}
-            {step === 3 && (
-              <motion.div key="step3" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                <button onClick={() => setStep(2)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
+            {/* ── STEP 4 — Goal ── */}
+            {step === 4 && (
+              <motion.div key="step4" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
+                <button onClick={() => setStep(3)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
                   <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
@@ -392,6 +452,12 @@ export default function SignupPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
