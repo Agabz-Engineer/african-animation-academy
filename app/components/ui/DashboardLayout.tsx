@@ -124,10 +124,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const showMobileSidebar = (isMobile || isTablet) && mobileOpen;
   const sidebarWidth      = expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
-  /* ─── PREMIUM THEME TOGGLE ───────────────────────────
-     Inspired by Raycast: system-style segmented pill
-     Sun | Moon as two tappable segments — no track needed
-  ──────────────────────────────────────────────────── */
   const ThemeToggle = ({ size = "full" }: { size?: "full"|"icon" }) => {
     if (size === "icon") {
       return (
@@ -162,7 +158,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       );
     }
 
-    /* Full segmented toggle */
     return (
       <div style={{
         display: "flex", alignItems: "center",
@@ -220,27 +215,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   };
 
-  /* ─── SIDEBAR INNER ─── */
+  /* ── SIDEBAR INNER ── */
   const SidebarContent = ({ isOverlay = false }: { isOverlay?: boolean }) => {
     const wide = expanded || isOverlay;
     return (
       <div style={{
-        width: isOverlay ? `${SIDEBAR_EXPANDED}px` : `${sidebarWidth}px`,
+        width: "100%",
         backgroundColor: T.sidebarBg,
         borderRight: `1px solid ${T.sidebarBorder}`,
         display: "flex", flexDirection: "column",
         height: "100%",
         overflow: "hidden",
-        transition: "width 0.28s cubic-bezier(0.4,0,0.2,1)",
       }}>
 
-        {/* ── Kente stripe — minimal, tasteful ── */}
         <div style={{
           height: "2px", flexShrink: 0,
           background: `linear-gradient(90deg, ${T.accent} 0%, ${T.accent}88 40%, ${T.sidebarBorder} 60%, ${T.accent}44 80%, ${T.accent} 100%)`,
         }} />
 
-        {/* ── Logo ── */}
         <div style={{
           padding: wide ? "1.25rem 1.25rem 1rem" : "1.25rem 0 1rem",
           display: "flex", alignItems: "center",
@@ -248,7 +240,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           gap: "10px",
           borderBottom: `1px solid ${T.sidebarBorder}`,
         }}>
-          {/* Logo mark */}
           <div style={{
             width: "36px", height: "36px", minWidth: "36px",
             borderRadius: "11px",
@@ -276,7 +267,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </AnimatePresence>
         </div>
 
-        {/* ── User pill — Notion style ── */}
         <div style={{
           padding: wide ? "0.875rem 1.25rem" : "0.875rem 0",
           borderBottom: `1px solid ${T.sidebarBorder}`,
@@ -285,7 +275,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           gap: "10px",
           cursor: "pointer",
         }}>
-          {/* Avatar with online ring */}
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{
               width: "32px", height: "32px",
@@ -298,7 +287,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }}>
               {initial}
             </div>
-            {/* Online dot */}
             <div style={{ position: "absolute", bottom: "1px", right: "1px", width: "7px", height: "7px", borderRadius: "50%", backgroundColor: "#4CAF50", border: `1.5px solid ${T.sidebarBg}` }} />
           </div>
 
@@ -321,7 +309,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </AnimatePresence>
         </div>
 
-        {/* ── Nav links ── */}
         <nav style={{ flex: 1, padding: "0.5rem 0", overflowY: "auto", overflowX: "hidden" }}>
           {wide && (
             <div style={{ padding: "0.25rem 1.25rem 0.375rem", fontSize: "0.58rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: T.textDim, letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -362,7 +349,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     position: "relative",
                   }}
                 >
-                  {/* Active pill indicator — shared layoutId for smooth travel */}
                   {isActive && (
                     <motion.div
                       layoutId="navActivePill"
@@ -375,15 +361,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       transition={{ type: "spring", stiffness: 400, damping: 32 }}
                     />
                   )}
-
-                  {/* Left dot for active — collapsed mode */}
                   {isActive && !wide && (
                     <motion.div
                       layoutId="collapsedDot"
                       style={{ position: "absolute", left: "-1px", top: "50%", transform: "translateY(-50%)", width: "3px", height: "60%", borderRadius: "0 3px 3px 0", backgroundColor: T.accent }}
                     />
                   )}
-
                   <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: wide ? "0.75rem" : 0, justifyContent: wide ? "flex-start" : "center", width: "100%" }}>
                     <link.icon style={{ width: "16px", height: "16px", flexShrink: 0 }} />
                     <AnimatePresence>
@@ -406,7 +389,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* ── Bottom ── */}
         <div style={{
           borderTop: `1px solid ${T.sidebarBorder}`,
           padding: wide ? "0.875rem 1.25rem" : "0.75rem 0",
@@ -414,8 +396,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           gap: wide ? "0.125rem" : "0.25rem",
           alignItems: wide ? "stretch" : "center",
         }}>
-
-          {/* Theme toggle — full in wide, icon in collapsed */}
           {wide ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.375rem 0", marginBottom: "0.25rem" }}>
               <span style={{ fontSize: "0.7rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>Appearance</span>
@@ -426,8 +406,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <ThemeToggle size="icon" />
             </div>
           )}
-
-          {/* Settings */}
           <Link
             href="/settings"
             onClick={() => setMobileOpen(false)}
@@ -436,8 +414,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Settings style={{ width: "14px", height: "14px", flexShrink: 0 }} />
             {wide && "Settings"}
           </Link>
-
-          {/* Logout */}
           <button
             onClick={handleLogout}
             style={{ display: "flex", alignItems: "center", justifyContent: wide ? "flex-start" : "center", gap: wide ? "0.625rem" : 0, padding: wide ? "0.45rem 0.375rem" : "0.55rem 0", width: "100%", background: "none", border: "none", cursor: "pointer", color: T.textDim, fontSize: "0.78rem", fontFamily: "'General Sans',sans-serif", borderRadius: "8px", transition: "color 0.15s" }}
@@ -453,21 +429,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: T.mainBg, color: T.text, fontFamily: "'Satoshi',sans-serif", transition: "background-color 0.35s, color 0.35s" }}>
 
-      {/* ── Desktop sidebar ── */}
+      {/* ── Desktop sidebar — plain div + CSS transition, no Framer Motion ── */}
       {showSidebar && (
-        <motion.div
-          animate={{ width: sidebarWidth }}
-          transition={{ type: "spring", stiffness: 280, damping: 28 }}
-          style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20, overflow: "visible" }}
+        <div
+          style={{
+            position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20, overflow: "visible",
+            width: `${sidebarWidth}px`,
+            transition: "width 0.28s cubic-bezier(0.4,0,0.2,1)",
+          }}
         >
           <SidebarContent />
-
-          {/* ── Expand toggle — Linear-style ── */}
-          <motion.button
+          <button
             onClick={() => setExpanded(!expanded)}
-            initial={false}
-            whileHover={{ scale: 1.12, boxShadow: `0 4px 16px ${T.accentGlow}` }}
-            whileTap={{ scale: 0.90 }}
             title={expanded ? "Collapse" : "Expand"}
             style={{
               position: "absolute", top: "50%", right: "-13px",
@@ -479,16 +452,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: `0 2px 10px ${T.accentGlow}`,
               zIndex: 22,
+              transition: "box-shadow 0.2s",
             }}
+            onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 4px 16px ${T.accentGlow}`)}
+            onMouseLeave={e => (e.currentTarget.style.boxShadow = `0 2px 10px ${T.accentGlow}`)}
           >
-            <motion.div
-              animate={{ rotate: expanded ? 180 : 0 }}
-              transition={{ type: "spring", stiffness: 350, damping: 28 }}
-            >
-              <ChevronRight style={{ width: "13px", height: "13px", color: "#FFFFFF" }} />
-            </motion.div>
-          </motion.button>
-        </motion.div>
+            <ChevronRight style={{
+              width: "13px", height: "13px", color: "#FFFFFF",
+              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+            }} />
+          </button>
+        </div>
       )}
 
       {/* ── Mobile overlay sidebar ── */}
@@ -526,13 +501,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </AnimatePresence>
 
-      {/* ── Main content ── */}
-      <motion.div
-        animate={{ marginLeft: showSidebar ? sidebarWidth : 0 }}
-        transition={{ type: "spring", stiffness: 280, damping: 28 }}
-        style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, paddingBottom: isMobile || isTablet ? "72px" : 0 }}
+      {/* ── Main content — plain div + CSS transition, no Framer Motion ── */}
+      <div
+        style={{
+          flex: 1, display: "flex", flexDirection: "column", minWidth: 0,
+          paddingBottom: isMobile || isTablet ? "72px" : 0,
+          marginLeft: showSidebar ? `${sidebarWidth}px` : 0,
+          transition: "margin-left 0.28s cubic-bezier(0.4,0,0.2,1)",
+        }}
       >
-
         {/* Mobile topbar */}
         {(isMobile || isTablet) && (
           <div style={{ position: "sticky", top: 0, zIndex: 19, backgroundColor: T.topbarBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `1px solid ${T.border}`, padding: "0.75rem 1.25rem", display: "flex", alignItems: "center", gap: "0.875rem" }}>
@@ -543,14 +520,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Menu style={{ width: "17px", height: "17px", color: T.textMuted }} />
             </motion.button>
-
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{ width: "26px", height: "26px", borderRadius: "8px", background: `linear-gradient(135deg, ${T.accent}22, ${T.accent}44)`, border: `1px solid ${T.accent}44`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.56rem", color: T.accent }}>AFX</span>
               </div>
               <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text }}>Africa Fx</span>
             </div>
-
             <ThemeToggle size="icon" />
           </div>
         )}
@@ -558,7 +533,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main style={{ flex: 1, overflowX: "hidden" }}>
           {children}
         </main>
-      </motion.div>
+      </div>
 
       {/* ── Mobile bottom nav ── */}
       {(isMobile || isTablet) && (
@@ -591,7 +566,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </motion.div>
       )}
 
-      {/* ── Global styles ── */}
       <style jsx global>{`
         @media (max-width: 767px) {
           .dash-grid-4    { grid-template-columns: 1fr 1fr !important; }
@@ -611,20 +585,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-grid-stats{ grid-template-columns: repeat(4,1fr); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Sidebar nav scrollbar invisible */
         nav::-webkit-scrollbar { width: 0; }
-
-        /* Page scrollbar — thin and orange */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,140,0,0.20); border-radius: 999px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,140,0,0.45); }
-
-        /* Smooth focus rings */
         *:focus-visible { outline: 2px solid rgba(255,140,0,0.60); outline-offset: 2px; border-radius: 6px; }
-
-        /* Link hover — subtle lift */
         nav a { transition: color 0.15s, background-color 0.15s, transform 0.15s; }
       `}</style>
     </div>
