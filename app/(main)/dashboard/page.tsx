@@ -211,8 +211,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         display: "flex", flexDirection: "column",
         height: "100%", overflow: "hidden",
         transition: "width 0.26s cubic-bezier(0.4,0,0.2,1)",
-        backfaceVisibility: "hidden" as const,
-        WebkitBackfaceVisibility: "hidden" as const,
       }}>
 
         {/* Kente stripe — subtle, tasteful */}
@@ -410,29 +408,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: T.mainBg, color: T.text, fontFamily: "'Satoshi',sans-serif", transition: "background-color 0.3s, color 0.3s" }}>
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — plain div, CSS transition only (no Framer Motion on fixed element = no scroll flicker) */}
       {showSidebar && (
         <div
           style={{
             position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20, overflow: "visible",
-            width: sidebarWidth,
+            width: `${sidebarWidth}px`,
             transition: "width 0.26s cubic-bezier(0.4,0,0.2,1)",
-            willChange: "width",
-            backfaceVisibility: "hidden",
           }}
         >
           <SidebarContent />
-          <motion.button
+          <button
             onClick={() => setExpanded(!expanded)}
-            whileHover={{ scale: 1.10, boxShadow: `0 4px 18px ${T.accentGlow}` }}
-            whileTap={{ scale: 0.90 }}
             title={expanded ? "Collapse" : "Expand"}
-            style={{ position: "absolute", top: "50%", right: "-13px", transform: "translateY(-50%)", width: "26px", height: "26px", borderRadius: "50%", backgroundColor: T.accent, border: `2.5px solid ${T.mainBg}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 2px 10px ${T.accentGlow}`, zIndex: 22 }}
+            style={{
+              position: "absolute", top: "50%", right: "-13px",
+              transform: "translateY(-50%)",
+              width: "26px", height: "26px", borderRadius: "50%",
+              backgroundColor: T.accent, border: `2.5px solid ${T.mainBg}`,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: `0 2px 10px ${T.accentGlow}`, zIndex: 22,
+              transition: "box-shadow 0.2s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 4px 18px ${T.accentGlow}`)}
+            onMouseLeave={e => (e.currentTarget.style.boxShadow = `0 2px 10px ${T.accentGlow}`)}
           >
-            <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.22, ease: "easeInOut" }}>
-              <ChevronRight style={{ width: "12px", height: "12px", color: "#FFFFFF" }} />
-            </motion.div>
-          </motion.button>
+            <ChevronRight style={{
+              width: "12px", height: "12px", color: "#FFFFFF",
+              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.22s ease",
+            }} />
+          </button>
         </div>
       )}
 
@@ -466,7 +472,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{
           flex: 1, display: "flex", flexDirection: "column", minWidth: 0,
           paddingBottom: isMobile || isTablet ? "72px" : 0,
-          marginLeft: showSidebar ? sidebarWidth : 0,
+          marginLeft: showSidebar ? `${sidebarWidth}px` : 0,
           transition: "margin-left 0.26s cubic-bezier(0.4,0,0.2,1)",
         }}
       >
