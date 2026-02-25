@@ -211,6 +211,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         display: "flex", flexDirection: "column",
         height: "100%", overflow: "hidden",
         transition: "width 0.26s cubic-bezier(0.4,0,0.2,1)",
+        backfaceVisibility: "hidden" as const,
+        WebkitBackfaceVisibility: "hidden" as const,
       }}>
 
         {/* Kente stripe — subtle, tasteful */}
@@ -415,9 +417,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20, overflow: "visible",
             width: sidebarWidth,
             transition: "width 0.26s cubic-bezier(0.4,0,0.2,1)",
-            /* GPU layer — eliminates scroll-triggered repaint flicker */
-            transform: "translateZ(0)",
             willChange: "width",
+            backfaceVisibility: "hidden",
           }}
         >
           <SidebarContent />
