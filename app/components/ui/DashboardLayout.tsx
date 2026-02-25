@@ -29,32 +29,59 @@ const BOTTOM_NAV = [
   { label: "Profile",   href: "/profile",    icon: User },
 ];
 
+/* ══════════════════════════════════════════════
+   COLOUR TOKENS — 4-colour palette update
+   ──────────────────────────────────────────────
+   OLD dark bg:    #0D0905  → NEW: #1C1C1C
+   OLD dark text:  #F5ECD7  → NEW: #FAF8F0
+   OLD gold:       #E8A020  → NEW: #FF8C00  (orange)
+   OLD terracotta: #C1440E  → NEW: #FF8C00  (same orange, simplified)
+   OLD light bg:   #FDF6EC  → NEW: #FAF8F0
+   OLD light side: #F5E6C8  → NEW: #EDE5CC
+
+   READABILITY — never broken:
+   • light text (#FAF8F0) on dark surfaces ✓
+   • dark text  (#1C1C1C) on light surfaces ✓
+   • orange (#FF8C00) only for active/accent ✓
+══════════════════════════════════════════════ */
 const DARK = {
-  sidebarBg:     "#110A06",
-  sidebarBorder: "#3D2E10",
-  mainBg:        "#0D0905",
-  topbarBg:      "rgba(13,9,5,0.95)",
-  text:          "#F5ECD7",
-  textMuted:     "#A89070",
-  textDim:       "#6B5A40",
-  border:        "#3D2E10",
-  activeNavBg:   "rgba(232,160,32,0.10)",
-  overlayBg:     "rgba(0,0,0,0.60)",
-  bottomNavBg:   "#110A06",
+  sidebarBg:     "#252320",                  /* was #110A06  */
+  sidebarBorder: "#3A3530",                  /* was #3D2E10  */
+  mainBg:        "#1C1C1C",                  /* was #0D0905  */
+  topbarBg:      "rgba(28,28,28,0.95)",      /* was rgba(13,9,5,0.95) */
+  text:          "#FAF8F0",                  /* was #F5ECD7  */
+  textMuted:     "#C8C4BC",                  /* was #A89070  */
+  textDim:       "#8A8680",                  /* was #6B5A40  */
+  border:        "#3A3530",                  /* was #3D2E10  */
+  activeNavBg:   "rgba(255,140,0,0.10)",     /* was rgba(232,160,32,0.10) */
+  overlayBg:     "rgba(0,0,0,0.60)",         /* unchanged    */
+  bottomNavBg:   "#1C1C1C",                  /* was #110A06  */
+  /* new tokens needed for inline hardcodes below */
+  accent:        "#FF8C00",                  /* was #E8A020  */
+  accentText:    "#1C1C1C",                  /* dark on orange ✓ */
+  accentSoft:    "rgba(255,140,0,0.10)",
+  hamburgerBg:   "rgba(37,35,32,0.85)",      /* was rgba(34,24,8,0.80) */
+  toggleTrack:   "#3A3530",                  /* was #3D2E10  */
 };
 
 const LIGHT = {
-  sidebarBg:     "#F5E6C8",
-  sidebarBorder: "#E2C99A",
-  mainBg:        "#FDF6EC",
-  topbarBg:      "rgba(253,246,236,0.95)",
-  text:          "#1A0F00",
-  textMuted:     "#6B4F2A",
-  textDim:       "#A0845C",
-  border:        "#E2C99A",
-  activeNavBg:   "rgba(232,160,32,0.15)",
-  overlayBg:     "rgba(0,0,0,0.40)",
-  bottomNavBg:   "#FFF8F0",
+  sidebarBg:     "#EDE5CC",                  /* was #F5E6C8  */
+  sidebarBorder: "#E0D8C3",                  /* was #E2C99A  */
+  mainBg:        "#FAF8F0",                  /* was #FDF6EC  */
+  topbarBg:      "rgba(250,248,240,0.95)",   /* was rgba(253,246,236,0.95) */
+  text:          "#1C1C1C",                  /* was #1A0F00  */
+  textMuted:     "#4A4744",                  /* was #6B4F2A  */
+  textDim:       "#7A7570",                  /* was #A0845C  */
+  border:        "#E0D8C3",                  /* was #E2C99A  */
+  activeNavBg:   "rgba(255,140,0,0.12)",     /* was rgba(232,160,32,0.15) */
+  overlayBg:     "rgba(0,0,0,0.40)",         /* unchanged    */
+  bottomNavBg:   "#FAF8F0",                  /* was #FFF8F0  */
+  /* new tokens */
+  accent:        "#FF8C00",                  /* was #E8A020  */
+  accentText:    "#FFFFFF",                  /* white on orange ✓ */
+  accentSoft:    "rgba(255,140,0,0.12)",
+  hamburgerBg:   "rgba(255,255,255,0.85)",   /* was rgba(255,255,255,0.80) */
+  toggleTrack:   "#E0D8C3",                  /* was #E8D5B0  */
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -70,7 +97,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     /* Sync theme */
     const saved = localStorage.getItem("africafx-theme") as "dark"|"light";
-    if (saved) setTheme(saved);
+    if (saved) {
+      setTheme(saved);
+      document.documentElement.setAttribute("data-theme", saved);
+    }
     const obs = new MutationObserver(() => {
       const t = document.documentElement.getAttribute("data-theme") as "dark"|"light";
       if (t) setTheme(t);
@@ -111,8 +141,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                  || user?.email?.split("@")[0]
                  || "Creative";
 
-  /* Sidebar width logic */
-  const SIDEBAR_EXPANDED = 200;
+  /* Sidebar width logic — identical to original */
+  const SIDEBAR_EXPANDED  = 200;
   const SIDEBAR_COLLAPSED = 60;
   const sidebarWidth = isMobile
     ? 0
@@ -120,10 +150,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ? 0
       : expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED;
 
-  const showSidebar = !isMobile && !isTablet;
+  const showSidebar       = !isMobile && !isTablet;
   const showMobileSidebar = (isMobile || isTablet) && mobileOpen;
 
-  /* ─── Sidebar inner component (reused for desktop + mobile overlay) ─── */
+  /* ─── Sidebar inner component — identical structure to original ─── */
   const SidebarContent = ({ isOverlay = false }: { isOverlay?: boolean }) => (
     <div style={{
       width: isOverlay ? "220px" : expanded ? `${SIDEBAR_EXPANDED}px` : `${SIDEBAR_COLLAPSED}px`,
@@ -134,18 +164,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       transition: "width 0.3s ease",
       overflow: "hidden",
     }}>
-      {/* Kente stripe */}
-      <div style={{ height: "4px", flexShrink: 0, background: "repeating-linear-gradient(90deg,#E8A020 0,#E8A020 20px,#C1440E 20px,#C1440E 40px,#D4A853 40px,#D4A853 60px,#8B2E08 60px,#8B2E08 80px)" }} />
+
+      {/* Kente stripe — updated to 4-colour palette */}
+      <div style={{ height: "4px", flexShrink: 0, background: "repeating-linear-gradient(90deg,#FF8C00 0,#FF8C00 20px,#1C1C1C 20px,#1C1C1C 40px,#EDE5CC 40px,#EDE5CC 60px,#FF8C00 60px,#FF8C00 80px)" }} />
 
       {/* Logo + user */}
       <div style={{ padding: expanded || isOverlay ? "1.25rem 1rem" : "1.25rem 0", display: "flex", flexDirection: "column", alignItems: expanded || isOverlay ? "flex-start" : "center", borderBottom: `1px solid ${T.sidebarBorder}`, transition: "padding 0.3s" }}>
 
         {/* AFX mark */}
         <div style={{ display: "flex", alignItems: "center", gap: expanded || isOverlay ? "8px" : 0, marginBottom: expanded || isOverlay ? "1.25rem" : "1rem", width: "100%", justifyContent: expanded || isOverlay ? "flex-start" : "center" }}>
-          <div style={{ width: "34px", height: "28px", minWidth: "34px", backgroundColor: theme === "dark" ? "#221808" : "#fff", border: `1px solid ${T.sidebarBorder}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.65rem", color: "#E8A020" }}>A</span>
-            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.75rem", color: "#C1440E" }}>F</span>
-            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.65rem", color: "#D4A853" }}>X</span>
+          <div style={{ width: "34px", height: "28px", minWidth: "34px", backgroundColor: T.mainBg, border: `1px solid ${T.sidebarBorder}`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {/* Single AFX in orange — cleaner than 3 separate colours */}
+            <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.68rem", color: T.accent }}>AFX</span>
           </div>
           {(expanded || isOverlay) && (
             <div style={{ overflow: "hidden" }}>
@@ -157,7 +187,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* User avatar */}
         <div style={{ display: "flex", alignItems: "center", gap: expanded || isOverlay ? "8px" : 0, width: "100%", justifyContent: expanded || isOverlay ? "flex-start" : "center" }}>
-          <div style={{ width: "32px", height: "32px", minWidth: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.8rem", color: "#0D0905" }}>
+          <div style={{ width: "32px", height: "32px", minWidth: "32px", borderRadius: "50%", backgroundColor: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.8rem", color: T.accentText }}>
             {firstName.charAt(0).toUpperCase()}
           </div>
           {(expanded || isOverlay) && (
@@ -169,7 +199,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
 
-      {/* Nav links */}
+      {/* Nav links — identical logic to original */}
       <nav style={{ flex: 1, padding: "0.75rem 0", overflowY: "auto", overflowX: "hidden" }}>
         {NAV_LINKS.map((link) => {
           const isActive = pathname === link.href;
@@ -183,10 +213,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 justifyContent: expanded || isOverlay ? "flex-start" : "center",
                 padding: expanded || isOverlay ? "0.65rem 1rem" : "0.75rem 0",
                 textDecoration: "none",
-                color: isActive ? "#E8A020" : T.textMuted,
+                color: isActive ? T.accent : T.textMuted,           /* was #E8A020 hardcoded */
                 backgroundColor: isActive ? T.activeNavBg : "transparent",
                 borderLeft: expanded || isOverlay
-                  ? isActive ? "3px solid #E8A020" : "3px solid transparent"
+                  ? isActive ? `3px solid ${T.accent}` : "3px solid transparent"  /* was #E8A020 hardcoded */
                   : "none",
                 transition: "all 0.2s",
                 fontSize: "0.825rem",
@@ -211,9 +241,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span style={{ fontSize: "0.7rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>
               {theme === "dark" ? "Dark" : "Light"}
             </span>
-            <button onClick={toggleTheme} style={{ width: "46px", height: "24px", borderRadius: "999px", border: "none", cursor: "pointer", position: "relative", backgroundColor: theme === "dark" ? "#3D2E10" : "#E8D5B0", transition: "background-color 0.3s", flexShrink: 0 }}>
-              <div style={{ position: "absolute", top: "2px", left: theme === "dark" ? "2px" : "22px", width: "20px", height: "20px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", transition: "left 0.3s ease", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {theme === "dark" ? <Moon style={{ width: "9px", height: "9px", color: "#0D0905" }} /> : <Sun style={{ width: "9px", height: "9px", color: "#0D0905" }} />}
+            <button onClick={toggleTheme} style={{ width: "46px", height: "24px", borderRadius: "999px", border: "none", cursor: "pointer", position: "relative", backgroundColor: T.toggleTrack, transition: "background-color 0.3s", flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: "2px", left: theme === "dark" ? "2px" : "22px", width: "20px", height: "20px", borderRadius: "50%", backgroundColor: T.accent, transition: "left 0.3s ease", display: "flex", alignItems: "center", justifyContent: "center" }}>  {/* was gradient */}
+                {theme === "dark" ? <Moon style={{ width: "9px", height: "9px", color: T.accentText }} /> : <Sun style={{ width: "9px", height: "9px", color: T.accentText }} />}
               </div>
             </button>
           </div>
@@ -254,7 +284,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               position: "absolute", top: "50%", right: "-12px",
               transform: "translateY(-50%)",
               width: "24px", height: "24px", borderRadius: "50%",
-              background: "linear-gradient(135deg,#E8A020,#C1440E)",
+              backgroundColor: T.accent,                             /* was gradient */
               border: "none", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
@@ -262,8 +292,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }}
           >
             {expanded
-              ? <ChevronLeft  style={{ width: "12px", height: "12px", color: "#0D0905" }} />
-              : <ChevronRight style={{ width: "12px", height: "12px", color: "#0D0905" }} />}
+              ? <ChevronLeft  style={{ width: "12px", height: "12px", color: T.accentText }} />   /* was #0D0905 */
+              : <ChevronRight style={{ width: "12px", height: "12px", color: T.accentText }} />}  /* was #0D0905 */
           </button>
         </div>
       )}
@@ -281,8 +311,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 31 }}>
             <SidebarContent isOverlay />
             {/* Close button */}
-            <button onClick={() => setMobileOpen(false)} style={{ position: "absolute", top: "12px", right: "-40px", width: "32px", height: "32px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <X style={{ width: "14px", height: "14px", color: "#0D0905" }} />
+            <button onClick={() => setMobileOpen(false)} style={{ position: "absolute", top: "12px", right: "-40px", width: "32px", height: "32px", borderRadius: "50%", backgroundColor: T.accent, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>  {/* was gradient */}
+              <X style={{ width: "14px", height: "14px", color: T.accentText }} />              {/* was #0D0905 */}
             </button>
           </div>
         </>
@@ -301,21 +331,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {(isMobile || isTablet) && (
           <div style={{ position: "sticky", top: 0, zIndex: 19, backgroundColor: T.topbarBg, backdropFilter: "blur(12px)", borderBottom: `1px solid ${T.border}`, padding: "0.75rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
             {/* Hamburger */}
-            <button onClick={() => setMobileOpen(true)} style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: theme === "dark" ? "rgba(34,24,8,0.80)" : "rgba(255,255,255,0.80)", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <button onClick={() => setMobileOpen(true)} style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: T.hamburgerBg, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>   {/* was hardcoded per theme */}
               <Menu style={{ width: "18px", height: "18px", color: T.textMuted }} />
             </button>
 
             {/* AFX brand */}
             <div style={{ flex: 1 }}>
-              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: "#E8A020" }}>Africa</span>
+              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.accent }}>Africa</span>  {/* was #E8A020 hardcoded */}
               <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text, marginLeft: "4px" }}>Fx</span>
             </div>
 
             {/* Theme toggle mobile */}
-            <button onClick={toggleTheme} style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: theme === "dark" ? "rgba(34,24,8,0.80)" : "rgba(255,255,255,0.80)", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <button onClick={toggleTheme} style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: T.hamburgerBg, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               {theme === "dark"
-                ? <Sun  style={{ width: "16px", height: "16px", color: "#E8A020" }} />
-                : <Moon style={{ width: "16px", height: "16px", color: "#C47D0E" }} />}
+                ? <Sun  style={{ width: "16px", height: "16px", color: T.accent }} />     /* was #E8A020 hardcoded */
+                : <Moon style={{ width: "16px", height: "16px", color: T.textMuted }} />} {/* was #C47D0E hardcoded — now uses token */}
             </button>
           </div>
         )}
@@ -332,7 +362,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {BOTTOM_NAV.map((link) => {
             const isActive = pathname === link.href;
             return (
-              <Link key={link.label} href={link.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", textDecoration: "none", padding: "0.25rem 0.75rem", borderRadius: "12px", color: isActive ? "#E8A020" : T.textDim, backgroundColor: isActive ? "rgba(232,160,32,0.10)" : "transparent", transition: "all 0.2s", minWidth: "50px" }}>
+              <Link key={link.label} href={link.href} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px", textDecoration: "none", padding: "0.25rem 0.75rem", borderRadius: "12px", color: isActive ? T.accent : T.textDim, backgroundColor: isActive ? T.accentSoft : "transparent", transition: "all 0.2s", minWidth: "50px" }}>  {/* was #E8A020 + rgba hardcoded */}
                 <link.icon style={{ width: "20px", height: "20px" }} />
                 <span style={{ fontSize: "0.58rem", fontFamily: "'General Sans',sans-serif", fontWeight: isActive ? 600 : 400 }}>{link.label}</span>
               </Link>
@@ -341,25 +371,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
 
-      {/* Global responsive styles */}
+      {/* Global responsive styles — identical to original */}
       <style jsx global>{`
         @media (max-width: 767px) {
-          .dash-grid-4 { grid-template-columns: 1fr 1fr !important; }
-          .dash-grid-2 { grid-template-columns: 1fr !important; }
-          .dash-grid-stats { grid-template-columns: 1fr 1fr !important; }
-          .dash-hero { height: 180px !important; }
-          .dash-padding { padding: 1rem !important; }
-          .hide-mobile { display: none !important; }
+          .dash-grid-4    { grid-template-columns: 1fr 1fr !important; }
+          .dash-grid-2    { grid-template-columns: 1fr !important; }
+          .dash-grid-stats{ grid-template-columns: 1fr 1fr !important; }
+          .dash-hero      { height: 180px !important; }
+          .dash-padding   { padding: 1rem !important; }
+          .hide-mobile    { display: none !important; }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
-          .dash-grid-4 { grid-template-columns: 1fr 1fr !important; }
+          .dash-grid-4  { grid-template-columns: 1fr 1fr !important; }
           .dash-padding { padding: 1.25rem !important; }
         }
         @media (min-width: 1024px) {
-          .dash-grid-4 { grid-template-columns: repeat(4,1fr); }
-          .dash-grid-2 { grid-template-columns: 1fr 1fr; }
-          .dash-grid-stats { grid-template-columns: repeat(4,1fr); }
+          .dash-grid-4    { grid-template-columns: repeat(4,1fr); }
+          .dash-grid-2    { grid-template-columns: 1fr 1fr; }
+          .dash-grid-stats{ grid-template-columns: repeat(4,1fr); }
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
