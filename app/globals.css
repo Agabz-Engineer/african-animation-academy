@@ -157,19 +157,28 @@
   */
   body {
     background-color: var(--bg);
-    background-image:
-      var(--bg-overlay),
-      url('/images/portrait-3d-cartoon-indigenous-person.jpg');
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: 70% center; /* shift right so character is visible */
-    background-repeat: no-repeat;
-    min-height: 100vh;
     color: var(--text);
     font-family: 'Satoshi', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: color 0.3s ease, background-color 0.3s ease;
+    min-height: 100vh;
+  }
+
+  /* Background image lives on a pseudo-element so it's always visible
+     behind the dashboard layout (which has its own bg color) */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image:
+      var(--bg-overlay),
+      url('/images/portrait-3d-cartoon-indigenous-person.jpg');
+    background-size: cover;
+    background-position: 70% center;
+    background-repeat: no-repeat;
+    pointer-events: none;
   }
 
   /* Subtle adinkra crosshatch texture on top of everything */

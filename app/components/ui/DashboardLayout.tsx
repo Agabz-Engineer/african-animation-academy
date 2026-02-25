@@ -262,7 +262,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // ── RENDER ───────────────────────────────────────────
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: T.mainBg, color: T.text, fontFamily: "'Satoshi',sans-serif", transition: "background-color 0.3s, color 0.3s" }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "transparent", color: T.text, fontFamily: "'Satoshi',sans-serif", transition: "color 0.3s" }}>
 
       {/* DESKTOP SIDEBAR
           - Only this div controls the width
@@ -317,6 +317,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         marginLeft: isDesktop ? sidebarW : 0,
         paddingBottom: (isMobile || isTablet) ? 72 : 0,
         transition: "margin-left 0.28s cubic-bezier(0.4,0,0.2,1)",
+        position: "relative", zIndex: 1,
       }}>
         {/* Mobile topbar */}
         {(isMobile || isTablet) && (
