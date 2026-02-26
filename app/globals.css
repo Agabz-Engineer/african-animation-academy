@@ -81,10 +81,10 @@
   --bg-overlay:
     linear-gradient(
       to bottom,
-      rgba(15,13,11,0.82) 0%,
-      rgba(15,13,11,0.65) 25%,
-      rgba(15,13,11,0.72) 55%,
-      rgba(15,13,11,0.94) 82%,
+      rgba(15,13,11,0.68) 0%,
+      rgba(15,13,11,0.50) 25%,
+      rgba(15,13,11,0.60) 55%,
+      rgba(15,13,11,0.88) 82%,
       rgba(15,13,11,1.00) 100%
     );
 }
@@ -117,10 +117,10 @@
   --bg-overlay:
     linear-gradient(
       to bottom,
-      rgba(240,232,212,0.88) 0%,
-      rgba(240,232,212,0.75) 25%,
-      rgba(240,232,212,0.82) 55%,
-      rgba(240,232,212,0.96) 82%,
+      rgba(240,232,212,0.72) 0%,
+      rgba(240,232,212,0.58) 25%,
+      rgba(240,232,212,0.68) 55%,
+      rgba(240,232,212,0.90) 82%,
       rgba(240,232,212,1.00) 100%
     );
 }
@@ -166,39 +166,72 @@
     position: relative; /* needed for mobile absolute pseudo-element */
   }
 
-  /* Background image — fixed pseudo-element
-     position: fixed is used only on desktop.
-     On mobile we use a separate approach (see @media below)
-     to avoid the iOS/Android scroll stagger bug. */
+  /* ── Background image ──────────────────────────────────────
+     Two optimised versions:
+       bg-mobile.jpg  → 600px wide, 44 KB  (phones & tablets)
+       bg-desktop.jpg → 1200px wide, 156 KB (laptops & up)
+
+     Scroll-lag fix:
+     - translate3d forces a GPU compositor layer
+     - This means the bg never repaints on scroll — it's
+       just a texture on a separate GPU layer that doesn't move
+     - On mobile the image also uses this trick so it's smooth
+  ─────────────────────────────────────────────────────────── */
   body::before {
     content: '';
     position: fixed;
-    inset: 0;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     z-index: 0;
-    background-image:
-      var(--bg-overlay),
-      url('/images/portrait-3d-cartoon-indigenous-person.jpg');
-    background-size: cover;
-    background-position: 65% 25%;
-    background-repeat: no-repeat;
     pointer-events: none;
+    /* GPU layer — key to zero scroll lag */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    /* Mobile image — small and fast
+       Layers (top to bottom):
+       1. Solid dark veil   — kills the loudness
+       2. Gradient overlay  — fades bottom to solid bg colour
+       3. The image itself  */
+    background-image:
+      linear-gradient(rgba(10,8,6,0.45), rgba(10,8,6,0.45)),
+      var(--bg-overlay),
+      url('/images/bg-mobile.jpg');
+    background-size: cover;
+    background-position: 55% 20%;
+    background-repeat: no-repeat;
   }
 
-  /* Mobile: use absolute + no-repeat trick to stop scroll stagger.
-     The image stays locked at the top and doesn't jump as you scroll. */
-  @media (max-width: 1023px) {
+  /* Desktop — switch to larger image + same veil */
+  @media (min-width: 1024px) {
     body::before {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      min-height: 100vh;
-      background-position: 55% 15%;
-      background-size: 160%;
+      background-image:
+        linear-gradient(rgba(10,8,6,0.45), rgba(10,8,6,0.45)),
+        var(--bg-overlay),
+        url('/images/bg-desktop.jpg');
+      background-position: 65% 25%;
     }
   }
 
-  /* Subtle adinkra crosshatch texture on top of everything */
+  /* Light mode veil — warmer tone instead of dark */
+  [data-theme="light"] body::before {
+    background-image:
+      linear-gradient(rgba(240,228,200,0.50), rgba(240,228,200,0.50)),
+      var(--bg-overlay),
+      url('/images/bg-mobile.jpg');
+  }
+
+  @media (min-width: 1024px) {
+    [data-theme="light"] body::before {
+      background-image:
+        linear-gradient(rgba(240,228,200,0.50), rgba(240,228,200,0.50)),
+        var(--bg-overlay),
+        url('/images/bg-desktop.jpg');
+    }
+  }
+
+  /* Subtle adinkra crosshatch texture on top of background */
   body::after {
     content: '';
     position: fixed;
@@ -206,6 +239,8 @@
     pointer-events: none;
     z-index: 0;
     opacity: 0.015;
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
     background-image:
       repeating-linear-gradient(
         45deg,
@@ -488,4 +523,17 @@
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
+}
+
+/* ── Page transparency ─────────────────────────────────────
+   The background image (body::before) must show through all
+   page wrappers. We force the dashboard page div and main
+   tag to be transparent on desktop so the bg is always visible
+   across Home, Courses, Community etc.
+──────────────────────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  main,
+  main > div {
+    background-color: transparent !important;
+  }
 }
