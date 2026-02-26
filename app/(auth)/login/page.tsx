@@ -3,35 +3,28 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Mail, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setMessage("");
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        shouldCreateUser: true,
-      },
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      setMessage("Magic link sent. Check your email to continue.");
-      setLoading(false);
+      window.location.href = "/dashboard";
     }
   };
 
@@ -163,7 +156,7 @@ export default function LoginPage() {
             Welcome back
           </h1>
           <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi', sans-serif" }}>
-            Enter your email and we will send you a secure sign-in link
+            Sign in to continue your animation journey
           </p>
 
           {error && (
@@ -175,16 +168,6 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-          {message && (
-            <div style={{
-              background: "rgba(76,175,80,0.12)", border: "1px solid rgba(76,175,80,0.30)",
-              color: "#8BE29A", borderRadius: "12px", padding: "0.75rem 1rem",
-              marginBottom: "1.5rem", fontSize: "0.875rem"
-            }}>
-              {message}
-            </div>
-          )}
-
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
             {/* Email */}
@@ -206,6 +189,39 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Password */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                <label style={{ fontSize: "0.875rem", fontWeight: 500, color: "#A89070", fontFamily: "'General Sans', sans-serif" }}>
+                  Password
+                </label>
+                <Link href="/forgot-password" style={{ fontSize: "0.8rem", color: "#E8A020", textDecoration: "none" }}>
+                  Forgot password?
+                </Link>
+              </div>
+              <div style={{ position: "relative" }}>
+                <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  className="input-field"
+                  style={{ paddingLeft: "2.75rem", paddingRight: "2.75rem" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#6B5A40" }}
+                >
+                  {showPassword
+                    ? <EyeOff style={{ width: "16px", height: "16px" }} />
+                    : <Eye style={{ width: "16px", height: "16px" }} />}
+                </button>
+              </div>
+            </div>
+
             {/* Submit */}
             <button
               type="submit"
@@ -215,13 +231,13 @@ export default function LoginPage() {
             >
               {loading
                 ? <div style={{ width: "20px", height: "20px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                : <> Send magic link <ArrowRight style={{ width: "16px", height: "16px" }} /></>
+                : <> Sign in <ArrowRight style={{ width: "16px", height: "16px" }} /></>
               }
             </button>
           </form>
 
           <p style={{ textAlign: "center", color: "#6B5A40", fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "'General Sans', sans-serif" }}>
-            Passwordless sign-in powered by email magic links.
+            Use your email and password to sign in.
           </p>
 
           <p style={{ textAlign: "center", color: "#A89070", fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'Satoshi', sans-serif" }}>

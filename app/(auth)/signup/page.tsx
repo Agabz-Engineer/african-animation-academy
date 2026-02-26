@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap, Film, Clapperboard } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap, Film, Clapperboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type SkillLevel = "beginner" | "intermediate" | "advanced" | null;
@@ -47,17 +47,22 @@ const TOTAL_STEPS = 4;
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState<AccountType>(null);
   const [skillLevel, setSkillLevel] = useState<SkillLevel>(null);
   const [goal, setGoal] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
   const handleStepOne = (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
     setError("");
     setStep(2);
   };
@@ -66,13 +71,11 @@ export default function SignupPage() {
     if (!goal) return;
     setLoading(true);
     setError("");
-    setMessage("");
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signUp({
       email,
+      password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        shouldCreateUser: true,
         data: {
           full_name: name,
           account_type: accountType,
@@ -86,10 +89,12 @@ export default function SignupPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      setMessage("Magic link sent. Check your email to complete sign-up.");
-      setLoading(false);
+      window.location.href = "/dashboard";
     }
   };
+
+  const strengthColor = password.length === 0 ? "#3D2E10" : password.length < 8 ? "#FF5722" : password.length < 12 ? "#FF9800" : "#4CAF50";
+  const strengthLabel = password.length === 0 ? "Enter a password" : password.length < 8 ? "Too short" : password.length < 12 ? "Fair" : password.length < 16 ? "Good" : "Strong";
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden" }}>
@@ -189,11 +194,6 @@ export default function SignupPage() {
               {error}
             </div>
           )}
-          {message && (
-            <div style={{ background: "rgba(76,175,80,0.12)", border: "1px solid rgba(76,175,80,0.30)", color: "#8BE29A", borderRadius: "12px", padding: "0.75rem 1rem", marginBottom: "1rem", fontSize: "0.875rem" }}>
-              {message}
-            </div>
-          )}
 
           <AnimatePresence mode="wait">
 
@@ -204,7 +204,7 @@ export default function SignupPage() {
                   Create your account
                 </h1>
                 <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
-                  Free forever and passwordless
+                  Free forever - no credit card needed
                 </p>
 
                 <form onSubmit={handleStepOne} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -224,13 +224,30 @@ export default function SignupPage() {
                     </div>
                   </div>
 
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Password</label>
+                    <div style={{ position: "relative" }}>
+                      <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                      <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 8 characters" required className="input-field" style={{ paddingLeft: "2.75rem", paddingRight: "2.75rem" }} />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#6B5A40" }}>
+                        {showPassword ? <EyeOff style={{ width: "16px", height: "16px" }} /> : <Eye style={{ width: "16px", height: "16px" }} />}
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
+                      {[8, 12, 16].map((len, i) => (
+                        <div key={i} style={{ flex: 1, height: "3px", borderRadius: "999px", backgroundColor: password.length >= len ? strengthColor : "#3D2E10", transition: "background-color 0.3s" }} />
+                      ))}
+                    </div>
+                    <p style={{ color: "#6B5A40", fontSize: "0.75rem", marginTop: "4px", fontFamily: "'General Sans',sans-serif" }}>{strengthLabel}</p>
+                  </div>
+
                   <button type="submit" className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem" }}>
                     Continue <ArrowRight style={{ width: "16px", height: "16px" }} />
                   </button>
                 </form>
 
                 <p style={{ textAlign: "center", color: "#6B5A40", fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>
-                  No password needed. We send a secure sign-in link to your email.
+                  Your account will be ready immediately after signup.
                 </p>
 
                 <p style={{ textAlign: "center", color: "#A89070", fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
@@ -394,7 +411,7 @@ export default function SignupPage() {
                 <button onClick={() => goal && handleFinish()} disabled={!goal || loading} className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem", marginTop: "1.5rem", opacity: goal && !loading ? 1 : 0.4 }}>
                   {loading
                     ? <div style={{ width: "20px", height: "20px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                    : <>Send my magic link <ArrowRight style={{ width: "16px", height: "16px" }} /></>
+                    : <>Create my account <ArrowRight style={{ width: "16px", height: "16px" }} /></>
                   }
                 </button>
 
