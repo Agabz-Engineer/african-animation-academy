@@ -166,10 +166,15 @@
 
      Light mode: warmer cream veil
   ──────────────────────────────────────────────────────────── */
+  /* ── BODY BACKGROUND ────────────────────────────────────────
+     Dashboard & main app: image is almost invisible (veil 0.93)
+     Login & Signup pages override this with a much lower veil
+     so the image is a strong design feature on those pages.
+  ──────────────────────────────────────────────────────────── */
   body {
     background-color: #0F0D0B;
     background-image:
-      linear-gradient(rgba(10,8,6,0.75), rgba(10,8,6,0.75)),
+      linear-gradient(rgba(10,8,6,0.93), rgba(10,8,6,0.93)),
       url('/images/bg-mobile.jpg');
     background-size: cover;
     background-position: center top;
@@ -185,25 +190,44 @@
   @media (min-width: 1024px) {
     body {
       background-image:
-        linear-gradient(rgba(10,8,6,0.75), rgba(10,8,6,0.75)),
+        linear-gradient(rgba(10,8,6,0.93), rgba(10,8,6,0.93)),
         url('/images/bg-desktop.jpg');
       background-attachment: fixed;
       background-position: center top;
     }
   }
 
+  /* Light mode */
   [data-theme="light"] body {
     background-color: #FAF8F0;
     background-image:
-      linear-gradient(rgba(240,228,200,0.75), rgba(240,228,200,0.75)),
+      linear-gradient(rgba(240,228,200,0.93), rgba(240,228,200,0.93)),
       url('/images/bg-desktop.jpg');
   }
 
   @media (min-width: 1024px) {
     [data-theme="light"] body {
       background-image:
-        linear-gradient(rgba(240,228,200,0.75), rgba(240,228,200,0.75)),
+        linear-gradient(rgba(240,228,200,0.93), rgba(240,228,200,0.93)),
         url('/images/bg-desktop.jpg');
+    }
+  }
+
+  /* ── LOGIN & SIGNUP pages — image is strong and visible ────
+     These pages add class .auth-page to their wrapper which
+     lowers the veil so the character shows clearly           */
+  body.auth-page {
+    background-image:
+      linear-gradient(rgba(10,8,6,0.40), rgba(10,8,6,0.40)),
+      url('/images/bg-desktop.jpg');
+  }
+
+  @media (min-width: 1024px) {
+    body.auth-page {
+      background-image:
+        linear-gradient(rgba(10,8,6,0.35), rgba(10,8,6,0.35)),
+        url('/images/bg-desktop.jpg');
+      background-position: center top;
     }
   }
 
@@ -479,16 +503,10 @@
 }
 
 /* ── Page transparency ──────────────────────────────────────
-   Force page WRAPPERS transparent so background shows through.
-   Only targets the outer wrapper divs — NOT cards or components
-   that have their own intentional background colours.
+   ONLY the main tag is transparent — nothing else.
+   Cards, course items, list items ALL keep their own colours.
+   background-color is NEVER forced on any child element.
 ──────────────────────────────────────────────────────────── */
 main {
-  background-color: transparent !important;
-}
-
-/* Cards keep their own background — only the direct page
-   wrapper div (first child of main) is made transparent */
-main > div:first-child {
   background-color: transparent !important;
 }
