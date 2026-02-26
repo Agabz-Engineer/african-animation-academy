@@ -76,38 +76,51 @@ const LIGHT = {
 const W_EXPANDED  = 224;
 const W_COLLAPSED = 64;
 
+const getInitialTheme = (): "dark" | "light" => {
+  if (typeof window === "undefined") return "dark";
+  const saved = localStorage.getItem("africafx-theme");
+  if (saved === "dark" || saved === "light") return saved;
+  const attr = document.documentElement.getAttribute("data-theme");
+  return attr === "light" ? "light" : "dark";
+};
+
+const getViewportFlags = () => {
+  if (typeof window === "undefined") return { isMobile: false, isTablet: false };
+  const width = window.innerWidth;
+  return { isMobile: width < 768, isTablet: width >= 768 && width < 1024 };
+};
+
 // ─── Main Component ──────────────────────────────────────
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const [theme,      setTheme     ] = useState<"dark"|"light">("dark");
+  const [theme,      setTheme     ] = useState<"dark"|"light">(getInitialTheme);
   const [expanded,   setExpanded  ] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isMobile,   setIsMobile  ] = useState(false);
-  const [isTablet,   setIsTablet  ] = useState(false);
+  const [isMobile,   setIsMobile  ] = useState(() => getViewportFlags().isMobile);
+  const [isTablet,   setIsTablet  ] = useState(() => getViewportFlags().isTablet);
   const [hovered,    setHovered   ] = useState<string|null>(null);
   const [user,       setUser      ] = useState<{ email?: string; user_metadata?: { full_name?: string } } | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("africafx-theme") as "dark"|"light" | null;
-    if (saved) {
-      setTheme(saved);
-      document.documentElement.setAttribute("data-theme", saved);
-    }
     const obs = new MutationObserver(() => {
       const t = document.documentElement.getAttribute("data-theme") as "dark"|"light";
       if (t) setTheme(t);
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     const onResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+      const next = getViewportFlags();
+      setIsMobile(next.isMobile);
+      setIsTablet(next.isTablet);
     };
-    onResize();
     window.addEventListener("resize", onResize);
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     return () => { obs.disconnect(); window.removeEventListener("resize", onResize); };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const T         = theme === "dark" ? DARK : LIGHT;
   const isDesktop = !isMobile && !isTablet;
@@ -122,7 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   // ── Theme Toggle ─────────────────────────────────────
-  const ThemeToggle = ({ compact = false }: { compact?: boolean }) => {
+  const renderThemeToggle = (compact = false) => {
     if (compact) {
       return (
         <button
@@ -152,7 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // ── Sidebar Inner ─────────────────────────────────────
   // This fills 100% of its parent — parent owns the width
-  const SidebarInner = ({ wide = false }: { wide?: boolean }) => (
+  const renderSidebarInner = (wide = false) => (
     <div style={{ width: "100%", height: "100%", backgroundColor: T.sidebarBg, borderRight: `1px solid ${T.sidebarBorder}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
       {/* Kente stripe */}
@@ -241,10 +254,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {wide ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.375rem 0", marginBottom: 4 }}>
             <span style={{ fontSize: "0.7rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>Appearance</span>
-            <ThemeToggle compact={false} />
+            {renderThemeToggle(false)}
           </div>
         ) : (
-          <div style={{ marginBottom: 4 }}><ThemeToggle compact /></div>
+          <div style={{ marginBottom: 4 }}>{renderThemeToggle(true)}</div>
         )}
         <Link href="/settings" onClick={() => setMobileOpen(false)}
           style={{ display: "flex", alignItems: "center", justifyContent: wide ? "flex-start" : "center", gap: wide ? "0.625rem" : 0, padding: wide ? "0.45rem 0.375rem" : "0.55rem 0", borderRadius: 8, textDecoration: "none", color: T.textDim, fontSize: "0.78rem", fontFamily: "'General Sans',sans-serif" }}>
@@ -274,7 +287,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           width: sidebarW,
           transition: "width 0.28s cubic-bezier(0.4,0,0.2,1)",
         }}>
-          <SidebarInner wide={expanded} />
+          {renderSidebarInner(expanded)}
           <button
             onClick={() => setExpanded(v => !v)}
             title={expanded ? "Collapse" : "Expand"}
@@ -299,7 +312,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               transition={{ type: "spring", stiffness: 380, damping: 34 }}
               style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 31, width: W_EXPANDED }}
             >
-              <SidebarInner wide />
+              {renderSidebarInner(true)}
               <button onClick={() => setMobileOpen(false)}
                 style={{ position: "absolute", top: 14, right: -44, width: 34, height: 34, borderRadius: "50%", backgroundColor: T.accent, border: `2px solid ${T.mainBg}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px ${T.accentGlow}` }}>
                 <X style={{ width: 14, height: 14, color: "#fff" }} />
@@ -332,7 +345,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text }}>Africa Fx</span>
             </div>
-            <ThemeToggle compact />
+            {renderThemeToggle(true)}
           </div>
         )}
         <main style={{ flex: 1, overflowX: "hidden" }}>{children}</main>

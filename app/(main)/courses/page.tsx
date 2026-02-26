@@ -51,15 +51,21 @@ const LIGHT = {
   inputBg:   "#FFFFFF",
 };
 
+const getInitialTheme = (): "dark" | "light" => {
+  if (typeof window === "undefined") return "dark";
+  const saved = localStorage.getItem("africafx-theme");
+  if (saved === "dark" || saved === "light") return saved;
+  const attr = document.documentElement.getAttribute("data-theme");
+  return attr === "light" ? "light" : "dark";
+};
+
 export default function CoursesPage() {
-  const [theme, setTheme]       = useState<"dark"|"light">("dark");
+  const [theme, setTheme]       = useState<"dark"|"light">(getInitialTheme);
   const [search, setSearch]     = useState("");
   const [skillLevel, setSkill]  = useState("beginner");
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem("africafx-theme") as "dark"|"light";
-    if (saved) setTheme(saved);
     const obs = new MutationObserver(() => {
       const t = document.documentElement.getAttribute("data-theme") as "dark"|"light";
       if (t) setTheme(t);

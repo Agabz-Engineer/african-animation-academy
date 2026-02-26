@@ -66,14 +66,20 @@ const LIGHT = {
   dateBg:     "rgba(255,255,255,0.85)",
 };
 
+const getInitialTheme = (): "dark" | "light" => {
+  if (typeof window === "undefined") return "dark";
+  const saved = localStorage.getItem("africafx-theme");
+  if (saved === "dark" || saved === "light") return saved;
+  const attr = document.documentElement.getAttribute("data-theme");
+  return attr === "light" ? "light" : "dark";
+};
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("Hot");
-  const [theme, setTheme]         = useState<"dark"|"light">("dark");
+  const [theme, setTheme]         = useState<"dark"|"light">(getInitialTheme);
   const [user, setUser]           = useState<{ email?: string; user_metadata?: { full_name?: string } } | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("africafx-theme") as "dark"|"light";
-    if (saved) setTheme(saved);
     const obs = new MutationObserver(() => {
       const t = document.documentElement.getAttribute("data-theme") as "dark"|"light";
       if (t) setTheme(t);

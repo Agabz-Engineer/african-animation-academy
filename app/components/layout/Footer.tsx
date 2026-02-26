@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Instagram,
@@ -68,11 +68,7 @@ const socialLinks = [
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
-  const [year, setYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
+  const year = new Date().getFullYear();
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,7 +283,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8" style={{ borderTop: "1px solid #3D2E10" }}>
           <p className="text-xs text-center md:text-left" style={{ color: "#6B5A40" }}>
-            Copyright {year ?? ""} Africa Fx. All rights reserved.
+            Copyright {year} Africa Fx. All rights reserved.
           </p>
 
           <div className="flex items-center gap-2">

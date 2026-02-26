@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Lock, Bell, Palette,
@@ -67,8 +68,16 @@ const GOALS = [
 
 type NotifKey = "newLessons" | "communityReplies" | "events" | "weeklyReport";
 
+const getInitialTheme = (): "dark" | "light" => {
+  if (typeof window === "undefined") return "dark";
+  const saved = localStorage.getItem("africafx-theme");
+  if (saved === "dark" || saved === "light") return saved;
+  const attr = document.documentElement.getAttribute("data-theme");
+  return attr === "light" ? "light" : "dark";
+};
+
 export default function SettingsPage() {
-  const [theme, setTheme]   = useState<"dark"|"light">("dark");
+  const [theme, setTheme]   = useState<"dark"|"light">(getInitialTheme);
   const [tab, setTab]       = useState("profile");
   const [saved, setSaved]   = useState(false);
   const [loading, setLoading] = useState(true);
@@ -84,7 +93,6 @@ export default function SettingsPage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
 
   /* Account fields */
-  const [currentPw,  setCurrentPw]  = useState("");
   const [newPw,      setNewPw]      = useState("");
   const [confirmPw,  setConfirmPw]  = useState("");
   const [showPw,     setShowPw]     = useState(false);
@@ -100,8 +108,6 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem("africafx-theme") as "dark"|"light";
-    if (saved) setTheme(saved);
     const obs = new MutationObserver(() => {
       const t = document.documentElement.getAttribute("data-theme") as "dark"|"light";
       if (t) setTheme(t);
@@ -149,7 +155,7 @@ export default function SettingsPage() {
     if (newPw !== confirmPw) { setPwError("Passwords do not match."); return; }
     const { error } = await supabase.auth.updateUser({ password: newPw });
     if (error) { setPwError(error.message); return; }
-    setCurrentPw(""); setNewPw(""); setConfirmPw("");
+    setNewPw(""); setConfirmPw("");
     showSavedToast();
   };
 
@@ -305,9 +311,12 @@ export default function SettingsPage() {
             <div style={{ position: "relative", flexShrink: 0 }}>
               {/* Avatar image or initial fallback */}
               {avatarUrl ? (
-                <img
+                <Image
                   src={avatarUrl}
                   alt="Profile"
+                  width={64}
+                  height={64}
+                  unoptimized
                   style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}
                 />
               ) : (
