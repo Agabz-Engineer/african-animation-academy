@@ -169,7 +169,7 @@
   body {
     background-color: #0F0D0B;
     background-image:
-      linear-gradient(rgba(10,8,6,0.50), rgba(10,8,6,0.50)),
+      linear-gradient(rgba(10,8,6,0.75), rgba(10,8,6,0.75)),
       url('/images/bg-mobile.jpg');
     background-size: cover;
     background-position: center top;
@@ -185,7 +185,7 @@
   @media (min-width: 1024px) {
     body {
       background-image:
-        linear-gradient(rgba(10,8,6,0.50), rgba(10,8,6,0.50)),
+        linear-gradient(rgba(10,8,6,0.75), rgba(10,8,6,0.75)),
         url('/images/bg-desktop.jpg');
       background-attachment: fixed;
       background-position: center top;
@@ -195,14 +195,14 @@
   [data-theme="light"] body {
     background-color: #FAF8F0;
     background-image:
-      linear-gradient(rgba(240,228,200,0.58), rgba(240,228,200,0.58)),
-      url('/images/bg-mobile.jpg');
+      linear-gradient(rgba(240,228,200,0.75), rgba(240,228,200,0.75)),
+      url('/images/bg-desktop.jpg');
   }
 
   @media (min-width: 1024px) {
     [data-theme="light"] body {
       background-image:
-        linear-gradient(rgba(240,228,200,0.58), rgba(240,228,200,0.58)),
+        linear-gradient(rgba(240,228,200,0.75), rgba(240,228,200,0.75)),
         url('/images/bg-desktop.jpg');
     }
   }
@@ -479,12 +479,16 @@
 }
 
 /* ── Page transparency ──────────────────────────────────────
-   Force ALL page wrappers to be transparent so the body
-   background image always shows through on every tab/page.
-   Applies on ALL screen sizes — mobile and desktop.
+   Force page WRAPPERS transparent so background shows through.
+   Only targets the outer wrapper divs — NOT cards or components
+   that have their own intentional background colours.
 ──────────────────────────────────────────────────────────── */
-main,
-main > div,
-main > div > div {
+main {
+  background-color: transparent !important;
+}
+
+/* Cards keep their own background — only the direct page
+   wrapper div (first child of main) is made transparent */
+main > div:first-child {
   background-color: transparent !important;
 }
