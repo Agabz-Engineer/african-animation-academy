@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 export default function AuthCallbackPage() {
@@ -15,12 +16,34 @@ export default function AuthCallbackPage() {
     if (hasRun.current) return;
     hasRun.current = true;
 
-    const finishOAuth = async () => {
+    const finishAuth = async () => {
+      const validOtpTypes: EmailOtpType[] = [
+        "signup",
+        "invite",
+        "magiclink",
+        "recovery",
+        "email_change",
+        "email",
+      ];
+
       const providerError =
         searchParams.get("error_description") || searchParams.get("error");
       if (providerError) {
         setError(providerError);
         return;
+      }
+
+      const tokenHash = searchParams.get("token_hash");
+      const type = searchParams.get("type");
+      if (tokenHash && type && validOtpTypes.includes(type as EmailOtpType)) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: type as EmailOtpType,
+        });
+        if (error) {
+          setError(error.message);
+          return;
+        }
       }
 
       const code = searchParams.get("code");
@@ -32,25 +55,42 @@ export default function AuthCallbackPage() {
         }
       }
 
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+      const waitForSession = async () => {
+        const timeoutMs = 5000;
+        const intervalMs = 150;
+        const start = Date.now();
 
-      if (sessionError) {
-        setError(sessionError.message);
-        return;
-      }
+        while (Date.now() - start < timeoutMs) {
+          const {
+            data: { session },
+            error: sessionError,
+          } = await supabase.auth.getSession();
 
+          if (sessionError) {
+            setError(sessionError.message);
+            return null;
+          }
+
+          if (session) return session;
+          await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
+
+        return null;
+      };
+
+      const session = await waitForSession();
       if (!session) {
-        setError("Could not create a session. Please try signing in again.");
+        setError(
+          "Could not create a session. Please request a new login link and try again."
+        );
         return;
       }
 
-      router.replace("/dashboard");
+      const nextPath = searchParams.get("next");
+      router.replace(nextPath && nextPath.startsWith("/") ? nextPath : "/dashboard");
     };
 
-    finishOAuth();
+    finishAuth();
   }, [router, searchParams]);
 
   if (error) {
@@ -73,7 +113,7 @@ export default function AuthCallbackPage() {
               marginBottom: "0.75rem",
             }}
           >
-            Google sign-in failed
+            Sign-in failed
           </h1>
           <p style={{ color: "#FFB4A1", marginBottom: "1.5rem" }}>{error}</p>
           <Link
@@ -115,7 +155,7 @@ export default function AuthCallbackPage() {
             marginBottom: "0.75rem",
           }}
         >
-          Finishing your sign-in
+          Finishing sign-in
         </h1>
         <p style={{ color: "#A89070" }}>Please wait...</p>
       </div>
