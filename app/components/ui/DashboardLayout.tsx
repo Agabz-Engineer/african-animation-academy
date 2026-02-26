@@ -317,7 +317,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         marginLeft: isDesktop ? sidebarW : 0,
         paddingBottom: (isMobile || isTablet) ? 72 : 0,
         transition: "margin-left 0.28s cubic-bezier(0.4,0,0.2,1)",
-        position: "relative", zIndex: 1,
+        backgroundColor: "transparent",
       }}>
         {/* Mobile topbar */}
         {(isMobile || isTablet) && (
