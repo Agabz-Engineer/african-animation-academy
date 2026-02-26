@@ -202,7 +202,7 @@
     background-color: #FAF8F0;
     background-image:
       linear-gradient(rgba(240,228,200,0.93), rgba(240,228,200,0.93)),
-      url('/images/bg-desktop.jpg');
+      url('/images/bg-mobile.jpg');
   }
 
   @media (min-width: 1024px) {
@@ -219,7 +219,7 @@
   body.auth-page {
     background-image:
       linear-gradient(rgba(10,8,6,0.40), rgba(10,8,6,0.40)),
-      url('/images/bg-desktop.jpg');
+      url('/images/bg-mobile.jpg');
   }
 
   @media (min-width: 1024px) {
