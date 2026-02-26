@@ -80,6 +80,8 @@ export default function SettingsPage() {
   const [skillLevel,  setSkillLevel]  = useState("beginner");
   const [goal,        setGoal]        = useState(GOALS[0]);
   const [email,       setEmail]       = useState("");
+  const [avatarUrl,   setAvatarUrl]   = useState<string|null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   /* Account fields */
   const [currentPw,  setCurrentPw]  = useState("");
@@ -114,6 +116,7 @@ export default function SettingsPage() {
         setBio(user.user_metadata?.bio || "");
         setSkillLevel(user.user_metadata?.skill_level || "beginner");
         setGoal(user.user_metadata?.goal || GOALS[0]);
+        setAvatarUrl(user.user_metadata?.avatar_url || null);
       }
       setLoading(false);
     });
@@ -135,7 +138,7 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     await supabase.auth.updateUser({
-      data: { full_name: fullName, username, bio, skill_level: skillLevel, goal }
+      data: { full_name: fullName, username, bio, skill_level: skillLevel, goal, avatar_url: avatarUrl }
     });
     showSavedToast();
   };
@@ -148,6 +151,53 @@ export default function SettingsPage() {
     if (error) { setPwError(error.message); return; }
     setCurrentPw(""); setNewPw(""); setConfirmPw("");
     showSavedToast();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    /* Validate — image only, max 2MB */
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file."); return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image must be under 2MB."); return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const ext      = file.name.split(".").pop();
+      const filePath = `avatars/${user.id}.${ext}`;
+
+      /* Upload to Supabase Storage bucket "avatars" */
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      /* Get public URL */
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      /* Save to user metadata */
+      await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+
+      setAvatarUrl(publicUrl);
+      showSavedToast();
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      alert("Upload failed. Make sure the 'avatars' bucket exists in Supabase Storage.");
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   /* ── Reusable input ── */
@@ -250,19 +300,46 @@ export default function SettingsPage() {
         <div>
           <SectionHead title="Profile" desc="Update your public profile and how others see you on Africa Fx." />
 
-          {/* Avatar */}
+          {/* Avatar — real upload */}
           <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", marginBottom: "1.75rem" }}>
-            <div style={{ position: "relative" }}>
-              <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "linear-gradient(135deg,#FF8C00,#E06400)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "#FFFFFF", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}>
-                {(fullName || email).charAt(0).toUpperCase()}
-              </div>
-              <button style={{ position: "absolute", bottom: 0, right: 0, width: "22px", height: "22px", borderRadius: "50%", backgroundColor: T.accent, border: `2px solid ${T.pageBg}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                <Camera style={{ width: "10px", height: "10px", color: "#FFFFFF" }} />
-              </button>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              {/* Avatar image or initial fallback */}
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}
+                />
+              ) : (
+                <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "linear-gradient(135deg,#FF8C00,#E06400)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "#FFFFFF", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}>
+                  {(fullName || email).charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              {/* Upload button — triggers hidden file input */}
+              <label htmlFor="avatar-upload" style={{ position: "absolute", bottom: 0, right: 0, width: "22px", height: "22px", borderRadius: "50%", backgroundColor: avatarUploading ? T.textDim : T.accent, border: `2px solid ${T.pageBg}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: avatarUploading ? "wait" : "pointer" }}>
+                {avatarUploading
+                  ? <div style={{ width: "8px", height: "8px", border: "1.5px solid #FFFFFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                  : <Camera style={{ width: "10px", height: "10px", color: "#FFFFFF" }} />
+                }
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                style={{ display: "none" }}
+              />
             </div>
+
             <div>
               <p style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.85rem", color: T.text }}>{fullName || "Your Name"}</p>
-              <p style={{ fontSize: "0.72rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginTop: "2px" }}>Avatar is auto-generated from your initials</p>
+              <p style={{ fontSize: "0.72rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginTop: "2px" }}>
+                {avatarUrl ? "Click the camera to change your photo" : "Click the camera icon to upload a photo"}
+              </p>
+              <p style={{ fontSize: "0.68rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginTop: "1px" }}>
+                JPG, PNG or WebP · max 2MB
+              </p>
             </div>
           </div>
 
