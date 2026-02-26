@@ -50,7 +50,14 @@ export default function AuthCallbackPage() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
-          setError(error.message);
+          const lowerMessage = error.message.toLowerCase();
+          if (lowerMessage.includes("code verifier")) {
+            setError(
+              "This sign-in link is invalid or expired. Request a new magic link and open the newest email link."
+            );
+          } else {
+            setError(error.message);
+          }
           return;
         }
       }
