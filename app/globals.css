@@ -137,7 +137,7 @@
 
   html {
     scroll-behavior: smooth;
-    min-height: 100%;
+    height: 100%;
     background-color: var(--bg);
   }
 
@@ -162,11 +162,14 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: color 0.3s ease, background-color 0.3s ease;
-    min-height: 100vh;
+    min-height: 100%;
+    position: relative; /* needed for mobile absolute pseudo-element */
   }
 
-  /* Background image lives on a pseudo-element so it's always visible
-     behind the dashboard layout (which has its own bg color) */
+  /* Background image — fixed pseudo-element
+     position: fixed is used only on desktop.
+     On mobile we use a separate approach (see @media below)
+     to avoid the iOS/Android scroll stagger bug. */
   body::before {
     content: '';
     position: fixed;
@@ -176,9 +179,23 @@
       var(--bg-overlay),
       url('/images/portrait-3d-cartoon-indigenous-person.jpg');
     background-size: cover;
-    background-position: 70% center;
+    background-position: 65% 25%;
     background-repeat: no-repeat;
     pointer-events: none;
+  }
+
+  /* Mobile: use absolute + no-repeat trick to stop scroll stagger.
+     The image stays locked at the top and doesn't jump as you scroll. */
+  @media (max-width: 1023px) {
+    body::before {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      background-position: 55% 15%;
+      background-size: 160%;
+    }
   }
 
   /* Subtle adinkra crosshatch texture on top of everything */
