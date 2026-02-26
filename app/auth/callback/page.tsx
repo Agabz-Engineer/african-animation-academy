@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const hasRun = useRef(false);
   const [error, setError] = useState("");
 
@@ -25,16 +24,17 @@ export default function AuthCallbackPage() {
         "email_change",
         "email",
       ];
+      const params = new URLSearchParams(window.location.search);
 
       const providerError =
-        searchParams.get("error_description") || searchParams.get("error");
+        params.get("error_description") || params.get("error");
       if (providerError) {
         setError(providerError);
         return;
       }
 
-      const tokenHash = searchParams.get("token_hash");
-      const type = searchParams.get("type");
+      const tokenHash = params.get("token_hash");
+      const type = params.get("type");
       if (tokenHash && type && validOtpTypes.includes(type as EmailOtpType)) {
         const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
@@ -46,7 +46,7 @@ export default function AuthCallbackPage() {
         }
       }
 
-      const code = searchParams.get("code");
+      const code = params.get("code");
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
@@ -86,12 +86,12 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      const nextPath = searchParams.get("next");
+      const nextPath = params.get("next");
       router.replace(nextPath && nextPath.startsWith("/") ? nextPath : "/dashboard");
     };
 
     finishAuth();
-  }, [router, searchParams]);
+  }, [router]);
 
   if (error) {
     return (
