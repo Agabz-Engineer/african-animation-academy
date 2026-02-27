@@ -167,17 +167,17 @@
      Light mode: warmer cream veil
   ──────────────────────────────────────────────────────────── */
   /* ── BODY BACKGROUND ────────────────────────────────────────
-     Dashboard & main app: image is almost invisible (veil 0.93)
+     Dashboard & main app: image stays subtle (veil 0.90)
      Login & Signup pages override this with a much lower veil
      so the image is a strong design feature on those pages.
   ──────────────────────────────────────────────────────────── */
   body {
     background-color: #0F0D0B;
     background-image:
-      linear-gradient(rgba(10,8,6,0.93), rgba(10,8,6,0.93)),
+      linear-gradient(rgba(10,8,6,0.90), rgba(10,8,6,0.90)),
       url('/images/bg-mobile.jpg');
     background-size: cover;
-    background-position: center top;
+    background-position: center 18%;
     background-repeat: no-repeat;
     background-attachment: scroll;
     color: var(--text);
@@ -187,13 +187,12 @@
     min-height: 100vh;
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 768px) {
     body {
       background-image:
-        linear-gradient(rgba(10,8,6,0.93), rgba(10,8,6,0.93)),
+        linear-gradient(rgba(10,8,6,0.90), rgba(10,8,6,0.90)),
         url('/images/bg-desktop.jpg');
-      background-attachment: fixed;
-      background-position: center top;
+      background-position: center 10%;
     }
   }
 
@@ -201,15 +200,16 @@
   [data-theme="light"] body {
     background-color: #FAF8F0;
     background-image:
-      linear-gradient(rgba(240,228,200,0.93), rgba(240,228,200,0.93)),
+      linear-gradient(rgba(240,228,200,0.88), rgba(240,228,200,0.88)),
       url('/images/bg-mobile.jpg');
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 768px) {
     [data-theme="light"] body {
       background-image:
-        linear-gradient(rgba(240,228,200,0.93), rgba(240,228,200,0.93)),
+        linear-gradient(rgba(240,228,200,0.88), rgba(240,228,200,0.88)),
         url('/images/bg-desktop.jpg');
+      background-position: center 10%;
     }
   }
 
@@ -218,16 +218,33 @@
      lowers the veil so the character shows clearly           */
   body.auth-page {
     background-image:
-      linear-gradient(rgba(10,8,6,0.40), rgba(10,8,6,0.40)),
+      linear-gradient(rgba(10,8,6,0.60), rgba(10,8,6,0.60)),
       url('/images/bg-mobile.jpg');
+    background-position: center 16%;
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 768px) {
     body.auth-page {
       background-image:
-        linear-gradient(rgba(10,8,6,0.35), rgba(10,8,6,0.35)),
+        linear-gradient(rgba(10,8,6,0.54), rgba(10,8,6,0.54)),
         url('/images/bg-desktop.jpg');
-      background-position: center top;
+      background-position: center 14%;
+    }
+  }
+
+  [data-theme="light"] body.auth-page {
+    background-image:
+      linear-gradient(rgba(240,228,200,0.72), rgba(240,228,200,0.72)),
+      url('/images/bg-mobile.jpg');
+    background-position: center 16%;
+  }
+
+  @media (min-width: 768px) {
+    [data-theme="light"] body.auth-page {
+      background-image:
+        linear-gradient(rgba(240,228,200,0.66), rgba(240,228,200,0.66)),
+        url('/images/bg-desktop.jpg');
+      background-position: center 14%;
     }
   }
 

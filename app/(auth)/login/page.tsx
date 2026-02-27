@@ -31,17 +31,6 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden" }}>
 
-      {/* ── Brown veil over background image ── */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        backgroundColor: "rgba(20, 9, 2, 0.84)",
-        backdropFilter: "blur(2px)",
-        WebkitBackdropFilter: "blur(2px)",
-        zIndex: 0,
-        pointerEvents: "none"
-      }} />
-
       {/* ── Left Panel ── */}
       <div
         style={{ position: "relative", zIndex: 1 }}

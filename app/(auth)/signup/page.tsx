@@ -99,16 +99,7 @@ export default function SignupPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden" }}>
 
-      {/* Brown veil */}
-      <div style={{
-        position: "absolute", inset: 0,
-        backgroundColor: "rgba(20, 9, 2, 0.84)",
-        backdropFilter: "blur(2px)",
-        WebkitBackdropFilter: "blur(2px)",
-        zIndex: 0, pointerEvents: "none"
-      }} />
-
-      {/* ── Left Panel ── */}
+      {/* Left Panel */}
       <div style={{ position: "relative", zIndex: 1 }}
         className="hidden lg:flex lg:w-1/2 items-center justify-center px-12"
       >
@@ -166,7 +157,7 @@ export default function SignupPage() {
       {/* Vertical divider */}
       <div className="hidden lg:block" style={{ position: "relative", zIndex: 1, width: "1px", backgroundColor: "rgba(61,46,16,0.4)", alignSelf: "stretch" }} />
 
-      {/* ── Right Panel ── */}
+      {/* Right Panel */}
       <div style={{ position: "relative", zIndex: 1 }}
         className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12"
       >
@@ -197,7 +188,7 @@ export default function SignupPage() {
 
           <AnimatePresence mode="wait">
 
-            {/* ── STEP 1 — Account Details ── */}
+            {/* Step 1: Account Details */}
             {step === 1 && (
               <motion.div key="step1" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
@@ -257,7 +248,7 @@ export default function SignupPage() {
               </motion.div>
             )}
 
-            {/* ── STEP 2 — Account Type ── */}
+            {/* Step 2: Account Type */}
             {step === 2 && (
               <motion.div key="step2" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <button onClick={() => setStep(1)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
@@ -317,7 +308,7 @@ export default function SignupPage() {
               </motion.div>
             )}
 
-            {/* ── STEP 3 — Skill Level (only for animators) ── */}
+            {/* Step 3: Skill Level */}
             {step === 3 && (
               <motion.div key="step3" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <button onClick={() => setStep(2)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
@@ -367,7 +358,7 @@ export default function SignupPage() {
               </motion.div>
             )}
 
-            {/* ── STEP 4 — Goal ── */}
+            {/* Step 4: Goal */}
             {step === 4 && (
               <motion.div key="step4" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <button onClick={() => setStep(3)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
