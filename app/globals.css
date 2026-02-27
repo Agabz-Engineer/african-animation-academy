@@ -185,6 +185,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+    transition: background-color 0.35s ease, color 0.35s ease, background-position 0.35s ease;
   }
 
   @media (min-width: 768px) {
@@ -221,6 +222,7 @@
       linear-gradient(rgba(10,8,6,0.60), rgba(10,8,6,0.60)),
       url('/images/bg-mobile.jpg');
     background-position: center 16%;
+    transition: background-image 0.35s ease, background-position 0.35s ease;
   }
 
   @media (min-width: 768px) {
@@ -246,6 +248,19 @@
         url('/images/bg-desktop.jpg');
       background-position: center 14%;
     }
+  }
+
+  /* Smooth theme-change animation for common UI surfaces. */
+  main,
+  section,
+  article,
+  aside,
+  nav,
+  button,
+  input,
+  textarea,
+  select {
+    transition: background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
   }
 
   h1 {

@@ -1,8 +1,34 @@
+"use client";
+
 import Link from "next/link";
+import { useThemeMode } from "@/lib/useThemeMode";
+
+const DARK_UI = {
+  navBg: "rgba(34,24,8,0.58)",
+  navBorder: "rgba(61,46,16,0.70)",
+  brandText: "#F5ECD7",
+};
+
+const LIGHT_UI = {
+  navBg: "rgba(255,255,255,0.84)",
+  navBorder: "rgba(188,165,125,0.58)",
+  brandText: "#1C1C1C",
+};
 
 export default function Navbar() {
+  const theme = useThemeMode();
+  const C = theme === "dark" ? DARK_UI : LIGHT_UI;
+
   return (
-    <nav className="glass" style={{ padding: "1rem" }}>
+    <nav
+      className="glass"
+      style={{
+        padding: "1rem",
+        backgroundColor: C.navBg,
+        border: `1px solid ${C.navBorder}`,
+        transition: "background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease",
+      }}
+    >
       <div
         className="container-custom"
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
@@ -27,7 +53,7 @@ export default function Navbar() {
             </div>
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="font-bold text-sm" style={{ color: "#F5ECD7", fontFamily: "Space Grotesk, sans-serif" }}>
+            <span className="font-bold text-sm" style={{ color: C.brandText, fontFamily: "Space Grotesk, sans-serif" }}>
               African Animation
             </span>
             <span
@@ -43,8 +69,8 @@ export default function Navbar() {
         </Link>
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Link href="/(auth)/login" className="btn-ghost">Log in</Link>
-          <Link href="/(auth)/signup" className="btn-primary">Sign up</Link>
+          <Link href="/login" className="btn-ghost">Log in</Link>
+          <Link href="/signup" className="btn-primary">Sign up</Link>
         </div>
       </div>
     </nav>

@@ -5,9 +5,24 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { useThemeMode } from "@/lib/useThemeMode";
+
+const DARK_UI = {
+  bg: "#140902",
+  text: "#F5ECD7",
+  muted: "#A89070",
+};
+
+const LIGHT_UI = {
+  bg: "rgba(250,248,240,0.86)",
+  text: "#1C1C1C",
+  muted: "#5A5550",
+};
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const theme = useThemeMode();
+  const C = theme === "dark" ? DARK_UI : LIGHT_UI;
   const hasRun = useRef(false);
   const [error, setError] = useState("");
 
@@ -108,8 +123,9 @@ export default function AuthCallbackPage() {
           display: "grid",
           placeItems: "center",
           padding: "1.5rem",
-          background: "#140902",
-          color: "#F5ECD7",
+          background: C.bg,
+          color: C.text,
+          transition: "background-color 0.3s ease, color 0.3s ease",
         }}
       >
         <div style={{ maxWidth: "480px", width: "100%", textAlign: "center" }}>
@@ -122,7 +138,7 @@ export default function AuthCallbackPage() {
           >
             Sign-in failed
           </h1>
-          <p style={{ color: "#FFB4A1", marginBottom: "1.5rem" }}>{error}</p>
+          <p style={{ color: theme === "dark" ? "#FFB4A1" : "#B3452C", marginBottom: "1.5rem" }}>{error}</p>
           <Link
             href="/login"
             style={{
@@ -149,9 +165,10 @@ export default function AuthCallbackPage() {
         display: "grid",
         placeItems: "center",
         padding: "1.5rem",
-        background: "#140902",
-        color: "#F5ECD7",
+        background: C.bg,
+        color: C.text,
         textAlign: "center",
+        transition: "background-color 0.3s ease, color 0.3s ease",
       }}
     >
       <div>
@@ -164,7 +181,7 @@ export default function AuthCallbackPage() {
         >
           Finishing sign-in
         </h1>
-        <p style={{ color: "#A89070" }}>Please wait...</p>
+        <p style={{ color: C.muted }}>Please wait...</p>
       </div>
     </main>
   );

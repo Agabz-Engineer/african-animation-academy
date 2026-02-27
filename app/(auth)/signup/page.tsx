@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap, Film, Clapperboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useThemeMode } from "@/lib/useThemeMode";
 
 type SkillLevel = "beginner" | "intermediate" | "advanced" | null;
 type AccountType = "animator" | "studio" | null;
@@ -45,7 +46,30 @@ const stepVariants = {
 
 const TOTAL_STEPS = 4;
 
+const DARK_UI = {
+  surface: "#221808",
+  border: "#3D2E10",
+  text: "#F5ECD7",
+  muted: "#A89070",
+  dim: "#6B5A40",
+  divider: "rgba(61,46,16,0.4)",
+  cardBg: "rgba(34,24,8,0.70)",
+};
+
+const LIGHT_UI = {
+  surface: "rgba(255,255,255,0.86)",
+  border: "#DCCFB7",
+  text: "#1C1C1C",
+  muted: "#5A5550",
+  dim: "#7A746A",
+  divider: "rgba(183,164,132,0.55)",
+  cardBg: "rgba(255,255,255,0.80)",
+};
+
 export default function SignupPage() {
+  const theme = useThemeMode();
+  const C = theme === "dark" ? DARK_UI : LIGHT_UI;
+
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
@@ -93,11 +117,11 @@ export default function SignupPage() {
     }
   };
 
-  const strengthColor = password.length === 0 ? "#3D2E10" : password.length < 8 ? "#FF5722" : password.length < 12 ? "#FF9800" : "#4CAF50";
+  const strengthColor = password.length === 0 ? C.border : password.length < 8 ? "#FF5722" : password.length < 12 ? "#FF9800" : "#4CAF50";
   const strengthLabel = password.length === 0 ? "Enter a password" : password.length < 8 ? "Too short" : password.length < 12 ? "Fair" : password.length < 16 ? "Good" : "Strong";
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden", transition: "color 0.3s ease" }}>
 
       {/* Left Panel */}
       <div style={{ position: "relative", zIndex: 1 }}
@@ -113,25 +137,25 @@ export default function SignupPage() {
         >
           {/* AFX Logo */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "3rem" }}>
-            <div style={{ width: "48px", height: "40px", backgroundColor: "#221808", border: "1px solid #3D2E10", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "48px", height: "40px", backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#E8A020" }}>A</span>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#C1440E" }}>F</span>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#D4A853" }}>X</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
-              <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "0.875rem", color: "#F5ECD7" }}>African Animation</span>
+              <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "0.875rem", color: C.text }}>African Animation</span>
               <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "0.875rem", background: "linear-gradient(135deg,#E8A020,#C1440E)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>Academy</span>
             </div>
           </div>
 
-          <h2 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2.5rem", lineHeight: 1.15, color: "#F5ECD7", marginBottom: "1.25rem" }}>
+          <h2 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2.5rem", lineHeight: 1.15, color: C.text, marginBottom: "1.25rem" }}>
             Your animation<br />
             <span style={{ background: "linear-gradient(135deg,#E8A020,#C1440E)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               journey starts here
             </span>
           </h2>
 
-          <p style={{ color: "#A89070", fontSize: "1rem", lineHeight: 1.7, maxWidth: "300px", margin: "0 auto 2.5rem" }}>
+          <p style={{ color: C.muted, fontSize: "1rem", lineHeight: 1.7, maxWidth: "300px", margin: "0 auto 2.5rem" }}>
             Create your free account and get access to courses, the community, and monthly challenges.
           </p>
 
@@ -141,12 +165,12 @@ export default function SignupPage() {
               <div key={s} style={{
                 height: "6px", borderRadius: "999px",
                 width: step >= s ? "32px" : "8px",
-                background: step >= s ? "linear-gradient(90deg,#E8A020,#C1440E)" : "#3D2E10",
+                background: step >= s ? "linear-gradient(90deg,#E8A020,#C1440E)" : C.border,
                 transition: "all 0.3s ease"
               }} />
             ))}
           </div>
-          <p style={{ color: "#6B5A40", fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif" }}>Step {step} of {TOTAL_STEPS}</p>
+          <p style={{ color: C.dim, fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif" }}>Step {step} of {TOTAL_STEPS}</p>
 
           <p style={{ fontFamily: "'General Sans',sans-serif", fontStyle: "italic", color: "#D4A853", fontSize: "0.8rem", marginTop: "2rem" }}>
             Proudly African. Globally Creative.
@@ -155,7 +179,7 @@ export default function SignupPage() {
       </div>
 
       {/* Vertical divider */}
-      <div className="hidden lg:block" style={{ position: "relative", zIndex: 1, width: "1px", backgroundColor: "rgba(61,46,16,0.4)", alignSelf: "stretch" }} />
+      <div className="hidden lg:block" style={{ position: "relative", zIndex: 1, width: "1px", backgroundColor: C.divider, alignSelf: "stretch" }} />
 
       {/* Right Panel */}
       <div style={{ position: "relative", zIndex: 1 }}
@@ -165,18 +189,18 @@ export default function SignupPage() {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-6 lg:hidden">
-            <div style={{ width: "40px", height: "34px", backgroundColor: "#221808", border: "1px solid #3D2E10", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "40px", height: "34px", backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#E8A020", fontSize: "0.85rem" }}>A</span>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#C1440E", fontSize: "0.95rem" }}>F</span>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#D4A853", fontSize: "0.85rem" }}>X</span>
             </div>
-            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1rem" }}>Africa Fx</span>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, color: C.text, fontSize: "1rem" }}>Africa Fx</span>
           </div>
 
           {/* Mobile step bar */}
           <div className="flex gap-2 mb-8 lg:hidden">
             {[1, 2, 3, 4].map((s) => (
-              <div key={s} style={{ flex: 1, height: "4px", borderRadius: "999px", background: step >= s ? "linear-gradient(90deg,#E8A020,#C1440E)" : "#3D2E10", transition: "all 0.3s ease" }} />
+              <div key={s} style={{ flex: 1, height: "4px", borderRadius: "999px", background: step >= s ? "linear-gradient(90deg,#E8A020,#C1440E)" : C.border, transition: "all 0.3s ease" }} />
             ))}
           </div>
 
@@ -191,45 +215,45 @@ export default function SignupPage() {
             {/* Step 1: Account Details */}
             {step === 1 && (
               <motion.div key="step1" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: C.text, marginBottom: "0.5rem" }}>
                   Create your account
                 </h1>
-                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
+                <p style={{ color: C.muted, marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   Free forever - no credit card needed
                 </p>
 
                 <form onSubmit={handleStepOne} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Full name</label>
+                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: C.muted, marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Full name</label>
                     <div style={{ position: "relative" }}>
-                      <User style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                      <User style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: C.dim }} />
                       <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" required className="input-field" style={{ paddingLeft: "2.75rem" }} />
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Email address</label>
+                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: C.muted, marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Email address</label>
                     <div style={{ position: "relative" }}>
-                      <Mail style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                      <Mail style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: C.dim }} />
                       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required className="input-field" style={{ paddingLeft: "2.75rem" }} />
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Password</label>
+                    <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: C.muted, marginBottom: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>Password</label>
                     <div style={{ position: "relative" }}>
-                      <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                      <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: C.dim }} />
                       <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 8 characters" required className="input-field" style={{ paddingLeft: "2.75rem", paddingRight: "2.75rem" }} />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#6B5A40" }}>
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.dim }}>
                         {showPassword ? <EyeOff style={{ width: "16px", height: "16px" }} /> : <Eye style={{ width: "16px", height: "16px" }} />}
                       </button>
                     </div>
                     <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
                       {[8, 12, 16].map((len, i) => (
-                        <div key={i} style={{ flex: 1, height: "3px", borderRadius: "999px", backgroundColor: password.length >= len ? strengthColor : "#3D2E10", transition: "background-color 0.3s" }} />
+                        <div key={i} style={{ flex: 1, height: "3px", borderRadius: "999px", backgroundColor: password.length >= len ? strengthColor : C.border, transition: "background-color 0.3s" }} />
                       ))}
                     </div>
-                    <p style={{ color: "#6B5A40", fontSize: "0.75rem", marginTop: "4px", fontFamily: "'General Sans',sans-serif" }}>{strengthLabel}</p>
+                    <p style={{ color: C.dim, fontSize: "0.75rem", marginTop: "4px", fontFamily: "'General Sans',sans-serif" }}>{strengthLabel}</p>
                   </div>
 
                   <button type="submit" className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem" }}>
@@ -237,11 +261,11 @@ export default function SignupPage() {
                   </button>
                 </form>
 
-                <p style={{ textAlign: "center", color: "#6B5A40", fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>
+                <p style={{ textAlign: "center", color: C.dim, fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>
                   Your account will be ready immediately after signup.
                 </p>
 
-                <p style={{ textAlign: "center", color: "#A89070", fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'General Sans',sans-serif" }}>
+                <p style={{ textAlign: "center", color: C.muted, fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   Already have an account?{" "}
                   <Link href="/login" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>Sign in</Link>
                 </p>
@@ -251,14 +275,14 @@ export default function SignupPage() {
             {/* Step 2: Account Type */}
             {step === 2 && (
               <motion.div key="step2" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                <button onClick={() => setStep(1)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
+                <button onClick={() => setStep(1)} style={{ display: "flex", alignItems: "center", gap: "8px", color: C.muted, background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
                   <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
-                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: C.text, marginBottom: "0.5rem" }}>
                   Who are you?
                 </h1>
-                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
+                <p style={{ color: C.muted, marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   This helps us tailor your experience on Africa Fx
                 </p>
 
@@ -271,8 +295,8 @@ export default function SignupPage() {
                         display: "flex", alignItems: "center", gap: "1.25rem",
                         padding: "1.5rem", borderRadius: "16px", textAlign: "left",
                         cursor: "pointer", transition: "all 0.2s ease",
-                        background: accountType === type.id ? "rgba(232,160,32,0.10)" : "rgba(34,24,8,0.70)",
-                        border: accountType === type.id ? "1px solid rgba(232,160,32,0.50)" : "1px solid #3D2E10",
+                        background: accountType === type.id ? "rgba(232,160,32,0.10)" : C.cardBg,
+                        border: accountType === type.id ? "1px solid rgba(232,160,32,0.50)" : `1px solid ${C.border}`,
                         backdropFilter: "blur(8px)"
                       }}
                     >
@@ -285,8 +309,8 @@ export default function SignupPage() {
                         <type.Icon style={{ width: "24px", height: "24px", color: accountType === type.id ? "#0D0905" : "#E8A020" }} />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1.1rem", marginBottom: "4px" }}>{type.label}</div>
-                        <div style={{ color: "#A89070", fontSize: "0.8rem", lineHeight: 1.5 }}>{type.desc}</div>
+                        <div style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: C.text, fontSize: "1.1rem", marginBottom: "4px" }}>{type.label}</div>
+                        <div style={{ color: C.muted, fontSize: "0.8rem", lineHeight: 1.5 }}>{type.desc}</div>
                       </div>
                       {accountType === type.id && (
                         <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -311,14 +335,14 @@ export default function SignupPage() {
             {/* Step 3: Skill Level */}
             {step === 3 && (
               <motion.div key="step3" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                <button onClick={() => setStep(2)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
+                <button onClick={() => setStep(2)} style={{ display: "flex", alignItems: "center", gap: "8px", color: C.muted, background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
                   <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
-                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: C.text, marginBottom: "0.5rem" }}>
                   {accountType === "studio" ? "Studio size?" : "What's your skill level?"}
                 </h1>
-                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
+                <p style={{ color: C.muted, marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   {accountType === "studio" ? "Help us understand your studio better" : "We'll personalise your learning path based on this"}
                 </p>
 
@@ -331,8 +355,8 @@ export default function SignupPage() {
                         display: "flex", alignItems: "center", gap: "1rem",
                         padding: "1.25rem", borderRadius: "12px", textAlign: "left",
                         cursor: "pointer", transition: "all 0.2s ease",
-                        background: skillLevel === level.id ? "rgba(232,160,32,0.10)" : "rgba(34,24,8,0.70)",
-                        border: skillLevel === level.id ? "1px solid rgba(232,160,32,0.50)" : "1px solid #3D2E10",
+                        background: skillLevel === level.id ? "rgba(232,160,32,0.10)" : C.cardBg,
+                        border: skillLevel === level.id ? "1px solid rgba(232,160,32,0.50)" : `1px solid ${C.border}`,
                         backdropFilter: "blur(8px)"
                       }}
                     >
@@ -340,8 +364,8 @@ export default function SignupPage() {
                         <level.Icon style={{ width: "20px", height: "20px", color: "#E8A020" }} />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, color: "#F5ECD7", fontSize: "0.9rem" }}>{level.label}</div>
-                        <div style={{ color: "#A89070", fontSize: "0.8rem", marginTop: "2px" }}>{level.desc}</div>
+                        <div style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, color: C.text, fontSize: "0.9rem" }}>{level.label}</div>
+                        <div style={{ color: C.muted, fontSize: "0.8rem", marginTop: "2px" }}>{level.desc}</div>
                       </div>
                       {skillLevel === level.id && (
                         <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -361,14 +385,14 @@ export default function SignupPage() {
             {/* Step 4: Goal */}
             {step === 4 && (
               <motion.div key="step4" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                <button onClick={() => setStep(3)} style={{ display: "flex", alignItems: "center", gap: "8px", color: "#A89070", background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
+                <button onClick={() => setStep(3)} style={{ display: "flex", alignItems: "center", gap: "8px", color: C.muted, background: "none", border: "none", cursor: "pointer", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif", fontSize: "0.875rem" }}>
                   <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
-                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: C.text, marginBottom: "0.5rem" }}>
                   What&apos;s your goal?
                 </h1>
-                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
+                <p style={{ color: C.muted, marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   This helps us recommend the right courses for you
                 </p>
 
@@ -381,15 +405,15 @@ export default function SignupPage() {
                         display: "flex", alignItems: "center", gap: "1rem",
                         padding: "1.25rem", borderRadius: "12px", textAlign: "left",
                         cursor: "pointer", transition: "all 0.2s ease",
-                        background: goal === g.id ? "rgba(232,160,32,0.10)" : "rgba(34,24,8,0.70)",
-                        border: goal === g.id ? "1px solid rgba(232,160,32,0.50)" : "1px solid #3D2E10",
+                        background: goal === g.id ? "rgba(232,160,32,0.10)" : C.cardBg,
+                        border: goal === g.id ? "1px solid rgba(232,160,32,0.50)" : `1px solid ${C.border}`,
                         backdropFilter: "blur(8px)"
                       }}
                     >
                       <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(232,160,32,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <g.Icon style={{ width: "20px", height: "20px", color: "#E8A020" }} />
                       </div>
-                      <div style={{ flex: 1, fontFamily: "'General Sans',sans-serif", fontWeight: 500, color: "#F5ECD7", fontSize: "0.9rem" }}>{g.label}</div>
+                      <div style={{ flex: 1, fontFamily: "'General Sans',sans-serif", fontWeight: 500, color: C.text, fontSize: "0.9rem" }}>{g.label}</div>
                       {goal === g.id && (
                         <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "linear-gradient(135deg,#E8A020,#C1440E)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <Check style={{ width: "12px", height: "12px", color: "#0D0905" }} />
@@ -406,7 +430,7 @@ export default function SignupPage() {
                   }
                 </button>
 
-                <p style={{ textAlign: "center", color: "#6B5A40", fontSize: "0.75rem", marginTop: "1.5rem", fontFamily: "'General Sans',sans-serif" }}>
+                <p style={{ textAlign: "center", color: C.dim, fontSize: "0.75rem", marginTop: "1.5rem", fontFamily: "'General Sans',sans-serif" }}>
                   By signing up you agree to our{" "}
                   <Link href="/terms" style={{ color: "#E8A020", textDecoration: "none" }}>Terms</Link>
                   {" "}and{" "}

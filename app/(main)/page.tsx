@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -17,8 +17,38 @@ import {
   Film,
   Layers,
 } from "lucide-react";
+import { useThemeMode } from "@/lib/useThemeMode";
+
+const DARK_UI = {
+  text: "#F5ECD7",
+  muted: "#A89070",
+  line: "#3D2E10",
+  softPanelBg: "rgba(34, 24, 8, 0.75)",
+  softPanelBorder: "rgba(61,46,16,0.6)",
+  ghostBg: "rgba(26, 18, 8, 0.45)",
+  ghostBorder: "rgba(61,46,16,0.8)",
+  cardBg: "rgba(13, 9, 5, 0.60)",
+  cardBorder: "rgba(61, 46, 16, 0.40)",
+  navBg: "rgba(34,24,8,0.55)",
+};
+
+const LIGHT_UI = {
+  text: "#1C1C1C",
+  muted: "#544F49",
+  line: "#D7C7A7",
+  softPanelBg: "rgba(255, 255, 255, 0.78)",
+  softPanelBorder: "rgba(188, 165, 125, 0.48)",
+  ghostBg: "rgba(255, 255, 255, 0.72)",
+  ghostBorder: "rgba(188, 165, 125, 0.58)",
+  cardBg: "rgba(255, 255, 255, 0.80)",
+  cardBorder: "rgba(188, 165, 125, 0.42)",
+  navBg: "rgba(255, 255, 255, 0.78)",
+};
 
 export default function Home() {
+  const theme = useThemeMode();
+  const C = theme === "dark" ? DARK_UI : LIGHT_UI;
+
   const [openDiscover, setOpenDiscover] = useState<number | null>(null);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
@@ -90,7 +120,7 @@ export default function Home() {
   };
 
   return (
-    <div>
+    <div style={{ transition: "color 0.3s ease, background-color 0.3s ease" }}>
       <motion.section
         ref={heroRef}
         initial={{ opacity: 0, y: 30 }}
@@ -110,7 +140,7 @@ export default function Home() {
 
         <div
           className="rounded-full px-4 py-1.5 inline-flex items-center gap-2 mb-8 relative z-10"
-          style={{ backgroundColor: "rgba(34, 24, 8, 0.75)", border: "1px solid rgba(61,46,16,0.6)", backdropFilter: "blur(8px)" }}
+          style={{ backgroundColor: C.softPanelBg, border: `1px solid ${C.softPanelBorder}`, backdropFilter: "blur(8px)" }}
         >
           <Star className="w-3 h-3" style={{ color: "#D4A853" }} />
           <span className="text-xs font-medium" style={{ color: "#D4A853", fontFamily: "General Sans, sans-serif" }}>
@@ -119,7 +149,7 @@ export default function Home() {
         </div>
 
         <h1 className="relative z-10 max-w-4xl mx-auto" style={{ letterSpacing: "-0.03em" }}>
-          <span className="block text-5xl md:text-7xl font-bold" style={{ color: "#F5ECD7", fontFamily: "Clash Display, sans-serif" }}>
+          <span className="block text-5xl md:text-7xl font-bold" style={{ color: C.text, fontFamily: "Clash Display, sans-serif" }}>
             Bring African
           </span>
           <span
@@ -136,7 +166,7 @@ export default function Home() {
           </span>
         </h1>
 
-        <p className="text-lg max-w-3xl mx-auto mt-6 leading-relaxed relative z-10" style={{ color: "#A89070", fontFamily: "Satoshi, sans-serif" }}>
+        <p className="text-lg max-w-3xl mx-auto mt-6 leading-relaxed relative z-10" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
           Master animation from Africa&apos;s best instructors and build career-ready creative skills.
         </p>
 
@@ -158,9 +188,9 @@ export default function Home() {
             href="/courses"
             className="font-semibold px-8 py-4 rounded-full text-base flex items-center gap-2 transition-all duration-200 border hover:border-[#E8A020] hover:text-[#E8A020]"
             style={{
-              backgroundColor: "rgba(26, 18, 8, 0.45)",
-              borderColor: "rgba(61,46,16,0.7)",
-              color: "#F5ECD7",
+              backgroundColor: C.ghostBg,
+              borderColor: C.softPanelBorder,
+              color: C.text,
               fontFamily: "General Sans, sans-serif",
               backdropFilter: "blur(8px)",
             }}
@@ -185,15 +215,15 @@ export default function Home() {
         />
         <div className="max-w-6xl mx-auto relative">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-10 h-px" style={{ backgroundColor: "#3D2E10" }} />
+            <div className="w-10 h-px" style={{ backgroundColor: C.line }} />
             <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#E8A020", fontFamily: "General Sans, sans-serif" }}>
               What We Offer
             </span>
-            <div className="w-10 h-px" style={{ backgroundColor: "#3D2E10" }} />
+            <div className="w-10 h-px" style={{ backgroundColor: C.line }} />
           </div>
 
           <h2 className="text-center text-4xl md:text-5xl font-bold mt-4 max-w-2xl mx-auto" style={{ fontFamily: "Clash Display, sans-serif" }}>
-            <span style={{ color: "#F5ECD7" }}>Discover the Art of </span>
+            <span style={{ color: C.text }}>Discover the Art of </span>
             <span
               style={{
                 background: "linear-gradient(135deg, #E8A020, #C1440E)",
@@ -214,16 +244,16 @@ export default function Home() {
                   key={item.title}
                   className="rounded-2xl p-8 transition-all duration-300 hover:-translate-y-1"
                   style={{
-                    background: "rgba(13, 9, 5, 0.60)",
-                    border: "1px solid rgba(61, 46, 16, 0.40)",
+                    background: C.cardBg,
+                    border: `1px solid ${C.cardBorder}`,
                     backdropFilter: "blur(4px)",
                   }}
                 >
                   <div className="rounded-xl p-3 w-fit" style={{ backgroundColor: "rgba(232,160,32,0.1)" }}>
                     <item.icon className="w-7 h-7" style={{ color: "#E8A020" }} />
                   </div>
-                  <h3 className="mt-6 text-xl font-bold" style={{ color: "#F5ECD7", fontFamily: "Cabinet Grotesk, sans-serif" }}>{item.title}</h3>
-                  <p className="text-sm mt-3" style={{ color: "#A89070", fontFamily: "Satoshi, sans-serif" }}>{item.teaser}</p>
+                  <h3 className="mt-6 text-xl font-bold" style={{ color: C.text, fontFamily: "Cabinet Grotesk, sans-serif" }}>{item.title}</h3>
+                  <p className="text-sm mt-3" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>{item.teaser}</p>
 
                   <button
                     type="button"
@@ -236,7 +266,7 @@ export default function Home() {
                   </button>
 
                   {isOpen && (
-                    <p className="text-sm mt-4 leading-relaxed" style={{ color: "#A89070", fontFamily: "Satoshi, sans-serif" }}>
+                    <p className="text-sm mt-4 leading-relaxed" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
                       {item.body}
                     </p>
                   )}
@@ -257,15 +287,15 @@ export default function Home() {
       >
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-10 h-px" style={{ backgroundColor: "#3D2E10" }} />
+            <div className="w-10 h-px" style={{ backgroundColor: C.line }} />
             <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#E8A020", fontFamily: "General Sans, sans-serif" }}>
               What You Will Learn
             </span>
-            <div className="w-10 h-px" style={{ backgroundColor: "#3D2E10" }} />
+            <div className="w-10 h-px" style={{ backgroundColor: C.line }} />
           </div>
 
           <h2 className="text-center text-4xl font-bold" style={{ fontFamily: "Clash Display, sans-serif" }}>
-            <span style={{ color: "#F5ECD7" }}>Our Course </span>
+            <span style={{ color: C.text }}>Our Course </span>
             <span
               style={{
                 background: "linear-gradient(135deg, #E8A020, #C1440E)",
@@ -321,15 +351,15 @@ export default function Home() {
                 key={card.title}
                 className="rounded-2xl p-6 border transition-all duration-300 hover:-translate-y-1"
                 style={{
-                  background: "rgba(13, 9, 5, 0.60)",
-                  border: "1px solid rgba(61, 46, 16, 0.40)",
+                  background: C.cardBg,
+                  border: `1px solid ${C.cardBorder}`,
                   backdropFilter: "blur(4px)",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "rgba(232,160,32,0.4)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(61,46,16,0.6)";
+                  e.currentTarget.style.borderColor = C.softPanelBorder;
                 }}
               >
                 <div
@@ -363,8 +393,8 @@ export default function Home() {
                   {card.badge}
                 </div>
 
-                <h3 className="text-lg font-bold mt-3" style={{ color: "#F5ECD7", fontFamily: "Cabinet Grotesk, sans-serif" }}>{card.title}</h3>
-                <p className="text-sm mt-2 leading-relaxed" style={{ color: "#A89070", fontFamily: "Satoshi, sans-serif" }}>{card.body}</p>
+                <h3 className="text-lg font-bold mt-3" style={{ color: C.text, fontFamily: "Cabinet Grotesk, sans-serif" }}>{card.title}</h3>
+                <p className="text-sm mt-2 leading-relaxed" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>{card.body}</p>
 
                 <Link
                   href={card.href}
@@ -390,15 +420,15 @@ export default function Home() {
       >
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-10 h-px" style={{ backgroundColor: "#3D2E10" }} />
+            <div className="w-10 h-px" style={{ backgroundColor: C.line }} />
             <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: "#E8A020", fontFamily: "General Sans, sans-serif" }}>
               Student Stories
             </span>
-            <div className="w-10 h-px" style={{ backgroundColor: "#3D2E10" }} />
+            <div className="w-10 h-px" style={{ backgroundColor: C.line }} />
           </div>
 
           <h2 className="text-center text-4xl font-bold" style={{ fontFamily: "Clash Display, sans-serif" }}>
-            <span style={{ color: "#F5ECD7" }}>Hear From Our </span>
+            <span style={{ color: C.text }}>Hear From Our </span>
             <span
               style={{
                 background: "linear-gradient(135deg, #E8A020, #C1440E)",
@@ -416,7 +446,7 @@ export default function Home() {
               type="button"
               onClick={prevTestimonial}
               className="w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 hover:border-[#E8A020]"
-              style={{ borderColor: "#3D2E10", color: "#A89070", backgroundColor: "rgba(34,24,8,0.55)" }}
+              style={{ borderColor: C.line, color: C.muted, backgroundColor: C.navBg }}
               aria-label="Previous testimonial"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -425,8 +455,8 @@ export default function Home() {
             <div
               className="rounded-2xl p-8 border transition-all duration-300 max-w-2xl w-full"
               style={{
-                background: "rgba(13, 9, 5, 0.60)",
-                border: "1px solid rgba(61, 46, 16, 0.40)",
+                background: C.cardBg,
+                border: `1px solid ${C.cardBorder}`,
                 backdropFilter: "blur(4px)",
               }}
             >
@@ -438,7 +468,7 @@ export default function Home() {
 
               <p
                 className="text-sm leading-relaxed mt-4 pl-4"
-                style={{ color: "#F5ECD7", borderLeft: "2px solid #E8A020", fontFamily: "Satoshi, sans-serif" }}
+                style={{ color: C.text, borderLeft: "2px solid #E8A020", fontFamily: "Satoshi, sans-serif" }}
               >
                 {testimonials[activeTestimonial].quote}
               </p>
@@ -453,10 +483,10 @@ export default function Home() {
                   </span>
                 </div>
                 <div>
-                  <div className="text-sm font-semibold" style={{ color: "#F5ECD7", fontFamily: "General Sans, sans-serif" }}>
+                  <div className="text-sm font-semibold" style={{ color: C.text, fontFamily: "General Sans, sans-serif" }}>
                     {testimonials[activeTestimonial].name}
                   </div>
-                  <div className="text-xs mt-0.5" style={{ color: "#A89070", fontFamily: "Satoshi, sans-serif" }}>
+                  <div className="text-xs mt-0.5" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
                     {testimonials[activeTestimonial].role}
                   </div>
                 </div>
@@ -467,7 +497,7 @@ export default function Home() {
               type="button"
               onClick={nextTestimonial}
               className="w-10 h-10 rounded-full border flex items-center justify-center transition-all duration-200 hover:border-[#E8A020]"
-              style={{ borderColor: "#3D2E10", color: "#A89070", backgroundColor: "rgba(34,24,8,0.55)" }}
+              style={{ borderColor: C.line, color: C.muted, backgroundColor: C.navBg }}
               aria-label="Next testimonial"
             >
               <ChevronRight className="w-5 h-5" />
@@ -483,7 +513,7 @@ export default function Home() {
                 style={
                   idx === activeTestimonial
                     ? { width: "24px", height: "6px", borderRadius: "999px", backgroundColor: "#E8A020" }
-                    : { width: "6px", height: "6px", borderRadius: "999px", backgroundColor: "#3D2E10" }
+                    : { width: "6px", height: "6px", borderRadius: "999px", backgroundColor: C.line }
                 }
                 aria-label={`Go to testimonial ${idx + 1}`}
               />
@@ -511,7 +541,7 @@ export default function Home() {
           />
 
           <h2 className="text-4xl md:text-5xl font-bold" style={{ fontFamily: "Clash Display, sans-serif" }}>
-            <span style={{ color: "#F5ECD7" }}>Ready to Tell Your </span>
+            <span style={{ color: C.text }}>Ready to Tell Your </span>
             <span
               style={{
                 background: "linear-gradient(135deg, #E8A020, #C1440E)",
@@ -524,7 +554,7 @@ export default function Home() {
             </span>
           </h2>
 
-          <p className="text-lg mt-6 leading-relaxed" style={{ color: "#A89070", fontFamily: "Satoshi, sans-serif" }}>
+          <p className="text-lg mt-6 leading-relaxed" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
             Join thousands of African creatives learning animation, building portfolios and connecting with a global community
             that celebrates authentic African storytelling.
           </p>
@@ -545,10 +575,10 @@ export default function Home() {
               href="/courses"
               className="px-10 py-4 rounded-full text-base border transition-all duration-200 hover:border-[#E8A020] hover:text-[#E8A020]"
               style={{
-                borderColor: "rgba(61,46,16,0.8)",
-                color: "#F5ECD7",
+                borderColor: C.ghostBorder,
+                color: C.text,
                 fontFamily: "General Sans, sans-serif",
-                backgroundColor: "rgba(34,24,8,0.45)",
+                backgroundColor: C.ghostBg,
                 backdropFilter: "blur(8px)",
               }}
             >

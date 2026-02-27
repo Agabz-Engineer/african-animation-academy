@@ -5,8 +5,30 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useThemeMode } from "@/lib/useThemeMode";
+
+const DARK_UI = {
+  surface: "#221808",
+  border: "#3D2E10",
+  text: "#F5ECD7",
+  muted: "#A89070",
+  dim: "#6B5A40",
+  divider: "rgba(61,46,16,0.4)",
+};
+
+const LIGHT_UI = {
+  surface: "rgba(255,255,255,0.86)",
+  border: "#DCCFB7",
+  text: "#1C1C1C",
+  muted: "#5A5550",
+  dim: "#7A746A",
+  divider: "rgba(183,164,132,0.55)",
+};
 
 export default function LoginPage() {
+  const theme = useThemeMode();
+  const C = theme === "dark" ? DARK_UI : LIGHT_UI;
+
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +51,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden", transition: "color 0.3s ease" }}>
 
       {/* ── Left Panel ── */}
       <div
@@ -59,8 +81,8 @@ export default function LoginPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "3rem" }}>
             <div style={{
               width: "48px", height: "40px",
-              backgroundColor: "#221808",
-              border: "1px solid #3D2E10",
+              backgroundColor: C.surface,
+              border: `1px solid ${C.border}`,
               borderRadius: "12px",
               display: "flex", alignItems: "center", justifyContent: "center"
             }}>
@@ -69,7 +91,7 @@ export default function LoginPage() {
               <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#D4A853" }}>X</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.875rem", color: "#F5ECD7" }}>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.875rem", color: C.text }}>
                 African Animation
               </span>
               <span style={{
@@ -85,7 +107,7 @@ export default function LoginPage() {
 
           <h2 style={{
             fontFamily: "'General Sans', sans-serif", fontWeight: 700,
-            fontSize: "2.5rem", lineHeight: 1.15, color: "#F5ECD7", marginBottom: "1.25rem"
+            fontSize: "2.5rem", lineHeight: 1.15, color: C.text, marginBottom: "1.25rem"
           }}>
             Bring African<br />
             <span style={{
@@ -97,7 +119,7 @@ export default function LoginPage() {
             </span>
           </h2>
 
-          <p style={{ color: "#A89070", fontSize: "1rem", lineHeight: 1.7, maxWidth: "300px", margin: "0 auto 2.5rem" }}>
+          <p style={{ color: C.muted, fontSize: "1rem", lineHeight: 1.7, maxWidth: "300px", margin: "0 auto 2.5rem" }}>
             Join African creatives learning animation, building portfolios and connecting with a global community.
           </p>
 
@@ -110,7 +132,7 @@ export default function LoginPage() {
       {/* Vertical divider */}
       <div className="hidden lg:block" style={{
         position: "relative", zIndex: 1,
-        width: "1px", backgroundColor: "rgba(61,46,16,0.4)",
+        width: "1px", backgroundColor: C.divider,
         alignSelf: "stretch"
       }} />
 
@@ -128,23 +150,23 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
             <div style={{
-              width: "40px", height: "34px", backgroundColor: "#221808",
-              border: "1px solid #3D2E10", borderRadius: "10px",
+              width: "40px", height: "34px", backgroundColor: C.surface,
+              border: `1px solid ${C.border}`, borderRadius: "10px",
               display: "flex", alignItems: "center", justifyContent: "center"
             }}>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#E8A020", fontSize: "0.85rem" }}>A</span>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#C1440E", fontSize: "0.95rem" }}>F</span>
               <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#D4A853", fontSize: "0.85rem" }}>X</span>
             </div>
-            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1rem" }}>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, color: C.text, fontSize: "1rem" }}>
               Africa Fx
             </span>
           </div>
 
-          <h1 style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+          <h1 style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "2rem", color: C.text, marginBottom: "0.5rem" }}>
             Welcome back
           </h1>
-          <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans', sans-serif" }}>
+          <p style={{ color: C.muted, marginBottom: "2rem", fontFamily: "'General Sans', sans-serif" }}>
             Sign in to continue your animation journey
           </p>
 
@@ -161,11 +183,11 @@ export default function LoginPage() {
 
             {/* Email */}
             <div>
-              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: "#A89070", marginBottom: "0.5rem", fontFamily: "'General Sans', sans-serif" }}>
+              <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: C.muted, marginBottom: "0.5rem", fontFamily: "'General Sans', sans-serif" }}>
                 Email address
               </label>
               <div style={{ position: "relative" }}>
-                <Mail style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                <Mail style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: C.dim }} />
                 <input
                   type="email"
                   value={email}
@@ -181,7 +203,7 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                <label style={{ fontSize: "0.875rem", fontWeight: 500, color: "#A89070", fontFamily: "'General Sans', sans-serif" }}>
+                <label style={{ fontSize: "0.875rem", fontWeight: 500, color: C.muted, fontFamily: "'General Sans', sans-serif" }}>
                   Password
                 </label>
                 <Link href="/forgot-password" style={{ fontSize: "0.8rem", color: "#E8A020", textDecoration: "none" }}>
@@ -189,7 +211,7 @@ export default function LoginPage() {
                 </Link>
               </div>
               <div style={{ position: "relative" }}>
-                <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: "#6B5A40" }} />
+                <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: C.dim }} />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
@@ -202,7 +224,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#6B5A40" }}
+                  style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.dim }}
                 >
                   {showPassword
                     ? <EyeOff style={{ width: "16px", height: "16px" }} />
@@ -225,11 +247,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p style={{ textAlign: "center", color: "#6B5A40", fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "'General Sans', sans-serif" }}>
+          <p style={{ textAlign: "center", color: C.dim, fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "'General Sans', sans-serif" }}>
             Use your email and password to sign in.
           </p>
 
-          <p style={{ textAlign: "center", color: "#A89070", fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'General Sans', sans-serif" }}>
+          <p style={{ textAlign: "center", color: C.muted, fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'General Sans', sans-serif" }}>
             Don&apos;t have an account?{" "}
             <Link href="/signup" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>
               Create one free
