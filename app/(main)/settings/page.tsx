@@ -265,8 +265,8 @@ export default function SettingsPage() {
   /* ── Section heading ── */
   const SectionHead = ({ title, desc }: { title: string; desc: string }) => (
     <div style={{ marginBottom: "1.75rem", paddingBottom: "1.25rem", borderBottom: `1px solid ${T.border}` }}>
-      <h2 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.25rem", color: T.text, marginBottom: "0.3rem", letterSpacing: "-0.02em" }}>{title}</h2>
-      <p style={{ fontSize: "0.82rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.55 }}>{desc}</p>
+      <h2 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1.25rem", color: T.text, marginBottom: "0.3rem", letterSpacing: "-0.01em" }}>{title}</h2>
+      <p style={{ fontSize: "0.9rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", lineHeight: 1.6 }}>{desc}</p>
     </div>
   );
 
@@ -320,7 +320,7 @@ export default function SettingsPage() {
                   style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}
                 />
               ) : (
-                <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "linear-gradient(135deg,#FF8C00,#E06400)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "#FFFFFF", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}>
+                <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "linear-gradient(135deg,#FF8C00,#E06400)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "#FFFFFF", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}>
                   {(fullName || email).charAt(0).toUpperCase()}
                 </div>
               )}
@@ -417,7 +417,7 @@ export default function SettingsPage() {
 
           {/* Change password */}
           <div style={{ backgroundColor: T.surface, border: `1px solid ${T.border}`, borderRadius: "14px", padding: "1.25rem", marginBottom: "1.5rem" }}>
-            <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.92rem", color: T.text, marginBottom: "1rem" }}>Change password</h3>
+            <h3 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.98rem", color: T.text, marginBottom: "1rem" }}>Change password</h3>
 
             <div style={{ position: "relative", marginBottom: "1rem" }}>
               <input type={showPw ? "text" : "password"} placeholder="New password" value={newPw} onChange={(e) => setNewPw(e.target.value)}
@@ -449,9 +449,9 @@ export default function SettingsPage() {
           <div style={{ backgroundColor: T.dangerSoft, border: `1px solid ${T.danger}33`, borderRadius: "14px", padding: "1.25rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.5rem" }}>
               <Trash2 style={{ width: "15px", height: "15px", color: T.danger }} />
-              <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.92rem", color: T.danger }}>Delete account</h3>
+              <h3 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.98rem", color: T.danger }}>Delete account</h3>
             </div>
-            <p style={{ fontSize: "0.78rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.55, marginBottom: "1rem" }}>
+            <p style={{ fontSize: "0.82rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", lineHeight: 1.55, marginBottom: "1rem" }}>
               This is permanent. All your progress, courses and community posts will be erased. Type <strong style={{ color: T.text, fontFamily: "'Fira Code',monospace" }}>DELETE</strong> to confirm.
             </p>
             <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
@@ -483,7 +483,7 @@ export default function SettingsPage() {
             <div key={key} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1.5rem", padding: "1.125rem 0", borderBottom: `1px solid ${T.border}` }}>
               <div style={{ flex: 1 }}>
                 <p style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.85rem", color: T.text, marginBottom: "0.25rem" }}>{title}</p>
-                <p style={{ fontSize: "0.75rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.55 }}>{desc}</p>
+                <p style={{ fontSize: "0.8rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", lineHeight: 1.55 }}>{desc}</p>
               </div>
               <Toggle on={notifs[key as NotifKey]} onChange={(v) => setNotifs(n => ({ ...n, [key]: v }))} />
             </div>
@@ -531,7 +531,7 @@ export default function SettingsPage() {
           <div style={{ backgroundColor: T.surface, border: `1px solid ${T.border}`, borderRadius: "12px", padding: "1rem 1.125rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
               <p style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.85rem", color: T.text }}>Language</p>
-              <p style={{ fontSize: "0.72rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif", marginTop: "2px" }}>English (UK) — more languages coming soon</p>
+              <p style={{ fontSize: "0.78rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginTop: "2px" }}>English (UK) — more languages coming soon</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.72rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>
               English <ChevronRight style={{ width: "13px", height: "13px" }} />
@@ -545,7 +545,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ backgroundColor: T.pageBg, minHeight: "100vh", color: T.text, fontFamily: "'Satoshi',sans-serif", transition: "background-color 0.3s" }}>
+    <div style={{ backgroundColor: T.pageBg, minHeight: "100vh", color: T.text, fontFamily: "'General Sans',sans-serif", transition: "background-color 0.3s" }}>
 
       {/* ── Page header ── */}
       <div style={{ padding: "2.5rem 2.5rem 0" }}>
@@ -554,8 +554,8 @@ export default function SettingsPage() {
             <div key={i} style={{ height: "3px", width: i === 0 || i === 3 ? "24px" : "8px", backgroundColor: c, borderRadius: "999px" }} />
           ))}
         </div>
-        <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: T.text, letterSpacing: "-0.03em", marginBottom: "0.375rem" }}>Settings</h1>
-        <p style={{ fontSize: "0.875rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.6, marginBottom: "2rem" }}>Manage your profile, account and preferences.</p>
+        <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: T.text, letterSpacing: "-0.01em", marginBottom: "0.375rem" }}>Settings</h1>
+        <p style={{ fontSize: "0.92rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", lineHeight: 1.6, marginBottom: "2rem" }}>Manage your profile, account and preferences.</p>
       </div>
 
       {/* ── Layout: tabs left + content right ── */}

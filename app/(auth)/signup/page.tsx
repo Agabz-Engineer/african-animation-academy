@@ -123,9 +123,9 @@ export default function SignupPage() {
           {/* AFX Logo */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "3rem" }}>
             <div style={{ width: "48px", height: "40px", backgroundColor: "#221808", border: "1px solid #3D2E10", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#E8A020" }}>A</span>
-              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#C1440E" }}>F</span>
-              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#D4A853" }}>X</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#E8A020" }}>A</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#C1440E" }}>F</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#D4A853" }}>X</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
               <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: "0.875rem", color: "#F5ECD7" }}>African Animation</span>
@@ -133,7 +133,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <h2 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2.5rem", lineHeight: 1.15, color: "#F5ECD7", marginBottom: "1.25rem" }}>
+          <h2 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2.5rem", lineHeight: 1.15, color: "#F5ECD7", marginBottom: "1.25rem" }}>
             Your animation<br />
             <span style={{ background: "linear-gradient(135deg,#E8A020,#C1440E)", WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               journey starts here
@@ -157,7 +157,7 @@ export default function SignupPage() {
           </div>
           <p style={{ color: "#6B5A40", fontSize: "0.8rem", fontFamily: "'General Sans',sans-serif" }}>Step {step} of {TOTAL_STEPS}</p>
 
-          <p style={{ fontFamily: "'Satoshi',sans-serif", fontStyle: "italic", color: "#D4A853", fontSize: "0.8rem", marginTop: "2rem" }}>
+          <p style={{ fontFamily: "'General Sans',sans-serif", fontStyle: "italic", color: "#D4A853", fontSize: "0.8rem", marginTop: "2rem" }}>
             Proudly African. Globally Creative.
           </p>
         </motion.div>
@@ -175,9 +175,9 @@ export default function SignupPage() {
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-6 lg:hidden">
             <div style={{ width: "40px", height: "34px", backgroundColor: "#221808", border: "1px solid #3D2E10", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, color: "#E8A020", fontSize: "0.85rem" }}>A</span>
-              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, color: "#C1440E", fontSize: "0.95rem" }}>F</span>
-              <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, color: "#D4A853", fontSize: "0.85rem" }}>X</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#E8A020", fontSize: "0.85rem" }}>A</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#C1440E", fontSize: "0.95rem" }}>F</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#D4A853", fontSize: "0.85rem" }}>X</span>
             </div>
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1rem" }}>Africa Fx</span>
           </div>
@@ -200,10 +200,10 @@ export default function SignupPage() {
             {/* ── STEP 1 — Account Details ── */}
             {step === 1 && (
               <motion.div key="step1" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
-                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
                   Create your account
                 </h1>
-                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   Free forever - no credit card needed
                 </p>
 
@@ -250,7 +250,7 @@ export default function SignupPage() {
                   Your account will be ready immediately after signup.
                 </p>
 
-                <p style={{ textAlign: "center", color: "#A89070", fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                <p style={{ textAlign: "center", color: "#A89070", fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   Already have an account?{" "}
                   <Link href="/login" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>Sign in</Link>
                 </p>
@@ -264,10 +264,10 @@ export default function SignupPage() {
                   <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
-                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
                   Who are you?
                 </h1>
-                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   This helps us tailor your experience on Africa Fx
                 </p>
 
@@ -294,7 +294,7 @@ export default function SignupPage() {
                         <type.Icon style={{ width: "24px", height: "24px", color: accountType === type.id ? "#0D0905" : "#E8A020" }} />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1.1rem", marginBottom: "4px" }}>{type.label}</div>
+                        <div style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#F5ECD7", fontSize: "1.1rem", marginBottom: "4px" }}>{type.label}</div>
                         <div style={{ color: "#A89070", fontSize: "0.8rem", lineHeight: 1.5 }}>{type.desc}</div>
                       </div>
                       {accountType === type.id && (
@@ -324,10 +324,10 @@ export default function SignupPage() {
                   <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
-                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
                   {accountType === "studio" ? "Studio size?" : "What's your skill level?"}
                 </h1>
-                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   {accountType === "studio" ? "Help us understand your studio better" : "We'll personalise your learning path based on this"}
                 </p>
 
@@ -374,10 +374,10 @@ export default function SignupPage() {
                   <ArrowLeft style={{ width: "16px", height: "16px" }} /> Back
                 </button>
 
-                <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
+                <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: "#F5ECD7", marginBottom: "0.5rem" }}>
                   What&apos;s your goal?
                 </h1>
-                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'Satoshi',sans-serif" }}>
+                <p style={{ color: "#A89070", marginBottom: "2rem", fontFamily: "'General Sans',sans-serif" }}>
                   This helps us recommend the right courses for you
                 </p>
 
@@ -436,4 +436,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

@@ -33,9 +33,9 @@
 ════════════════════════════════════════ */
 :root {
   /* Fonts */
-  --font-display: 'Clash Display', sans-serif;
-  --font-heading: 'Cabinet Grotesk', sans-serif;
-  --font-body:    'Satoshi', sans-serif;
+  --font-display: 'General Sans', sans-serif;
+  --font-heading: 'General Sans', sans-serif;
+  --font-body:    'General Sans', sans-serif;
   --font-ui:      'General Sans', sans-serif;
   --font-brand:   'Tahalonia', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
@@ -181,7 +181,7 @@
     background-repeat: no-repeat;
     background-attachment: scroll;
     color: var(--text);
-    font-family: 'Satoshi', sans-serif;
+    font-family: 'General Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
@@ -232,15 +232,15 @@
   }
 
   h1 {
-    font-family: 'Clash Display', sans-serif;
+    font-family: 'General Sans', sans-serif;
     font-weight: 700;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.01em;
   }
 
   h2, h3 {
-    font-family: 'Cabinet Grotesk', sans-serif;
+    font-family: 'General Sans', sans-serif;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
 
   h4, h5, h6 {
@@ -437,7 +437,7 @@
     border-radius: 12px;
     padding: 0.75rem 1rem;
     color: var(--text);
-    font-family: 'Satoshi', sans-serif;
+    font-family: 'General Sans', sans-serif;
     font-size: 0.875rem;
     outline: none;
     transition: all 0.2s ease;
@@ -490,9 +490,9 @@
   }
 
   /* Font helpers */
-  .font-display  { font-family: 'Clash Display', sans-serif; }
-  .font-heading  { font-family: 'Cabinet Grotesk', sans-serif; }
-  .font-body     { font-family: 'Satoshi', sans-serif; }
+  .font-display  { font-family: 'General Sans', sans-serif; }
+  .font-heading  { font-family: 'General Sans', sans-serif; }
+  .font-body     { font-family: 'General Sans', sans-serif; }
   .font-ui       { font-family: 'General Sans', sans-serif; }
   .font-brand    { font-family: 'Tahalonia', sans-serif; }
   .font-mono     { font-family: 'JetBrains Mono', monospace; }
