@@ -91,6 +91,7 @@ export default function SettingsPage() {
   const [email,       setEmail]       = useState("");
   const [avatarUrl,   setAvatarUrl]   = useState<string|null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   /* Account fields */
   const [newPw,      setNewPw]      = useState("");
@@ -123,6 +124,7 @@ export default function SettingsPage() {
         setSkillLevel(user.user_metadata?.skill_level || "beginner");
         setGoal(user.user_metadata?.goal || GOALS[0]);
         setAvatarUrl(user.user_metadata?.avatar_url || null);
+        setAvatarLoadError(false);
       }
       setLoading(false);
     });
@@ -176,8 +178,8 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const ext      = file.name.split(".").pop();
-      const filePath = `avatars/${user.id}.${ext}`;
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const filePath = `${user.id}-${Date.now()}.${ext}`;
 
       /* Upload to Supabase Storage bucket "avatars" */
       const { error: uploadError } = await supabase.storage
@@ -196,7 +198,8 @@ export default function SettingsPage() {
         data: { avatar_url: publicUrl }
       });
 
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(`${publicUrl}${publicUrl.includes("?") ? "&" : "?"}v=${Date.now()}`);
+      setAvatarLoadError(false);
       showSavedToast();
     } catch (err) {
       console.error("Avatar upload failed:", err);
@@ -310,13 +313,14 @@ export default function SettingsPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", marginBottom: "1.75rem" }}>
             <div style={{ position: "relative", flexShrink: 0 }}>
               {/* Avatar image or initial fallback */}
-              {avatarUrl ? (
+              {avatarUrl && !avatarLoadError ? (
                 <Image
                   src={avatarUrl}
                   alt="Profile"
                   width={64}
                   height={64}
                   unoptimized
+                  onError={() => setAvatarLoadError(true)}
                   style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}
                 />
               ) : (
