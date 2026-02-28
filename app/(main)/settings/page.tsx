@@ -76,6 +76,31 @@ const getInitialTheme = (): "dark" | "light" => {
   return attr === "light" ? "light" : "dark";
 };
 
+const addCacheBuster = (url: string) =>
+  `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+
+const resolveAvatarDisplayUrl = async (
+  avatarPath: string | null,
+  avatarPublicUrl: string | null
+) => {
+  if (avatarPath) {
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(avatarPath, 60 * 60);
+
+    if (!signedError && signedData?.signedUrl) {
+      return addCacheBuster(signedData.signedUrl);
+    }
+
+    const { data: publicData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(avatarPath);
+    if (publicData?.publicUrl) return addCacheBuster(publicData.publicUrl);
+  }
+
+  return avatarPublicUrl ? addCacheBuster(avatarPublicUrl) : null;
+};
+
 export default function SettingsPage() {
   const [theme, setTheme]   = useState<"dark"|"light">(getInitialTheme);
   const [tab, setTab]       = useState("profile");
@@ -115,20 +140,39 @@ export default function SettingsPage() {
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    let mounted = true;
+
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!mounted) return;
+
       if (user) {
+        const metadata = user.user_metadata || {};
+        const avatarPath = typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
+        const avatarPublicUrl = typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
+
         setEmail(user.email || "");
-        setFullName(user.user_metadata?.full_name || "");
-        setUsername(user.user_metadata?.username || "");
-        setBio(user.user_metadata?.bio || "");
-        setSkillLevel(user.user_metadata?.skill_level || "beginner");
-        setGoal(user.user_metadata?.goal || GOALS[0]);
-        setAvatarUrl(user.user_metadata?.avatar_url || null);
+        setFullName(metadata.full_name || "");
+        setUsername(metadata.username || "");
+        setBio(metadata.bio || "");
+        setSkillLevel(metadata.skill_level || "beginner");
+        setGoal(metadata.goal || GOALS[0]);
+
+        const displayAvatarUrl = await resolveAvatarDisplayUrl(avatarPath, avatarPublicUrl);
+        if (!mounted) return;
+        setAvatarUrl(displayAvatarUrl);
         setAvatarLoadError(false);
       }
+
       setLoading(false);
-    });
-    return () => obs.disconnect();
+    };
+
+    loadUser();
+
+    return () => {
+      mounted = false;
+      obs.disconnect();
+    };
   }, []);
 
   const T = theme === "dark" ? DARK : LIGHT;
@@ -146,7 +190,7 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     await supabase.auth.updateUser({
-      data: { full_name: fullName, username, bio, skill_level: skillLevel, goal, avatar_url: avatarUrl }
+      data: { full_name: fullName, username, bio, skill_level: skillLevel, goal }
     });
     showSavedToast();
   };
@@ -174,17 +218,18 @@ export default function SettingsPage() {
     }
 
     setAvatarUploading(true);
+    setAvatarLoadError(false);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const filePath = `${user.id}-${Date.now()}.${ext}`;
+      const filePath = `${user.id}/avatar.${ext}`;
 
       /* Upload to Supabase Storage bucket "avatars" */
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { upsert: true, contentType: file.type });
 
       if (uploadError) throw uploadError;
 
@@ -193,19 +238,25 @@ export default function SettingsPage() {
         .from("avatars")
         .getPublicUrl(filePath);
 
+      const { data: signedData } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(filePath, 60 * 60);
+
       /* Save to user metadata */
       await supabase.auth.updateUser({
-        data: { avatar_url: publicUrl }
+        data: { avatar_url: publicUrl, avatar_path: filePath }
       });
 
-      setAvatarUrl(`${publicUrl}${publicUrl.includes("?") ? "&" : "?"}v=${Date.now()}`);
+      setAvatarUrl(addCacheBuster(signedData?.signedUrl || publicUrl));
       setAvatarLoadError(false);
       showSavedToast();
     } catch (err) {
       console.error("Avatar upload failed:", err);
-      alert("Upload failed. Make sure the 'avatars' bucket exists in Supabase Storage.");
+      const message = err instanceof Error ? err.message : "Unknown error";
+      alert(`Upload failed: ${message}`);
     } finally {
       setAvatarUploading(false);
+      e.target.value = "";
     }
   };
 
