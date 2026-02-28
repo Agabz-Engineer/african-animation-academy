@@ -291,6 +291,8 @@ export default function EventsPage() {
   const reveal = (inView: boolean) => (inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 60 });
 
   const timelineStripMinWidth = `${TIMELINE_EVENTS.length * 220}px`;
+  const activeTimelineEvent =
+    activeTimelineIndex !== null ? TIMELINE_EVENTS[activeTimelineIndex] : null;
 
   const handleDownloadTimelineIcs = (event: TimelineEvent) => {
     const dtStamp = toCalendarStamp(new Date().toISOString());
@@ -538,110 +540,105 @@ export default function EventsPage() {
         </motion.h2>
 
         <div className="timelineBoard" style={{ borderColor: T.border, background: T.card }}>
-          <div
-            className="timelineStrip"
-            style={{
-              minWidth: timelineStripMinWidth,
-              gridTemplateColumns: `repeat(${TIMELINE_EVENTS.length}, minmax(180px, 1fr))`,
-            }}
-          >
-            {TIMELINE_EVENTS.map((item, index) => {
-              const top = index % 2 === 0;
-              const active = activeTimelineIndex === index;
-              return (
-                <motion.div
-                  key={item.id}
-                  className="timelineStage"
-                  initial={{ opacity: 0, y: 60 }}
-                  animate={reveal(timelineIn)}
-                  transition={{ duration: 0.62, delay: index * 0.1, ease: EASE }}
-                >
-                  <AnimatePresence initial={false}>
-                    {active && (
-                      <motion.div
-                        id={`timeline-detail-${item.id}`}
-                        className={`timelineCallout ${top ? "top" : "bottom"}`}
-                        style={{
-                          borderColor: T.border,
-                          background:
-                            theme === "dark"
-                              ? "rgba(12,11,9,0.9)"
-                              : "rgba(255,255,255,0.95)",
-                        }}
-                        initial={{ opacity: 0, y: top ? -12 : 12, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: top ? -10 : 10, scale: 0.97 }}
-                        transition={{ duration: 0.22, ease: EASE }}
-                      >
-                        <h3>{item.title}</h3>
-                        <p style={{ color: T.muted }}>{item.detail}</p>
-                        <div className="timelineMeta" style={{ color: T.dim }}>
-                          <span><Clock3 style={{ width: "12px", height: "12px" }} /> {item.time}</span>
-                          <span><CalendarDays style={{ width: "12px", height: "12px" }} /> {item.location}</span>
-                        </div>
-                        <div className="timelineActions">
-                          <a
-                            href={getGoogleCalendarUrl(item)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="timelineActionLink"
-                            style={{ borderColor: `${T.accent}77`, color: T.accent }}
-                          >
-                            <CalendarPlus style={{ width: "12px", height: "12px" }} />
-                            Google Calendar
-                          </a>
-                          <button
-                            type="button"
-                            className="timelineActionBtn"
-                            style={{ borderColor: T.border, color: T.text }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadTimelineIcs(item);
-                            }}
-                          >
-                            <Download style={{ width: "12px", height: "12px" }} />
-                            Download .ics
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div
-                    className={`timelineConnector ${top ? "top" : "bottom"}`}
-                    style={{ borderColor: `${T.dim}88` }}
+          <div className="timelineRail">
+            <div
+              className="timelineStrip"
+              style={{
+                minWidth: timelineStripMinWidth,
+                gridTemplateColumns: `repeat(${TIMELINE_EVENTS.length}, minmax(180px, 1fr))`,
+              }}
+            >
+              {TIMELINE_EVENTS.map((item, index) => {
+                const active = activeTimelineIndex === index;
+                return (
+                  <motion.div
+                    key={item.id}
+                    className="timelineStage"
+                    initial={{ opacity: 0, y: 60 }}
+                    animate={reveal(timelineIn)}
+                    transition={{ duration: 0.62, delay: index * 0.1, ease: EASE }}
                   >
-                    <span
-                      className="timelineConnectorDot"
+                    <button
+                      type="button"
+                      className={`timelineArrow ${index === 0 ? "first" : ""} ${index === TIMELINE_EVENTS.length - 1 ? "last" : ""}`}
                       style={{
-                        background: T.accent,
-                        boxShadow: `0 0 0 4px ${T.accent}26`,
+                        ...timelineArrowStyle(index),
+                        boxShadow: active
+                          ? `inset 0 0 0 1px ${T.accent}66, 0 10px 24px ${T.accent}2F`
+                          : undefined,
                       }}
-                    />
-                  </div>
+                      aria-expanded={active}
+                      aria-controls={active ? `timeline-detail-${item.id}` : undefined}
+                      onClick={() =>
+                        setActiveTimelineIndex((current) => (current === index ? null : index))
+                      }
+                    >
+                      <span className="arrowDay">{item.day}</span>
+                      <span className="arrowMonth">{item.month}</span>
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
 
+          <AnimatePresence mode="wait" initial={false}>
+            {activeTimelineEvent && (
+              <motion.div
+                key={activeTimelineEvent.id}
+                id={`timeline-detail-${activeTimelineEvent.id}`}
+                className="timelineDetailPanel"
+                style={{
+                  borderColor: T.border,
+                  background:
+                    theme === "dark"
+                      ? "rgba(12,11,9,0.9)"
+                      : "rgba(255,255,255,0.95)",
+                }}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ duration: 0.22, ease: EASE }}
+              >
+                <div className="timelineDetailHead">
+                  <h3>{activeTimelineEvent.title}</h3>
+                  <div className="timelineDateBadge" style={{ color: T.accent }}>
+                    <span className="arrowDay">{activeTimelineEvent.day}</span>
+                    <span className="arrowMonth">{activeTimelineEvent.month}</span>
+                  </div>
+                </div>
+
+                <p style={{ color: T.muted }}>{activeTimelineEvent.detail}</p>
+
+                <div className="timelineMeta" style={{ color: T.dim }}>
+                  <span><Clock3 style={{ width: "12px", height: "12px" }} /> {activeTimelineEvent.time}</span>
+                  <span><CalendarDays style={{ width: "12px", height: "12px" }} /> {activeTimelineEvent.location}</span>
+                </div>
+
+                <div className="timelineActions">
+                  <a
+                    href={getGoogleCalendarUrl(activeTimelineEvent)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="timelineActionLink"
+                    style={{ borderColor: `${T.accent}77`, color: T.accent }}
+                  >
+                    <CalendarPlus style={{ width: "13px", height: "13px" }} />
+                    Google Calendar
+                  </a>
                   <button
                     type="button"
-                    className={`timelineArrow ${index === 0 ? "first" : ""} ${index === TIMELINE_EVENTS.length - 1 ? "last" : ""}`}
-                    style={{
-                      ...timelineArrowStyle(index),
-                      boxShadow: active
-                        ? `inset 0 0 0 1px ${T.accent}66, 0 10px 24px ${T.accent}2F`
-                        : undefined,
-                    }}
-                    aria-expanded={active}
-                    aria-controls={`timeline-detail-${item.id}`}
-                    onClick={() =>
-                      setActiveTimelineIndex((current) => (current === index ? null : index))
-                    }
+                    className="timelineActionBtn"
+                    style={{ borderColor: T.border, color: T.text }}
+                    onClick={() => handleDownloadTimelineIcs(activeTimelineEvent)}
                   >
-                    <span className="arrowDay">{item.day}</span>
-                    <span className="arrowMonth">{item.month}</span>
+                    <Download style={{ width: "13px", height: "13px" }} />
+                    Download .ics
                   </button>
-                </motion.div>
-              );
-            })}
-          </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.section>
 
@@ -747,35 +744,52 @@ export default function EventsPage() {
         .host strong { font: 700 0.78rem "General Sans", sans-serif; line-height: 1.2; }
         .empty { border: 1px solid; border-radius: 16px; padding: 1rem; font: 600 0.9rem "General Sans", sans-serif; }
 
-        .timelineBoard { border: 1px solid; border-radius: 22px; padding: 1.05rem; overflow-x: auto; overflow-y: hidden; }
+        .timelineBoard { border: 1px solid; border-radius: 22px; padding: 1rem; }
+        .timelineRail { overflow-x: auto; overflow-y: hidden; padding-bottom: 0.3rem; }
         .timelineStrip { display: grid; align-items: center; }
-        .timelineStage { position: relative; height: 17.5rem; display: flex; align-items: center; justify-content: center; }
-        .timelineCallout {
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          width: calc(100% - 0.95rem);
+        .timelineStage { position: relative; min-height: 3.15rem; display: flex; align-items: center; justify-content: center; }
+        .timelineDetailPanel {
           border: 1px solid;
-          border-radius: 12px;
-          padding: 0.55rem 0.65rem;
+          border-radius: 14px;
+          padding: 0.85rem 0.9rem;
+          margin-top: 0.7rem;
           backdrop-filter: blur(9px);
         }
-        .timelineCallout.top { top: 0.4rem; }
-        .timelineCallout.bottom { bottom: 0.4rem; }
-        .timelineCallout h3 { font: 700 0.79rem "General Sans", sans-serif; margin-bottom: 0.22rem; line-height: 1.28; }
-        .timelineCallout p { font: 500 0.69rem "General Sans", sans-serif; line-height: 1.32; margin-bottom: 0.35rem; }
-        .timelineMeta { display: flex; flex-wrap: wrap; gap: 0.48rem; font: 600 0.62rem "General Sans", sans-serif; }
-        .timelineMeta span { display: inline-flex; gap: 0.2rem; align-items: center; }
-        .timelineActions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.45rem; }
+        .timelineDetailHead {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.7rem;
+          margin-bottom: 0.35rem;
+        }
+        .timelineDetailHead h3 {
+          font: 700 0.96rem "General Sans", sans-serif;
+          line-height: 1.3;
+          letter-spacing: -0.01em;
+        }
+        .timelineDateBadge {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 0.28rem;
+          white-space: nowrap;
+        }
+        .timelineDetailPanel > p {
+          font: 500 0.82rem "General Sans", sans-serif;
+          line-height: 1.48;
+          margin-bottom: 0.55rem;
+        }
+        .timelineMeta { display: flex; flex-wrap: wrap; gap: 0.52rem; font: 600 0.72rem "General Sans", sans-serif; }
+        .timelineMeta span { display: inline-flex; gap: 0.24rem; align-items: center; }
+        .timelineActions { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.6rem; }
         .timelineActionLink, .timelineActionBtn {
           border: 1px solid;
           border-radius: 999px;
-          padding: 0.26rem 0.5rem;
+          padding: 0.42rem 0.7rem;
           background: transparent;
-          font: 700 0.6rem "General Sans", sans-serif;
+          font: 700 0.72rem "General Sans", sans-serif;
           display: inline-flex;
           align-items: center;
-          gap: 0.2rem;
+          gap: 0.28rem;
           text-decoration: none;
           cursor: pointer;
           transition: transform 0.18s ease, border-color 0.18s ease;
@@ -783,27 +797,6 @@ export default function EventsPage() {
         .timelineActionLink:hover, .timelineActionBtn:hover {
           transform: translateY(-1px);
         }
-        .timelineConnector {
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 3.7rem;
-          border-left: 2px dashed;
-          pointer-events: none;
-        }
-        .timelineConnector.top { top: 4.68rem; }
-        .timelineConnector.bottom { bottom: 4.68rem; }
-        .timelineConnectorDot {
-          width: 8px;
-          height: 8px;
-          border-radius: 999px;
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-        }
-        .timelineConnector.top .timelineConnectorDot { bottom: -4px; }
-        .timelineConnector.bottom .timelineConnectorDot { top: -4px; }
         .timelineArrow {
           position: relative;
           width: calc(100% + 6px);
@@ -881,20 +874,16 @@ export default function EventsPage() {
           .host { top: 0.45rem; width: 6.4rem; min-height: 5rem; }
           .host.left { left: auto; right: 0.9rem; }
           .timelineBoard { padding: 0.75rem; }
-          .timelineStrip { min-width: 680px !important; grid-template-columns: repeat(3, minmax(170px, 1fr)) !important; }
-          .timelineStage { height: 16.6rem; }
-          .timelineCallout { width: calc(100% - 0.62rem); padding: 0.48rem 0.54rem; }
-          .timelineCallout h3 { font-size: 0.72rem; }
-          .timelineCallout p { font-size: 0.64rem; }
-          .timelineMeta { font-size: 0.58rem; gap: 0.36rem; }
-          .timelineActions { margin-top: 0.35rem; gap: 0.3rem; }
-          .timelineActionLink, .timelineActionBtn { font-size: 0.56rem; padding: 0.24rem 0.45rem; }
-          .timelineConnector { height: 3.32rem; }
-          .timelineConnector.top { top: 4.45rem; }
-          .timelineConnector.bottom { bottom: 4.45rem; }
+          .timelineStrip { min-width: 660px !important; grid-template-columns: repeat(3, minmax(170px, 1fr)) !important; }
           .timelineArrow { height: 2.75rem; gap: 0.35rem; }
           .arrowDay { font-size: 1.24rem; }
           .arrowMonth { font-size: 0.62rem; }
+          .timelineDetailPanel { padding: 0.68rem 0.72rem; margin-top: 0.55rem; }
+          .timelineDetailHead h3 { font-size: 0.85rem; }
+          .timelineDetailPanel > p { font-size: 0.74rem; }
+          .timelineMeta { font-size: 0.66rem; gap: 0.4rem; }
+          .timelineActions { gap: 0.35rem; margin-top: 0.45rem; }
+          .timelineActionLink, .timelineActionBtn { font-size: 0.64rem; padding: 0.36rem 0.6rem; }
         }
       `}</style>
     </div>
