@@ -436,18 +436,41 @@ export default function EventsPage() {
         </motion.h2>
 
         <div className="timeline" style={{ borderColor: T.border, background: T.card }}>
-          <div className="line">
-            <svg width="4" height="100%" viewBox="0 0 4 100" preserveAspectRatio="none" aria-hidden>
-              <motion.path
-                d="M2 0 L2 100"
-                stroke={T.accent}
-                strokeWidth="3"
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={timelineIn ? { pathLength: 1 } : { pathLength: 0 }}
-                transition={{ duration: 1.1, ease: EASE, delay: 0.12 }}
-              />
-            </svg>
+          <div className="trail" aria-hidden>
+            <div
+              className="trailBase"
+              style={{
+                background: `linear-gradient(180deg, transparent 0%, ${T.border} 12%, ${T.border} 88%, transparent 100%)`,
+              }}
+            />
+            <motion.div
+              className="trailProgress"
+              style={{
+                background: `linear-gradient(180deg, rgba(255,140,0,0.1) 0%, ${T.accent} 48%, rgba(255,140,0,0.12) 100%)`,
+              }}
+              initial={{ scaleY: 0, opacity: 0 }}
+              animate={timelineIn ? { scaleY: 1, opacity: 1 } : { scaleY: 0, opacity: 0 }}
+              transition={{ duration: 1.1, ease: EASE, delay: 0.12 }}
+            />
+            <motion.div
+              className="trailComet"
+              style={{
+                background: T.accent,
+                boxShadow: `0 0 0 6px ${T.accent}22, 0 0 22px ${T.accent}AA`,
+              }}
+              initial={{ top: "0%", opacity: 0 }}
+              animate={
+                timelineIn
+                  ? { top: ["0%", "100%"], opacity: [0, 1, 1, 0] }
+                  : { top: "0%", opacity: 0 }
+              }
+              transition={{
+                duration: 2.8,
+                ease: "easeInOut",
+                repeat: timelineIn ? Infinity : 0,
+                repeatDelay: 1.1,
+              }}
+            />
           </div>
 
           <div className="timelineItems">
@@ -459,9 +482,19 @@ export default function EventsPage() {
                 animate={timelineIn ? { opacity: 1, y: 0, x: 0 } : { opacity: 0, y: 60, x: 60 }}
                 transition={{ duration: 0.62, delay: index * 0.1, ease: EASE }}
               >
-                <div className="dateCol">
-                  <span className="day" style={{ color: T.accent }}>{item.day}</span>
-                  <span className="month" style={{ color: T.dim }}>{item.month}</span>
+                <div className="nodeCol" style={{ color: T.accent }}>
+                  <div
+                    className="nodeOuter"
+                    style={{
+                      borderColor: `${T.accent}66`,
+                      background:
+                        theme === "dark"
+                          ? "rgba(15,14,12,0.86)"
+                          : "rgba(255,255,255,0.88)",
+                    }}
+                  >
+                    <div className="nodeInner" style={{ background: T.accent }} />
+                  </div>
                 </div>
                 <div className="detail" style={{ borderColor: T.border }}>
                   <h3>{item.title}</h3>
@@ -470,6 +503,10 @@ export default function EventsPage() {
                     <span><Clock3 style={{ width: "12px", height: "12px" }} /> {item.time}</span>
                     <span><CalendarPlus style={{ width: "12px", height: "12px" }} /> Add to calendar</span>
                   </div>
+                </div>
+                <div className="dateChip">
+                  <span className="day" style={{ color: T.accent }}>{item.day}</span>
+                  <span className="month" style={{ color: T.dim }}>{item.month}</span>
                 </div>
               </motion.div>
             ))}
@@ -503,7 +540,6 @@ export default function EventsPage() {
               transition={{ duration: 0.62, delay: index * 0.1, ease: EASE }}
               style={{ borderColor: T.border, background: T.card, color: T.text }}
             >
-              <div className="chev" style={{ background: T.accentSoft }} />
               <div className="pastMedia" style={{ background: T.slot, borderColor: T.slotStroke }}>
                 <span className="slotText">IMAGE SLOT</span>
               </div>
@@ -580,12 +616,19 @@ export default function EventsPage() {
         .host strong { font: 700 0.78rem "General Sans", sans-serif; line-height: 1.2; }
         .empty { border: 1px solid; border-radius: 16px; padding: 1rem; font: 600 0.9rem "General Sans", sans-serif; }
 
-        .timeline { position: relative; border: 1px solid; border-radius: 22px; padding: 1.25rem; }
-        .line { position: absolute; left: 6.1rem; top: 1.55rem; bottom: 1.55rem; width: 4px; }
+        .timeline { position: relative; border: 1px solid; border-radius: 22px; padding: 1.25rem; overflow: hidden; }
+        .trail { position: absolute; left: calc(1.25rem + 1rem); top: 1.15rem; bottom: 1.15rem; width: 2px; pointer-events: none; }
+        .trailBase, .trailProgress { position: absolute; inset: 0; border-radius: 999px; }
+        .trailProgress { transform-origin: top; }
+        .trailComet { position: absolute; left: 50%; width: 10px; height: 10px; border-radius: 999px; transform: translate(-50%, -50%); }
         .timelineItems { display: flex; flex-direction: column; gap: 0.92rem; }
-        .timelineRow { display: grid; grid-template-columns: 5.1rem 1fr; gap: 1rem; align-items: stretch; }
-        .dateCol { text-align: right; display: flex; flex-direction: column; align-items: flex-end; padding-top: 0.2rem; }
-        .day { font-family: "Clash Display", sans-serif; font-size: 2rem; line-height: 0.95; }
+        .timelineRow { display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.85rem; align-items: stretch; }
+        .nodeCol { position: relative; display: flex; justify-content: center; align-items: flex-start; padding-top: 0.72rem; }
+        .nodeCol::after { content: ""; position: absolute; top: 1rem; left: calc(50% + 0.2rem); width: 0.9rem; height: 1px; background: linear-gradient(90deg, currentColor, transparent); }
+        .nodeOuter { width: 14px; height: 14px; border: 1px solid; border-radius: 999px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .nodeInner { width: 6px; height: 6px; border-radius: 999px; }
+        .dateChip { min-width: 2.8rem; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; padding-left: 0.2rem; }
+        .day { font-family: "Clash Display", sans-serif; font-size: 1.95rem; line-height: 0.9; letter-spacing: -0.02em; }
         .month { font: 700 0.68rem "General Sans", sans-serif; letter-spacing: 0.1em; }
         .detail { border: 1px solid; border-radius: 14px; padding: 0.75rem 0.9rem; }
         .detail h3 { font: 700 0.92rem "General Sans", sans-serif; margin-bottom: 0.3rem; }
@@ -595,7 +638,6 @@ export default function EventsPage() {
 
         .pastRow { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(17.8rem, 20rem); gap: 0.9rem; overflow-x: auto; padding-bottom: 0.4rem; }
         .pastCard { border: 1px solid; border-radius: 18px; padding: 1rem; overflow: hidden; position: relative; filter: saturate(0.72); }
-        .chev { position: absolute; right: -2.2rem; top: -1.3rem; width: 9rem; height: 9rem; clip-path: polygon(0 0, 74% 0, 100% 50%, 74% 100%, 0 100%, 22% 50%); opacity: 0.9; pointer-events: none; }
         .pastMedia { width: 100%; height: 9.6rem; border: 1.2px dashed; border-radius: 14px; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; }
         .pastCard h3 { font-family: "Clash Display", sans-serif; font-size: 1.06rem; margin-bottom: 0.35rem; }
         .pastCard p { font: 500 0.75rem "General Sans", sans-serif; margin-bottom: 0.72rem; }
@@ -622,10 +664,12 @@ export default function EventsPage() {
           .host { top: 0.45rem; width: 6.4rem; min-height: 5rem; }
           .host.left { left: auto; right: 0.9rem; }
           .timeline { padding: 0.9rem; }
-          .line { left: 3rem; top: 1.15rem; bottom: 1.15rem; }
-          .timelineRow { grid-template-columns: 2rem 1fr; gap: 0.8rem; }
-          .dateCol { text-align: left; align-items: flex-start; }
-          .day { font-size: 1.45rem; }
+          .trail { left: calc(0.9rem + 0.8rem); top: 1rem; bottom: 1rem; }
+          .timelineRow { grid-template-columns: 1.6rem 1fr auto; gap: 0.55rem; }
+          .nodeCol { padding-top: 0.58rem; }
+          .nodeCol::after { width: 0.55rem; top: 0.86rem; }
+          .dateChip { min-width: 2.3rem; }
+          .day { font-size: 1.42rem; }
         }
       `}</style>
     </div>
