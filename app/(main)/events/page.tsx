@@ -128,6 +128,20 @@ const TIMELINE_EVENTS = [
   },
 ];
 
+const TIMELINE_SWATCHES_DARK: Array<[string, string]> = [
+  ["rgba(173,68,49,0.94)", "rgba(255,132,52,0.92)"],
+  ["rgba(43,126,177,0.92)", "rgba(24,162,202,0.9)"],
+  ["rgba(211,141,36,0.92)", "rgba(255,185,67,0.9)"],
+  ["rgba(73,173,94,0.92)", "rgba(126,203,99,0.9)"],
+];
+
+const TIMELINE_SWATCHES_LIGHT: Array<[string, string]> = [
+  ["rgba(255,160,133,0.94)", "rgba(255,190,127,0.92)"],
+  ["rgba(129,197,228,0.92)", "rgba(113,220,245,0.9)"],
+  ["rgba(252,208,120,0.92)", "rgba(255,228,152,0.9)"],
+  ["rgba(149,218,162,0.92)", "rgba(176,230,153,0.9)"],
+];
+
 const PAST_EVENTS = [
   {
     id: "past-1",
@@ -236,6 +250,18 @@ export default function EventsPage() {
   const pastIn = useInView(pastRef, { once: true, amount: 0.2 });
 
   const reveal = (inView: boolean) => (inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 60 });
+
+  const timelineArrowStyle = (index: number) => {
+    const swatches = theme === "dark" ? TIMELINE_SWATCHES_DARK : TIMELINE_SWATCHES_LIGHT;
+    const [from, to] = swatches[index % swatches.length];
+    const veil = theme === "dark" ? "rgba(15,13,11,0.20)" : "rgba(255,255,255,0.28)";
+    return {
+      backgroundImage: `linear-gradient(135deg, ${from}, ${to}), linear-gradient(0deg, ${veil}, ${veil}), url('/images/bg-desktop.jpg')`,
+      backgroundSize: "cover, cover, cover",
+      backgroundPosition: "center, center, center",
+      color: theme === "dark" ? "#FAF8F0" : "#1C1C1C",
+    };
+  };
 
   return (
     <div className="events" style={{ color: T.text }}>
@@ -435,81 +461,57 @@ export default function EventsPage() {
           Upcoming Timeline
         </motion.h2>
 
-        <div className="timeline" style={{ borderColor: T.border, background: T.card }}>
-          <div className="trail" aria-hidden>
-            <div
-              className="trailBase"
-              style={{
-                background: `linear-gradient(180deg, transparent 0%, ${T.border} 12%, ${T.border} 88%, transparent 100%)`,
-              }}
-            />
-            <motion.div
-              className="trailProgress"
-              style={{
-                background: `linear-gradient(180deg, rgba(255,140,0,0.1) 0%, ${T.accent} 48%, rgba(255,140,0,0.12) 100%)`,
-              }}
-              initial={{ scaleY: 0, opacity: 0 }}
-              animate={timelineIn ? { scaleY: 1, opacity: 1 } : { scaleY: 0, opacity: 0 }}
-              transition={{ duration: 1.1, ease: EASE, delay: 0.12 }}
-            />
-            <motion.div
-              className="trailComet"
-              style={{
-                background: T.accent,
-                boxShadow: `0 0 0 6px ${T.accent}22, 0 0 22px ${T.accent}AA`,
-              }}
-              initial={{ top: "0%", opacity: 0 }}
-              animate={
-                timelineIn
-                  ? { top: ["0%", "100%"], opacity: [0, 1, 1, 0] }
-                  : { top: "0%", opacity: 0 }
-              }
-              transition={{
-                duration: 2.8,
-                ease: "easeInOut",
-                repeat: timelineIn ? Infinity : 0,
-                repeatDelay: 1.1,
-              }}
-            />
-          </div>
-
-          <div className="timelineItems">
-            {TIMELINE_EVENTS.map((item, index) => (
-              <motion.div
-                key={`${item.day}-${item.title}`}
-                className="timelineRow"
-                initial={{ opacity: 0, y: 60, x: 60 }}
-                animate={timelineIn ? { opacity: 1, y: 0, x: 0 } : { opacity: 0, y: 60, x: 60 }}
-                transition={{ duration: 0.62, delay: index * 0.1, ease: EASE }}
-              >
-                <div className="nodeCol" style={{ color: T.accent }}>
+        <div className="timelineBoard" style={{ borderColor: T.border, background: T.card }}>
+          <div className="timelineStrip">
+            {TIMELINE_EVENTS.map((item, index) => {
+              const top = index % 2 === 0;
+              return (
+                <motion.div
+                  key={`${item.day}-${item.title}`}
+                  className="timelineStage"
+                  initial={{ opacity: 0, y: 60 }}
+                  animate={reveal(timelineIn)}
+                  transition={{ duration: 0.62, delay: index * 0.1, ease: EASE }}
+                >
                   <div
-                    className="nodeOuter"
+                    className={`timelineCallout ${top ? "top" : "bottom"}`}
                     style={{
-                      borderColor: `${T.accent}66`,
+                      borderColor: T.border,
                       background:
-                        theme === "dark"
-                          ? "rgba(15,14,12,0.86)"
-                          : "rgba(255,255,255,0.88)",
+                        theme === "dark" ? "rgba(12,11,9,0.84)" : "rgba(255,255,255,0.92)",
                     }}
                   >
-                    <div className="nodeInner" style={{ background: T.accent }} />
+                    <h3>{item.title}</h3>
+                    <p style={{ color: T.muted }}>{item.detail}</p>
+                    <div className="timelineMeta" style={{ color: T.dim }}>
+                      <span><Clock3 style={{ width: "12px", height: "12px" }} /> {item.time}</span>
+                      <span><CalendarPlus style={{ width: "12px", height: "12px" }} /> Add to calendar</span>
+                    </div>
                   </div>
-                </div>
-                <div className="detail" style={{ borderColor: T.border }}>
-                  <h3>{item.title}</h3>
-                  <p style={{ color: T.muted }}>{item.detail}</p>
-                  <div className="detailMeta" style={{ color: T.dim }}>
-                    <span><Clock3 style={{ width: "12px", height: "12px" }} /> {item.time}</span>
-                    <span><CalendarPlus style={{ width: "12px", height: "12px" }} /> Add to calendar</span>
+
+                  <div
+                    className={`timelineConnector ${top ? "top" : "bottom"}`}
+                    style={{ borderColor: `${T.dim}88` }}
+                  >
+                    <span
+                      className="timelineConnectorDot"
+                      style={{
+                        background: T.accent,
+                        boxShadow: `0 0 0 4px ${T.accent}26`,
+                      }}
+                    />
                   </div>
-                </div>
-                <div className="dateChip">
-                  <span className="day" style={{ color: T.accent }}>{item.day}</span>
-                  <span className="month" style={{ color: T.dim }}>{item.month}</span>
-                </div>
-              </motion.div>
-            ))}
+
+                  <div
+                    className={`timelineArrow ${index === 0 ? "first" : ""} ${index === TIMELINE_EVENTS.length - 1 ? "last" : ""}`}
+                    style={timelineArrowStyle(index)}
+                  >
+                    <span className="arrowDay">{item.day}</span>
+                    <span className="arrowMonth">{item.month}</span>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </motion.section>
@@ -616,25 +618,89 @@ export default function EventsPage() {
         .host strong { font: 700 0.78rem "General Sans", sans-serif; line-height: 1.2; }
         .empty { border: 1px solid; border-radius: 16px; padding: 1rem; font: 600 0.9rem "General Sans", sans-serif; }
 
-        .timeline { position: relative; border: 1px solid; border-radius: 22px; padding: 1.25rem; overflow: hidden; }
-        .trail { position: absolute; left: calc(1.25rem + 1rem); top: 1.15rem; bottom: 1.15rem; width: 2px; pointer-events: none; }
-        .trailBase, .trailProgress { position: absolute; inset: 0; border-radius: 999px; }
-        .trailProgress { transform-origin: top; }
-        .trailComet { position: absolute; left: 50%; width: 10px; height: 10px; border-radius: 999px; transform: translate(-50%, -50%); }
-        .timelineItems { display: flex; flex-direction: column; gap: 0.92rem; }
-        .timelineRow { display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.85rem; align-items: stretch; }
-        .nodeCol { position: relative; display: flex; justify-content: center; align-items: flex-start; padding-top: 0.72rem; }
-        .nodeCol::after { content: ""; position: absolute; top: 1rem; left: calc(50% + 0.2rem); width: 0.9rem; height: 1px; background: linear-gradient(90deg, currentColor, transparent); }
-        .nodeOuter { width: 14px; height: 14px; border: 1px solid; border-radius: 999px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-        .nodeInner { width: 6px; height: 6px; border-radius: 999px; }
-        .dateChip { min-width: 2.8rem; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; padding-left: 0.2rem; }
-        .day { font-family: "Clash Display", sans-serif; font-size: 1.95rem; line-height: 0.9; letter-spacing: -0.02em; }
-        .month { font: 700 0.68rem "General Sans", sans-serif; letter-spacing: 0.1em; }
-        .detail { border: 1px solid; border-radius: 14px; padding: 0.75rem 0.9rem; }
-        .detail h3 { font: 700 0.92rem "General Sans", sans-serif; margin-bottom: 0.3rem; }
-        .detail p { font: 500 0.79rem "General Sans", sans-serif; line-height: 1.4; margin-bottom: 0.45rem; }
-        .detailMeta { display: flex; flex-wrap: wrap; gap: 0.65rem; font: 600 0.72rem "General Sans", sans-serif; }
-        .detailMeta span { display: inline-flex; align-items: center; gap: 0.28rem; }
+        .timelineBoard { border: 1px solid; border-radius: 22px; padding: 1.05rem; overflow-x: auto; overflow-y: hidden; }
+        .timelineStrip { min-width: 860px; display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); align-items: center; }
+        .timelineStage { position: relative; height: 17.5rem; display: flex; align-items: center; justify-content: center; }
+        .timelineCallout {
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          width: calc(100% - 0.95rem);
+          border: 1px solid;
+          border-radius: 12px;
+          padding: 0.55rem 0.65rem;
+          backdrop-filter: blur(9px);
+        }
+        .timelineCallout.top { top: 0.4rem; }
+        .timelineCallout.bottom { bottom: 0.4rem; }
+        .timelineCallout h3 { font: 700 0.79rem "General Sans", sans-serif; margin-bottom: 0.22rem; line-height: 1.28; }
+        .timelineCallout p { font: 500 0.69rem "General Sans", sans-serif; line-height: 1.32; margin-bottom: 0.35rem; }
+        .timelineMeta { display: flex; flex-wrap: wrap; gap: 0.48rem; font: 600 0.62rem "General Sans", sans-serif; }
+        .timelineMeta span { display: inline-flex; gap: 0.2rem; align-items: center; }
+        .timelineConnector {
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 3.7rem;
+          border-left: 2px dashed;
+          pointer-events: none;
+        }
+        .timelineConnector.top { top: 4.68rem; }
+        .timelineConnector.bottom { bottom: 4.68rem; }
+        .timelineConnectorDot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+        }
+        .timelineConnector.top .timelineConnectorDot { bottom: -4px; }
+        .timelineConnector.bottom .timelineConnectorDot { top: -4px; }
+        .timelineArrow {
+          position: relative;
+          width: calc(100% + 6px);
+          height: 3.05rem;
+          margin-right: -6px;
+          clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%, 8% 50%);
+          border: 1px solid rgba(255,255,255,0.26);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.42rem;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 8px 18px rgba(0,0,0,0.2);
+          isolation: isolate;
+        }
+        .timelineArrow::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0));
+          mix-blend-mode: soft-light;
+          pointer-events: none;
+        }
+        .timelineArrow.first {
+          clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+        }
+        .timelineArrow.last {
+          margin-right: 0;
+          width: 100%;
+          clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 8% 50%);
+        }
+        .arrowDay {
+          font-family: "Clash Display", sans-serif;
+          font-size: 1.43rem;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          line-height: 1;
+        }
+        .arrowMonth {
+          font: 700 0.68rem "General Sans", sans-serif;
+          letter-spacing: 0.08em;
+          opacity: 0.96;
+        }
 
         .pastRow { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(17.8rem, 20rem); gap: 0.9rem; overflow-x: auto; padding-bottom: 0.4rem; }
         .pastCard { border: 1px solid; border-radius: 18px; padding: 1rem; overflow: hidden; position: relative; filter: saturate(0.72); }
@@ -663,13 +729,19 @@ export default function EventsPage() {
           .copy { padding: 1rem 0.9rem 1.2rem; }
           .host { top: 0.45rem; width: 6.4rem; min-height: 5rem; }
           .host.left { left: auto; right: 0.9rem; }
-          .timeline { padding: 0.9rem; }
-          .trail { left: calc(0.9rem + 0.8rem); top: 1rem; bottom: 1rem; }
-          .timelineRow { grid-template-columns: 1.6rem 1fr auto; gap: 0.55rem; }
-          .nodeCol { padding-top: 0.58rem; }
-          .nodeCol::after { width: 0.55rem; top: 0.86rem; }
-          .dateChip { min-width: 2.3rem; }
-          .day { font-size: 1.42rem; }
+          .timelineBoard { padding: 0.75rem; }
+          .timelineStrip { min-width: 780px; grid-template-columns: repeat(4, minmax(170px, 1fr)); }
+          .timelineStage { height: 16.6rem; }
+          .timelineCallout { width: calc(100% - 0.62rem); padding: 0.48rem 0.54rem; }
+          .timelineCallout h3 { font-size: 0.72rem; }
+          .timelineCallout p { font-size: 0.64rem; }
+          .timelineMeta { font-size: 0.58rem; gap: 0.36rem; }
+          .timelineConnector { height: 3.32rem; }
+          .timelineConnector.top { top: 4.45rem; }
+          .timelineConnector.bottom { bottom: 4.45rem; }
+          .timelineArrow { height: 2.75rem; gap: 0.35rem; }
+          .arrowDay { font-size: 1.24rem; }
+          .arrowMonth { font-size: 0.62rem; }
         }
       `}</style>
     </div>
