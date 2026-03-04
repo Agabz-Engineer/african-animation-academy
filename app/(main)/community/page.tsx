@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -222,7 +222,7 @@ export default function CommunityPage() {
     return next;
   }, [filter, posts, search]);
 
-  const trendingTags = useMemo(() => {
+  const trendingTags = useMemo<Array<[string, number]>>(() => {
     const map = new Map<string, number>();
     posts.forEach((post) => {
       post.tags.forEach((tag) => map.set(tag, (map.get(tag) || 0) + 1));
@@ -383,7 +383,7 @@ export default function CommunityPage() {
                     <div style={{ display: "flex", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.45rem" }}>
                       <div>
                         <p style={{ fontWeight: 600, fontSize: "0.84rem" }}>{post.userName}</p>
-                        <p style={{ color: T.dim, fontSize: "0.72rem" }}>@{post.userHandle} · {timeAgo(post.createdAt)}</p>
+                        <p style={{ color: T.dim, fontSize: "0.72rem" }}>@{post.userHandle} Â· {timeAgo(post.createdAt)}</p>
                       </div>
                       {post.demo && <span style={{ borderRadius: "999px", border: `1px solid ${T.border}`, backgroundColor: T.chip, color: T.dim, fontSize: "0.66rem", padding: "0.18rem 0.45rem", height: "fit-content" }}>starter</span>}
                     </div>

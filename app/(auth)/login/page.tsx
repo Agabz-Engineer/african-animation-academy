@@ -1,10 +1,10 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { REMEMBER_ME_KEY, setRememberSessionPreference, supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
@@ -32,13 +32,28 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const savedPreference = window.localStorage.getItem(REMEMBER_ME_KEY);
+    if (savedPreference === "false") {
+      setRememberMe(false);
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        window.location.href = "/dashboard";
+      }
+    });
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setRememberSessionPreference(rememberMe);
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -231,6 +246,32 @@ export default function LoginPage() {
                     : <Eye style={{ width: "16px", height: "16px" }} />}
                 </button>
               </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.55rem", marginTop: "-0.25rem" }}>
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                style={{
+                  width: "15px",
+                  height: "15px",
+                  accentColor: "#E8A020",
+                  cursor: "pointer",
+                }}
+              />
+              <label
+                htmlFor="remember-me"
+                style={{
+                  color: C.muted,
+                  fontSize: "0.82rem",
+                  fontFamily: "'General Sans', sans-serif",
+                  cursor: "pointer",
+                }}
+              >
+                Keep me signed in
+              </label>
             </div>
 
             {/* Submit */}
