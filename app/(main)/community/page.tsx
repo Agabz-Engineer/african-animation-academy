@@ -564,18 +564,8 @@ export default function CommunityPage() {
         background: `radial-gradient(circle at 16% 8%, ${T.pageGlowA}, transparent 38%), radial-gradient(circle at 86% 0%, ${T.pageGlowB}, transparent 42%), ${T.pageBg}`,
       }}
     >
+      {theme === "dark" && <div className="community-dark-layer" aria-hidden="true" />}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.06) 100%)" }} />
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          backgroundImage: "url('/community-layer.svg')",
-          backgroundPosition: "center",
-          backgroundSize: "cover",
-          opacity: theme === "dark" ? 0.26 : 0.12,
-        }}
-      />
 
       <div style={{ position: "relative", zIndex: 1, padding: "1.4rem 1.6rem 3.2rem" }}>
         <section
@@ -1121,6 +1111,18 @@ export default function CommunityPage() {
       </div>
 
       <style jsx>{`
+        .community-dark-layer {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image: url("/images/community-bg-dark.webp");
+          background-position: center 40%;
+          background-size: cover;
+          background-repeat: no-repeat;
+          opacity: 0.6;
+          transform: translateZ(0);
+          will-change: opacity;
+        }
         .community-grid {
           display: grid;
           grid-template-columns: minmax(0, 1fr) 300px;
@@ -1156,6 +1158,9 @@ export default function CommunityPage() {
           }
         }
         @media (max-width: 767px) {
+          .community-dark-layer {
+            background-position: center 35%;
+          }
           div[style*="padding: 1.4rem 1.6rem 3.2rem"] {
             padding: 1rem 1rem 5.2rem !important;
           }
