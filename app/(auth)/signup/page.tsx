@@ -96,25 +96,40 @@ export default function SignupPage() {
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
         data: {
           full_name: name,
           account_type: accountType,
           skill_level: skillLevel,
-          goal: goal,
+          goal,
         },
-      },
+      }),
     });
 
-    if (error) {
-      setError(error.message);
+    const payload = await res.json().catch(() => ({} as { error?: string }));
+    if (!res.ok) {
+      setError(payload.error || "Could not create account right now.");
       setLoading(false);
-    } else {
-      window.location.href = "/dashboard";
+      return;
     }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+
+    window.location.href = "/dashboard";
   };
 
   const strengthColor = password.length === 0 ? C.border : password.length < 8 ? "#FF5722" : password.length < 12 ? "#FF9800" : "#4CAF50";
