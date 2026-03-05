@@ -48,6 +48,25 @@ type DbPost = {
   created_at: string;
 };
 
+type CommunityComment = {
+  id: string;
+  postId: string;
+  userName: string;
+  userHandle: string;
+  content: string;
+  createdAt: string;
+  localOnly?: boolean;
+};
+
+type DbComment = {
+  id: string;
+  post_id: string;
+  user_name: string | null;
+  user_handle: string | null;
+  content: string;
+  created_at: string;
+};
+
 type UserSummary = { id: string; name: string; handle: string };
 
 const STARTER_POSTS: CommunityPost[] = [
@@ -78,6 +97,7 @@ const STARTER_POSTS: CommunityPost[] = [
 ];
 
 const LOCAL_POSTS_KEY = "africafx-community-local-posts";
+const LOCAL_COMMENTS_KEY = "africafx-community-local-comments";
 
 const readLocalPosts = (): CommunityPost[] => {
   if (typeof window === "undefined") return [];
@@ -97,6 +117,33 @@ const writeLocalPosts = (posts: CommunityPost[]) => {
   window.localStorage.setItem(LOCAL_POSTS_KEY, JSON.stringify(posts.slice(0, 40)));
 };
 
+const readLocalComments = (): CommunityComment[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(LOCAL_COMMENTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => item && typeof item.id === "string" && typeof item.postId === "string");
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalComments = (comments: CommunityComment[]) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LOCAL_COMMENTS_KEY, JSON.stringify(comments.slice(0, 300)));
+};
+
+const groupCommentsByPost = (comments: CommunityComment[]) => {
+  return comments.reduce<Record<string, CommunityComment[]>>((acc, comment) => {
+    if (!acc[comment.postId]) acc[comment.postId] = [];
+    acc[comment.postId].push(comment);
+    acc[comment.postId].sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
+    return acc;
+  }, {});
+};
+
 const mergePosts = (...sources: CommunityPost[][]): CommunityPost[] => {
   const seen = new Set<string>();
   const merged: CommunityPost[] = [];
@@ -107,6 +154,18 @@ const mergePosts = (...sources: CommunityPost[][]): CommunityPost[] => {
     }
   });
   return merged.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+};
+
+const mergeComments = (...sources: CommunityComment[][]): CommunityComment[] => {
+  const seen = new Set<string>();
+  const merged: CommunityComment[] = [];
+  sources.flat().forEach((comment) => {
+    if (!seen.has(comment.id)) {
+      seen.add(comment.id);
+      merged.push(comment);
+    }
+  });
+  return merged.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
 };
 
 const DARK = {
@@ -173,11 +232,28 @@ const normalizePost = (row: DbPost): CommunityPost => ({
   isFollowing: false,
 });
 
+const normalizeComment = (row: DbComment): CommunityComment => ({
+  id: row.id,
+  postId: row.post_id,
+  userName: row.user_name || "Animator",
+  userHandle: row.user_handle || "animator",
+  content: row.content,
+  createdAt: row.created_at,
+});
+
 const isSetupError = (error: { message?: string; code?: string } | null) =>
   Boolean(
     error &&
       (error.code === "42P01" ||
         `${error.message || ""}`.toLowerCase().includes("community_posts") ||
+        `${error.message || ""}`.toLowerCase().includes("does not exist"))
+  );
+
+const isCommentSetupError = (error: { message?: string; code?: string } | null) =>
+  Boolean(
+    error &&
+      (error.code === "42P01" ||
+        `${error.message || ""}`.toLowerCase().includes("community_post_comments") ||
         `${error.message || ""}`.toLowerCase().includes("does not exist"))
   );
 
@@ -197,19 +273,33 @@ export default function CommunityPage() {
   const [submitPending, setSubmitPending] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitInfo, setSubmitInfo] = useState("");
+  const [commentsByPost, setCommentsByPost] = useState<Record<string, CommunityComment[]>>({});
+  const [commentsSetupNeeded, setCommentsSetupNeeded] = useState(false);
+  const [openCommentFor, setOpenCommentFor] = useState<string | null>(null);
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [commentPendingFor, setCommentPendingFor] = useState<string | null>(null);
+  const [commentErrorByPost, setCommentErrorByPost] = useState<Record<string, string>>({});
+  const [commentInfoByPost, setCommentInfoByPost] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let mounted = true;
 
     const load = async () => {
       const localPosts = readLocalPosts();
-      const [{ data: userData }, { data, error }] = await Promise.all([
+      const localComments = readLocalComments();
+      const [{ data: userData }, { data: postData, error: postError }, { data: commentData, error: commentError }] =
+        await Promise.all([
         supabase.auth.getUser(),
         supabase
           .from("community_posts")
           .select("id,user_name,user_handle,content,tags,likes_count,comments_count,created_at")
           .order("created_at", { ascending: false })
           .limit(40),
+        supabase
+          .from("community_post_comments")
+          .select("id,post_id,user_name,user_handle,content,created_at")
+          .order("created_at", { ascending: true })
+          .limit(250),
       ]);
 
       if (!mounted) return;
@@ -233,22 +323,32 @@ export default function CommunityPage() {
         setUser(null);
       }
 
-      if (error) {
-        const missingSetup = isSetupError(error);
+      if (postError) {
+        const missingSetup = isSetupError(postError);
         setSetupNeeded(missingSetup);
         setPosts(mergePosts(localPosts, STARTER_POSTS));
         if (missingSetup) {
           setSubmitInfo("Live posting is not configured yet. Posts will save locally on this device.");
-        } else if (error.code === "42501") {
+        } else if (postError.code === "42501") {
           setSubmitInfo("Sign in to load live community posts.");
         } else {
           setSubmitInfo("");
         }
       } else {
-        const livePosts = Array.isArray(data) ? (data as DbPost[]).map(normalizePost) : [];
+        const livePosts = Array.isArray(postData) ? (postData as DbPost[]).map(normalizePost) : [];
         setSetupNeeded(false);
         setSubmitInfo("");
         setPosts(mergePosts(localPosts, livePosts.length > 0 ? livePosts : STARTER_POSTS));
+      }
+
+      if (commentError) {
+        const missingCommentsSetup = isCommentSetupError(commentError);
+        setCommentsSetupNeeded(missingCommentsSetup);
+        setCommentsByPost(groupCommentsByPost(localComments));
+      } else {
+        const liveComments = Array.isArray(commentData) ? (commentData as DbComment[]).map(normalizeComment) : [];
+        setCommentsSetupNeeded(false);
+        setCommentsByPost(groupCommentsByPost(mergeComments(localComments, liveComments)));
       }
 
       setLoading(false);
@@ -385,6 +485,86 @@ export default function CommunityPage() {
     setPostText("");
     setSubmitInfo("Posted to live community.");
   };
+
+  const submitComment = async (postId: string) => {
+    const content = (commentDrafts[postId] || "").trim();
+    setCommentErrorByPost((prev) => ({ ...prev, [postId]: "" }));
+    setCommentInfoByPost((prev) => ({ ...prev, [postId]: "" }));
+
+    if (!user) {
+      setCommentErrorByPost((prev) => ({ ...prev, [postId]: "Sign in to comment." }));
+      return;
+    }
+    if (content.length < 2) {
+      setCommentErrorByPost((prev) => ({ ...prev, [postId]: "Write at least 2 characters." }));
+      return;
+    }
+
+    const pushCommentToState = (comment: CommunityComment) => {
+      setCommentsByPost((prev) => {
+        const nextForPost = [...(prev[postId] || []), comment].sort(
+          (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)
+        );
+        const next = { ...prev, [postId]: nextForPost };
+        writeLocalComments(Object.values(next).flat().filter((item) => item.localOnly));
+        return next;
+      });
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, commentsCount: Math.max(0, post.commentsCount + 1) } : post
+        )
+      );
+      setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
+    };
+
+    const saveLocalComment = (notice: string) => {
+      pushCommentToState({
+        id: `local-comment-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        postId,
+        userName: user.name,
+        userHandle: user.handle,
+        content,
+        createdAt: new Date().toISOString(),
+        localOnly: true,
+      });
+      setCommentInfoByPost((prev) => ({ ...prev, [postId]: notice }));
+    };
+
+    if (commentsSetupNeeded) {
+      saveLocalComment("Live comments are not configured yet. Saved locally on this device.");
+      return;
+    }
+
+    setCommentPendingFor(postId);
+    const { data, error } = await supabase
+      .from("community_post_comments")
+      .insert({
+        post_id: postId,
+        user_id: user.id,
+        user_name: user.name,
+        user_handle: user.handle,
+        content,
+      })
+      .select("id,post_id,user_name,user_handle,content,created_at")
+      .single();
+    setCommentPendingFor(null);
+
+    if (error || !data) {
+      if (isCommentSetupError(error || null)) {
+        setCommentsSetupNeeded(true);
+        saveLocalComment("Live comments are not configured yet. Saved locally on this device.");
+        return;
+      }
+      setCommentErrorByPost((prev) => ({ ...prev, [postId]: error?.message || "Comment failed." }));
+      return;
+    }
+
+    pushCommentToState(normalizeComment(data as DbComment));
+    setCommentInfoByPost((prev) => ({ ...prev, [postId]: "Comment posted." }));
+  };
+
+  const getCommentCount = (post: CommunityPost) =>
+    Math.max(post.commentsCount, commentsByPost[post.id]?.length || 0);
 
   const totalLikes = posts.reduce((sum, post) => sum + post.likesCount, 0);
 
@@ -673,6 +853,9 @@ export default function CommunityPage() {
               <AnimatePresence mode="popLayout">
                 {filteredPosts.map((post, index) => {
                   const hasLiked = liked.has(post.id);
+                  const postComments = commentsByPost[post.id] || [];
+                  const commentOpen = openCommentFor === post.id;
+                  const visibleCommentCount = getCommentCount(post);
                   return (
                     <motion.article
                       key={post.id}
@@ -758,11 +941,14 @@ export default function CommunityPage() {
                             {post.likesCount}
                           </button>
                           <button
+                            onClick={() =>
+                              setOpenCommentFor((prev) => (prev === post.id ? null : post.id))
+                            }
                             style={{
                               borderRadius: "999px",
-                              border: `1px solid ${T.border}`,
-                              backgroundColor: T.chip,
-                              color: T.muted,
+                              border: `1px solid ${commentOpen ? `${T.accent}66` : T.border}`,
+                              backgroundColor: commentOpen ? T.accentSoft : T.chip,
+                              color: commentOpen ? T.accent : T.muted,
                               padding: "0.28rem 0.62rem",
                               fontSize: "0.74rem",
                               display: "inline-flex",
@@ -773,11 +959,106 @@ export default function CommunityPage() {
                             }}
                           >
                             <MessageCircle style={{ width: "12px", height: "12px" }} />
-                            {post.commentsCount}
+                            {visibleCommentCount}
                           </button>
                         </div>
                         {post.likesCount < 2 && <span style={{ color: T.dim, fontSize: "0.7rem", fontFamily: "'General Sans', sans-serif" }}>Be first to like</span>}
                       </div>
+
+                      {(commentOpen || postComments.length > 0) && (
+                        <div
+                          style={{
+                            marginTop: "0.66rem",
+                            borderTop: `1px solid ${T.border}`,
+                            paddingTop: "0.62rem",
+                          }}
+                        >
+                          {postComments.length > 0 && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", marginBottom: "0.58rem" }}>
+                              {postComments.map((comment) => (
+                                <div
+                                  key={comment.id}
+                                  style={{
+                                    border: `1px solid ${T.border}`,
+                                    backgroundColor: T.chip,
+                                    borderRadius: "10px",
+                                    padding: "0.45rem 0.56rem",
+                                  }}
+                                >
+                                  <p style={{ fontSize: "0.72rem", color: T.dim, fontFamily: "'General Sans', sans-serif", marginBottom: "0.2rem" }}>
+                                    @{comment.userHandle} - {timeAgo(comment.createdAt)}
+                                  </p>
+                                  <p style={{ fontSize: "0.82rem", color: T.text, lineHeight: 1.5, fontFamily: "'Satoshi', sans-serif" }}>{comment.content}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {commentOpen && (
+                            <div>
+                              <div className="community-comment-row">
+                                <input
+                                  value={commentDrafts[post.id] || ""}
+                                  onChange={(event) =>
+                                    setCommentDrafts((prev) => ({
+                                      ...prev,
+                                      [post.id]: event.target.value,
+                                    }))
+                                  }
+                                  placeholder={user ? "Write a comment..." : "Sign in to comment"}
+                                  disabled={!user || commentPendingFor === post.id}
+                                  style={{
+                                    width: "100%",
+                                    borderRadius: "9px",
+                                    border: `1px solid ${T.border}`,
+                                    backgroundColor: T.input,
+                                    color: T.text,
+                                    padding: "0.44rem 0.66rem",
+                                    fontSize: "0.78rem",
+                                    outline: "none",
+                                    fontFamily: "'General Sans', sans-serif",
+                                  }}
+                                />
+                                <button
+                                  onClick={() => submitComment(post.id)}
+                                  disabled={!user || commentPendingFor === post.id}
+                                  style={{
+                                    borderRadius: "9px",
+                                    border: "none",
+                                    backgroundColor: user ? T.accent : T.chip,
+                                    color: user ? "#FFFFFF" : T.dim,
+                                    cursor: user ? "pointer" : "not-allowed",
+                                    fontFamily: "'General Sans', sans-serif",
+                                    fontSize: "0.74rem",
+                                    fontWeight: 700,
+                                    padding: "0.44rem 0.55rem",
+                                  }}
+                                >
+                                  {commentPendingFor === post.id ? "..." : "Send"}
+                                </button>
+                              </div>
+                              <p
+                                style={{
+                                  marginTop: "0.38rem",
+                                  fontSize: "0.72rem",
+                                  color: commentErrorByPost[post.id]
+                                    ? T.danger
+                                    : commentInfoByPost[post.id]
+                                    ? T.accent
+                                    : T.dim,
+                                  fontFamily: "'General Sans', sans-serif",
+                                }}
+                              >
+                                {commentErrorByPost[post.id] ||
+                                  commentInfoByPost[post.id] ||
+                                  (commentsSetupNeeded
+                                    ? "Comments currently save locally on this device."
+                                    : "Reply and help move the discussion forward.")}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </motion.article>
                   );
                 })}
@@ -894,6 +1175,11 @@ export default function CommunityPage() {
           grid-template-columns: 1fr 122px;
           gap: 0.52rem;
         }
+        .community-comment-row {
+          display: grid;
+          grid-template-columns: 1fr 64px;
+          gap: 0.45rem;
+        }
         @media (max-width: 1100px) {
           .community-grid {
             grid-template-columns: minmax(0, 1fr);
@@ -908,6 +1194,9 @@ export default function CommunityPage() {
           }
           .community-compose-row {
             grid-template-columns: 1fr;
+          }
+          .community-comment-row {
+            grid-template-columns: 1fr 72px;
           }
         }
       `}</style>
