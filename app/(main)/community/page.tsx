@@ -33,7 +33,6 @@ type CommunityPost = {
   commentsCount: number;
   createdAt: string;
   isFollowing: boolean;
-  demo?: boolean;
   localOnly?: boolean;
 };
 
@@ -68,33 +67,6 @@ type DbComment = {
 };
 
 type UserSummary = { id: string; name: string; handle: string };
-
-const STARTER_POSTS: CommunityPost[] = [
-  {
-    id: "starter-1",
-    userName: "Ama Serwaa",
-    userHandle: "ama_serwaa",
-    content: "Testing cloth simulation on an Adinkra jacket. Looking for quick feedback before final render.",
-    tags: ["wip", "cloth", "blender"],
-    likesCount: 3,
-    commentsCount: 2,
-    createdAt: "2026-03-04T09:15:00Z",
-    isFollowing: true,
-    demo: true,
-  },
-  {
-    id: "starter-2",
-    userName: "Kojo Mensah",
-    userHandle: "kojo_frames",
-    content: "Before and after on skin shading for my character turnaround. Which version reads better?",
-    tags: ["character", "lookdev"],
-    likesCount: 5,
-    commentsCount: 4,
-    createdAt: "2026-03-03T21:00:00Z",
-    isFollowing: false,
-    demo: true,
-  },
-];
 
 const LOCAL_POSTS_KEY = "africafx-community-local-posts";
 const LOCAL_COMMENTS_KEY = "africafx-community-local-comments";
@@ -220,6 +192,9 @@ const parseTags = (value: string) =>
     .filter(Boolean)
     .slice(0, 4);
 
+const isUuid = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
 const normalizePost = (row: DbPost): CommunityPost => ({
   id: row.id,
   userName: row.user_name || "Animator",
@@ -262,7 +237,7 @@ export default function CommunityPage() {
   const T = theme === "dark" ? DARK : LIGHT;
 
   const [user, setUser] = useState<UserSummary | null>(null);
-  const [posts, setPosts] = useState<CommunityPost[]>(STARTER_POSTS);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [setupNeeded, setSetupNeeded] = useState(false);
   const [filter, setFilter] = useState<FeedFilter>("For You");
@@ -326,7 +301,7 @@ export default function CommunityPage() {
       if (postError) {
         const missingSetup = isSetupError(postError);
         setSetupNeeded(missingSetup);
-        setPosts(mergePosts(localPosts, STARTER_POSTS));
+        setPosts(mergePosts(localPosts));
         if (missingSetup) {
           setSubmitInfo("Live posting is not configured yet. Posts will save locally on this device.");
         } else if (postError.code === "42501") {
@@ -338,7 +313,7 @@ export default function CommunityPage() {
         const livePosts = Array.isArray(postData) ? (postData as DbPost[]).map(normalizePost) : [];
         setSetupNeeded(false);
         setSubmitInfo("");
-        setPosts(mergePosts(localPosts, livePosts.length > 0 ? livePosts : STARTER_POSTS));
+        setPosts(mergePosts(localPosts, livePosts));
       }
 
       if (commentError) {
@@ -442,7 +417,7 @@ export default function CommunityPage() {
         localOnly: true,
       };
       setPosts((prev) => {
-        const next = mergePosts([localPost], prev.filter((post) => !post.demo));
+        const next = mergePosts([localPost], prev);
         writeLocalPosts(next.filter((post) => post.localOnly));
         return next;
       });
@@ -480,7 +455,7 @@ export default function CommunityPage() {
       return;
     }
 
-    setPosts((prev) => mergePosts([normalizePost(data as DbPost)], prev.filter((post) => !post.demo)));
+    setPosts((prev) => mergePosts([normalizePost(data as DbPost)], prev));
     setFilter("Latest");
     setPostText("");
     setSubmitInfo("Posted to live community.");
@@ -488,6 +463,7 @@ export default function CommunityPage() {
 
   const submitComment = async (postId: string) => {
     const content = (commentDrafts[postId] || "").trim();
+    const targetPost = posts.find((post) => post.id === postId);
     setCommentErrorByPost((prev) => ({ ...prev, [postId]: "" }));
     setCommentInfoByPost((prev) => ({ ...prev, [postId]: "" }));
 
@@ -530,6 +506,12 @@ export default function CommunityPage() {
       setCommentInfoByPost((prev) => ({ ...prev, [postId]: notice }));
     };
 
+    // Demo/local posts do not exist in the live DB, so comments stay local.
+    if (!isUuid(postId) || targetPost?.localOnly) {
+      saveLocalComment("This post is local only. Comment saved on this device.");
+      return;
+    }
+
     if (commentsSetupNeeded) {
       saveLocalComment("Live comments are not configured yet. Saved locally on this device.");
       return;
@@ -553,6 +535,10 @@ export default function CommunityPage() {
       if (isCommentSetupError(error || null)) {
         setCommentsSetupNeeded(true);
         saveLocalComment("Live comments are not configured yet. Saved locally on this device.");
+        return;
+      }
+      if (error?.code === "22P02" || error?.code === "23503") {
+        saveLocalComment("This post is not available in live DB yet. Comment saved locally.");
         return;
       }
       setCommentErrorByPost((prev) => ({ ...prev, [postId]: error?.message || "Comment failed." }));
@@ -878,22 +864,6 @@ export default function CommunityPage() {
                             @{post.userHandle} - {timeAgo(post.createdAt)}
                           </p>
                         </div>
-                        {post.demo && (
-                          <span
-                            style={{
-                              borderRadius: "999px",
-                              border: `1px solid ${T.border}`,
-                              backgroundColor: T.chip,
-                              color: T.dim,
-                              fontSize: "0.66rem",
-                              padding: "0.2rem 0.48rem",
-                              height: "fit-content",
-                              fontFamily: "'General Sans', sans-serif",
-                            }}
-                          >
-                            seed
-                          </span>
-                        )}
                       </div>
 
                       <p style={{ fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "0.62rem", fontFamily: "'Satoshi', sans-serif" }}>{post.content}</p>
