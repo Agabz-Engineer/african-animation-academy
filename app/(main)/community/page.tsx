@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CalendarDays,
@@ -33,6 +34,7 @@ type CommunityPost = {
   createdAt: string;
   isFollowing: boolean;
   demo?: boolean;
+  localOnly?: boolean;
 };
 
 type DbPost = {
@@ -74,6 +76,38 @@ const STARTER_POSTS: CommunityPost[] = [
     demo: true,
   },
 ];
+
+const LOCAL_POSTS_KEY = "africafx-community-local-posts";
+
+const readLocalPosts = (): CommunityPost[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(LOCAL_POSTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => item && typeof item.id === "string");
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalPosts = (posts: CommunityPost[]) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LOCAL_POSTS_KEY, JSON.stringify(posts.slice(0, 40)));
+};
+
+const mergePosts = (...sources: CommunityPost[][]): CommunityPost[] => {
+  const seen = new Set<string>();
+  const merged: CommunityPost[] = [];
+  sources.flat().forEach((post) => {
+    if (!seen.has(post.id)) {
+      seen.add(post.id);
+      merged.push(post);
+    }
+  });
+  return merged.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+};
 
 const DARK = {
   pageBg: "#0D0A08",
@@ -143,8 +177,8 @@ const isSetupError = (error: { message?: string; code?: string } | null) =>
   Boolean(
     error &&
       (error.code === "42P01" ||
-        error.code === "42501" ||
-        `${error.message || ""}`.toLowerCase().includes("community_posts"))
+        `${error.message || ""}`.toLowerCase().includes("community_posts") ||
+        `${error.message || ""}`.toLowerCase().includes("does not exist"))
   );
 
 export default function CommunityPage() {
@@ -162,11 +196,13 @@ export default function CommunityPage() {
   const [postTags, setPostTags] = useState("wip, character");
   const [submitPending, setSubmitPending] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [submitInfo, setSubmitInfo] = useState("");
 
   useEffect(() => {
     let mounted = true;
 
     const load = async () => {
+      const localPosts = readLocalPosts();
       const [{ data: userData }, { data, error }] = await Promise.all([
         supabase.auth.getUser(),
         supabase
@@ -193,17 +229,26 @@ export default function CommunityPage() {
           .replace(/^_+|_+$/g, "")
           .slice(0, 20);
         setUser({ id: authUser.id, name, handle: handle || "creative" });
+      } else {
+        setUser(null);
       }
 
       if (error) {
-        setSetupNeeded(isSetupError(error));
-        setPosts(STARTER_POSTS);
-      } else if (Array.isArray(data) && data.length > 0) {
-        setSetupNeeded(false);
-        setPosts((data as DbPost[]).map(normalizePost));
+        const missingSetup = isSetupError(error);
+        setSetupNeeded(missingSetup);
+        setPosts(mergePosts(localPosts, STARTER_POSTS));
+        if (missingSetup) {
+          setSubmitInfo("Live posting is not configured yet. Posts will save locally on this device.");
+        } else if (error.code === "42501") {
+          setSubmitInfo("Sign in to load live community posts.");
+        } else {
+          setSubmitInfo("");
+        }
       } else {
+        const livePosts = Array.isArray(data) ? (data as DbPost[]).map(normalizePost) : [];
         setSetupNeeded(false);
-        setPosts([]);
+        setSubmitInfo("");
+        setPosts(mergePosts(localPosts, livePosts.length > 0 ? livePosts : STARTER_POSTS));
       }
 
       setLoading(false);
@@ -269,19 +314,45 @@ export default function CommunityPage() {
 
   const publishPost = async () => {
     setSubmitError("");
+    setSubmitInfo("");
 
     if (!user) {
       setSubmitError("Sign in first so the post is linked to your account.");
-      return;
-    }
-    if (setupNeeded) {
-      setSubmitError("Run supabase/community_posts.sql first.");
       return;
     }
 
     const content = postText.trim();
     if (content.length < 8) {
       setSubmitError("Write at least 8 characters.");
+      return;
+    }
+
+    const tags = parseTags(postTags);
+    const saveLocalOnlyPost = (notice: string) => {
+      const localPost: CommunityPost = {
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        userName: user.name,
+        userHandle: user.handle,
+        content,
+        tags,
+        likesCount: 0,
+        commentsCount: 0,
+        createdAt: new Date().toISOString(),
+        isFollowing: true,
+        localOnly: true,
+      };
+      setPosts((prev) => {
+        const next = mergePosts([localPost], prev.filter((post) => !post.demo));
+        writeLocalPosts(next.filter((post) => post.localOnly));
+        return next;
+      });
+      setFilter("Latest");
+      setPostText("");
+      setSubmitInfo(notice);
+    };
+
+    if (setupNeeded) {
+      saveLocalOnlyPost("Live DB is not ready yet. Your post was saved locally on this device.");
       return;
     }
 
@@ -293,20 +364,26 @@ export default function CommunityPage() {
         user_name: user.name,
         user_handle: user.handle,
         content,
-        tags: parseTags(postTags),
+        tags,
       })
       .select("id,user_name,user_handle,content,tags,likes_count,comments_count,created_at")
       .single();
     setSubmitPending(false);
 
     if (error || !data) {
+      if (isSetupError(error || null)) {
+        setSetupNeeded(true);
+        saveLocalOnlyPost("Live DB is not ready yet. Your post was saved locally on this device.");
+        return;
+      }
       setSubmitError(error?.message || "Post failed.");
       return;
     }
 
-    setPosts((prev) => [normalizePost(data as DbPost), ...prev.filter((post) => !post.demo)]);
+    setPosts((prev) => mergePosts([normalizePost(data as DbPost)], prev.filter((post) => !post.demo)));
     setFilter("Latest");
     setPostText("");
+    setSubmitInfo("Posted to live community.");
   };
 
   const totalLikes = posts.reduce((sum, post) => sum + post.likesCount, 0);
@@ -322,6 +399,17 @@ export default function CommunityPage() {
       }}
     >
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.06) 100%)" }} />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          backgroundImage: "url('/community-layer.svg')",
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+          opacity: theme === "dark" ? 0.26 : 0.12,
+        }}
+      />
 
       <div style={{ position: "relative", zIndex: 1, padding: "1.4rem 1.6rem 3.2rem" }}>
         <section
@@ -423,10 +511,22 @@ export default function CommunityPage() {
                   </p>
                 </div>
                 {!user && (
-                  <span style={{ fontSize: "0.73rem", color: T.dim, display: "inline-flex", gap: "0.35rem", alignItems: "center", fontFamily: "'General Sans', sans-serif" }}>
+                  <Link
+                    href="/login"
+                    style={{
+                      fontSize: "0.73rem",
+                      color: T.accent,
+                      display: "inline-flex",
+                      gap: "0.35rem",
+                      alignItems: "center",
+                      fontFamily: "'General Sans', sans-serif",
+                      textDecoration: "none",
+                      fontWeight: 700,
+                    }}
+                  >
                     <Lock style={{ width: "12px", height: "12px" }} />
-                    login required
-                  </span>
+                    sign in
+                  </Link>
                 )}
               </div>
 
@@ -434,7 +534,7 @@ export default function CommunityPage() {
                 value={postText}
                 onChange={(event) => setPostText(event.target.value)}
                 placeholder="Share what you are building..."
-                disabled={!user || setupNeeded || submitPending}
+                disabled={!user || submitPending}
                 rows={4}
                 style={{
                   width: "100%",
@@ -456,7 +556,7 @@ export default function CommunityPage() {
                   <input
                     value={postTags}
                     onChange={(event) => setPostTags(event.target.value)}
-                    disabled={!user || setupNeeded || submitPending}
+                    disabled={!user || submitPending}
                     placeholder="wip, character"
                     style={{
                       width: "100%",
@@ -473,14 +573,14 @@ export default function CommunityPage() {
                 </div>
                 <button
                   onClick={publishPost}
-                  disabled={!user || setupNeeded || submitPending}
+                  disabled={!user || submitPending}
                   style={{
                     borderRadius: "10px",
                     border: "none",
-                    backgroundColor: user && !setupNeeded ? T.accent : T.chip,
-                    color: user && !setupNeeded ? "#FFFFFF" : T.dim,
+                    backgroundColor: user ? T.accent : T.chip,
+                    color: user ? "#FFFFFF" : T.dim,
                     fontWeight: 700,
-                    cursor: user && !setupNeeded ? "pointer" : "not-allowed",
+                    cursor: user ? "pointer" : "not-allowed",
                     fontSize: "0.82rem",
                     display: "inline-flex",
                     alignItems: "center",
@@ -494,8 +594,15 @@ export default function CommunityPage() {
                 </button>
               </div>
 
-              <p style={{ marginTop: "0.48rem", fontSize: "0.75rem", color: submitError ? T.danger : T.dim, fontFamily: "'General Sans', sans-serif" }}>
-                {submitError || (setupNeeded ? "Run supabase/community_posts.sql to enable publishing." : "Use tags to help people discover your post quickly.")}
+              <p
+                style={{
+                  marginTop: "0.48rem",
+                  fontSize: "0.75rem",
+                  color: submitError ? T.danger : submitInfo ? T.accent : T.dim,
+                  fontFamily: "'General Sans', sans-serif",
+                }}
+              >
+                {submitError || submitInfo || "Use tags to help people discover your post quickly."}
               </p>
             </div>
 
