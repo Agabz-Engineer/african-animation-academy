@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  CalendarDays,
   Flame,
   Hash,
   Heart,
@@ -12,7 +13,9 @@ import {
   Search,
   Send,
   Sparkles,
+  Trophy,
   Users,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -50,7 +53,7 @@ const STARTER_POSTS: CommunityPost[] = [
     id: "starter-1",
     userName: "Ama Serwaa",
     userHandle: "ama_serwaa",
-    content: "Testing cloth simulation on an Adinkra jacket. Feedback welcome.",
+    content: "Testing cloth simulation on an Adinkra jacket. Looking for quick feedback before final render.",
     tags: ["wip", "cloth", "blender"],
     likesCount: 3,
     commentsCount: 2,
@@ -62,7 +65,7 @@ const STARTER_POSTS: CommunityPost[] = [
     id: "starter-2",
     userName: "Kojo Mensah",
     userHandle: "kojo_frames",
-    content: "Before and after on skin shading for my character turnaround.",
+    content: "Before and after on skin shading for my character turnaround. Which version reads better?",
     tags: ["character", "lookdev"],
     likesCount: 5,
     commentsCount: 4,
@@ -73,29 +76,39 @@ const STARTER_POSTS: CommunityPost[] = [
 ];
 
 const DARK = {
-  pageBg: "#0F0D0B",
-  panel: "rgba(24,21,17,0.95)",
-  border: "#342E28",
-  text: "#FAF8F0",
-  muted: "#BEB6A8",
-  dim: "#8A8176",
+  pageBg: "#0D0A08",
+  pageGlowA: "rgba(255,140,0,0.17)",
+  pageGlowB: "rgba(255,188,116,0.12)",
+  panel: "rgba(29, 23, 18, 0.90)",
+  panelSoft: "rgba(26, 20, 15, 0.72)",
+  border: "rgba(255,255,255,0.12)",
+  text: "#F8F3EA",
+  muted: "#CABCA9",
+  dim: "#948677",
   accent: "#FF8C00",
-  accentSoft: "rgba(255,140,0,0.14)",
-  chip: "rgba(255,255,255,0.05)",
-  input: "#1E1A16",
+  accentSoft: "rgba(255,140,0,0.18)",
+  chip: "rgba(255,255,255,0.06)",
+  input: "#1A1511",
+  highlight: "#FFD08A",
+  danger: "#E46464",
 };
 
 const LIGHT = {
-  pageBg: "#FAF8F0",
-  panel: "rgba(255,251,243,0.96)",
-  border: "#E2D7C7",
-  text: "#1C1C1C",
-  muted: "#5A534A",
-  dim: "#8A8175",
-  accent: "#FF8C00",
-  accentSoft: "rgba(255,140,0,0.12)",
-  chip: "rgba(0,0,0,0.04)",
+  pageBg: "#F9F4E8",
+  pageGlowA: "rgba(255,140,0,0.14)",
+  pageGlowB: "rgba(255,210,140,0.19)",
+  panel: "rgba(255, 252, 247, 0.89)",
+  panelSoft: "rgba(255, 250, 242, 0.72)",
+  border: "rgba(123, 100, 72, 0.18)",
+  text: "#1F1A15",
+  muted: "#5D5347",
+  dim: "#7D7265",
+  accent: "#DE6F00",
+  accentSoft: "rgba(222,111,0,0.12)",
+  chip: "rgba(0,0,0,0.045)",
   input: "#FFFFFF",
+  highlight: "#8A4900",
+  danger: "#C94040",
 };
 
 const timeAgo = (isoDate: string) => {
@@ -291,7 +304,7 @@ export default function CommunityPage() {
       return;
     }
 
-    setPosts((prev) => [normalizePost(data as DbPost), ...prev.filter((p) => !p.demo)]);
+    setPosts((prev) => [normalizePost(data as DbPost), ...prev.filter((post) => !post.demo)]);
     setFilter("Latest");
     setPostText("");
   };
@@ -299,148 +312,495 @@ export default function CommunityPage() {
   const totalLikes = posts.reduce((sum, post) => sum + post.likesCount, 0);
 
   return (
-    <div style={{ backgroundColor: T.pageBg, minHeight: "100vh", color: T.text, padding: "1.5rem 2rem 3rem" }}>
-      <div style={{ border: `1px solid ${T.border}`, borderRadius: "18px", padding: "1rem", backgroundColor: T.panel, marginBottom: "1rem" }}>
-        <div style={{ display: "inline-flex", gap: "6px", alignItems: "center", borderRadius: "999px", border: `1px solid ${T.accent}55`, backgroundColor: T.accentSoft, padding: "0.3rem 0.75rem", marginBottom: "0.65rem" }}>
-          <Sparkles style={{ width: "12px", height: "12px", color: T.accent }} />
-          <span style={{ color: T.accent, fontSize: "0.7rem", fontWeight: 700 }}>Premium Community</span>
-        </div>
-        <h1 style={{ fontSize: "1.9rem", fontWeight: 700, marginBottom: "0.35rem", fontFamily: "'General Sans',sans-serif" }}>Community</h1>
-        <p style={{ color: T.muted, fontSize: "0.86rem", lineHeight: 1.6, maxWidth: "760px" }}>
-          Launch stage is active, so likes stay low and realistic. Any signed-in user can post updates, ask for feedback, and join discussions.
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.55rem", marginTop: "0.8rem" }}>
-          <div style={{ border: `1px solid ${T.border}`, borderRadius: "10px", backgroundColor: T.chip, padding: "0.4rem 0.65rem", fontSize: "0.75rem", color: T.muted, display: "inline-flex", alignItems: "center", gap: "5px" }}><Users style={{ width: "12px", height: "12px" }} /> Members: {126 + posts.length * 2}</div>
-          <div style={{ border: `1px solid ${T.border}`, borderRadius: "10px", backgroundColor: T.chip, padding: "0.4rem 0.65rem", fontSize: "0.75rem", color: T.muted, display: "inline-flex", alignItems: "center", gap: "5px" }}><PenSquare style={{ width: "12px", height: "12px" }} /> Posts: {posts.length}</div>
-          <div style={{ border: `1px solid ${T.border}`, borderRadius: "10px", backgroundColor: T.chip, padding: "0.4rem 0.65rem", fontSize: "0.75rem", color: T.muted, display: "inline-flex", alignItems: "center", gap: "5px" }}><Flame style={{ width: "12px", height: "12px", color: T.accent }} /> Likes: {totalLikes}</div>
-        </div>
-      </div>
+    <div
+      style={{
+        minHeight: "100vh",
+        color: T.text,
+        position: "relative",
+        overflow: "hidden",
+        background: `radial-gradient(circle at 16% 8%, ${T.pageGlowA}, transparent 38%), radial-gradient(circle at 86% 0%, ${T.pageGlowB}, transparent 42%), ${T.pageBg}`,
+      }}
+    >
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.06) 100%)" }} />
 
-      <div className="community-grid">
-        <section style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
-          <div style={{ border: `1px solid ${T.border}`, borderRadius: "14px", backgroundColor: T.panel, padding: "0.9rem" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.65rem" }}>
-              <p style={{ fontSize: "0.82rem", color: T.muted }}>{user ? `Posting as @${user.handle}` : "Sign in to post"}</p>
-              {!user && <span style={{ fontSize: "0.72rem", color: T.dim, display: "inline-flex", gap: "5px", alignItems: "center" }}><Lock style={{ width: "11px", height: "11px" }} /> login required</span>}
-            </div>
-            <textarea
-              value={postText}
-              onChange={(event) => setPostText(event.target.value)}
-              placeholder="Share what you are building..."
-              disabled={!user || setupNeeded || submitPending}
-              rows={4}
-              style={{ width: "100%", borderRadius: "10px", border: `1px solid ${T.border}`, backgroundColor: T.input, color: T.text, padding: "0.75rem", fontSize: "0.84rem", outline: "none", resize: "vertical" }}
-            />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: "0.5rem", marginTop: "0.55rem" }}>
-              <div style={{ position: "relative" }}>
-                <Hash style={{ position: "absolute", left: "0.7rem", top: "50%", transform: "translateY(-50%)", width: "12px", height: "12px", color: T.dim }} />
-                <input
-                  value={postTags}
-                  onChange={(event) => setPostTags(event.target.value)}
-                  disabled={!user || setupNeeded || submitPending}
-                  placeholder="wip, character"
-                  style={{ width: "100%", borderRadius: "9px", border: `1px solid ${T.border}`, backgroundColor: T.input, color: T.text, padding: "0.5rem 0.75rem 0.5rem 1.85rem", fontSize: "0.78rem", outline: "none" }}
-                />
+      <div style={{ position: "relative", zIndex: 1, padding: "1.4rem 1.6rem 3.2rem" }}>
+        <section
+          style={{
+            border: `1px solid ${T.border}`,
+            borderRadius: "22px",
+            background: `linear-gradient(135deg, ${T.panel} 0%, ${T.panelSoft} 100%)`,
+            padding: "1.2rem",
+            marginBottom: "1rem",
+            boxShadow: "0 18px 45px rgba(0,0,0,0.16)",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              borderRadius: "999px",
+              border: `1px solid ${T.accent}66`,
+              backgroundColor: T.accentSoft,
+              color: T.accent,
+              padding: "0.34rem 0.78rem",
+              fontFamily: "'General Sans', sans-serif",
+              fontSize: "0.74rem",
+              fontWeight: 700,
+              marginBottom: "0.85rem",
+            }}
+          >
+            <Sparkles style={{ width: "13px", height: "13px" }} />
+            Creator Circle
+          </div>
+
+          <h1
+            style={{
+              fontFamily: "'Clash Display', sans-serif",
+              fontWeight: 700,
+              fontSize: "clamp(2rem, 5vw, 2.7rem)",
+              lineHeight: 1.08,
+              marginBottom: "0.45rem",
+              letterSpacing: "-0.03em",
+            }}
+          >
+            Community
+          </h1>
+
+          <p
+            style={{
+              color: T.muted,
+              fontSize: "0.93rem",
+              lineHeight: 1.65,
+              maxWidth: "760px",
+              fontFamily: "'Satoshi', sans-serif",
+            }}
+          >
+            Share WIP shots, ask for critique, and find collaborators. The feed is open to all signed-in creatives, and your updates show instantly.
+          </p>
+
+          <div className="community-metric-grid" style={{ marginTop: "0.95rem" }}>
+            <div className="community-metric-card" style={{ borderColor: T.border, backgroundColor: T.chip }}>
+              <Users style={{ width: "15px", height: "15px", color: T.accent }} />
+              <div>
+                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'General Sans', sans-serif", marginBottom: "0.1rem" }}>Members</p>
+                <p style={{ color: T.text, fontSize: "1rem", fontWeight: 700, fontFamily: "'Cabinet Grotesk', sans-serif" }}>{126 + posts.length * 2}</p>
               </div>
-              <button
-                onClick={publishPost}
-                disabled={!user || setupNeeded || submitPending}
-                style={{ borderRadius: "9px", border: "none", backgroundColor: user && !setupNeeded ? T.accent : T.chip, color: user && !setupNeeded ? "#FFFFFF" : T.dim, fontWeight: 700, cursor: user && !setupNeeded ? "pointer" : "not-allowed", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "5px" }}
-              >
-                <Send style={{ width: "12px", height: "12px" }} /> {submitPending ? "Posting..." : "Post"}
-              </button>
             </div>
-            <p style={{ marginTop: "0.45rem", fontSize: "0.74rem", color: submitError ? "#E05252" : T.dim }}>
-              {submitError || (setupNeeded ? "Run supabase/community_posts.sql to enable publishing." : "Any signed-in user can post here.")}
-            </p>
-          </div>
-
-          <div style={{ border: `1px solid ${T.border}`, borderRadius: "12px", backgroundColor: T.panel, padding: "0.7rem", display: "flex", gap: "0.55rem", flexWrap: "wrap", alignItems: "center" }}>
-            {(["For You", "Latest", "Following"] as FeedFilter[]).map((tab) => {
-              const active = filter === tab;
-              return (
-                <button key={tab} onClick={() => setFilter(tab)} style={{ borderRadius: "999px", border: `1px solid ${active ? T.accent : T.border}`, backgroundColor: active ? T.accentSoft : T.chip, color: active ? T.accent : T.muted, fontSize: "0.74rem", fontWeight: active ? 700 : 500, padding: "0.3rem 0.8rem", cursor: "pointer" }}>
-                  {tab}
-                </button>
-              );
-            })}
-            <div style={{ marginLeft: "auto", position: "relative", minWidth: "190px", flex: "1 1 230px" }}>
-              <Search style={{ position: "absolute", left: "0.7rem", top: "50%", transform: "translateY(-50%)", width: "12px", height: "12px", color: T.dim }} />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search feed" style={{ width: "100%", borderRadius: "9px", border: `1px solid ${T.border}`, backgroundColor: T.input, color: T.text, padding: "0.45rem 0.7rem 0.45rem 1.8rem", fontSize: "0.78rem", outline: "none" }} />
+            <div className="community-metric-card" style={{ borderColor: T.border, backgroundColor: T.chip }}>
+              <PenSquare style={{ width: "15px", height: "15px", color: T.accent }} />
+              <div>
+                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'General Sans', sans-serif", marginBottom: "0.1rem" }}>Posts</p>
+                <p style={{ color: T.text, fontSize: "1rem", fontWeight: 700, fontFamily: "'Cabinet Grotesk', sans-serif" }}>{posts.length}</p>
+              </div>
+            </div>
+            <div className="community-metric-card" style={{ borderColor: T.border, backgroundColor: T.chip }}>
+              <Flame style={{ width: "15px", height: "15px", color: T.accent }} />
+              <div>
+                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'General Sans', sans-serif", marginBottom: "0.1rem" }}>Likes</p>
+                <p style={{ color: T.text, fontSize: "1rem", fontWeight: 700, fontFamily: "'Cabinet Grotesk', sans-serif" }}>{totalLikes}</p>
+              </div>
             </div>
           </div>
-
-          {loading ? (
-            <div style={{ border: `1px solid ${T.border}`, borderRadius: "14px", backgroundColor: T.panel, padding: "0.95rem", color: T.dim }}>Loading community feed...</div>
-          ) : filteredPosts.length === 0 ? (
-            <div style={{ border: `1px solid ${T.border}`, borderRadius: "14px", backgroundColor: T.panel, padding: "0.95rem", color: T.muted }}>No posts yet. You can be first to post.</div>
-          ) : (
-            <AnimatePresence mode="popLayout">
-              {filteredPosts.map((post, index) => {
-                const hasLiked = liked.has(post.id);
-                return (
-                  <motion.article key={post.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2, delay: index * 0.02 }} style={{ border: `1px solid ${T.border}`, borderRadius: "14px", backgroundColor: T.panel, padding: "0.9rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.45rem" }}>
-                      <div>
-                        <p style={{ fontWeight: 600, fontSize: "0.84rem" }}>{post.userName}</p>
-                        <p style={{ color: T.dim, fontSize: "0.72rem" }}>@{post.userHandle} Â· {timeAgo(post.createdAt)}</p>
-                      </div>
-                      {post.demo && <span style={{ borderRadius: "999px", border: `1px solid ${T.border}`, backgroundColor: T.chip, color: T.dim, fontSize: "0.66rem", padding: "0.18rem 0.45rem", height: "fit-content" }}>starter</span>}
-                    </div>
-                    <p style={{ fontSize: "0.84rem", lineHeight: 1.6, marginBottom: "0.55rem" }}>{post.content}</p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginBottom: "0.55rem" }}>
-                      {post.tags.map((tag) => (
-                        <button key={`${post.id}-${tag}`} onClick={() => setSearch(tag)} style={{ borderRadius: "999px", border: `1px solid ${T.border}`, backgroundColor: T.chip, color: T.muted, fontSize: "0.68rem", padding: "0.15rem 0.5rem", cursor: "pointer" }}>#{tag}</button>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
-                      <div style={{ display: "flex", gap: "0.45rem" }}>
-                        <button onClick={() => toggleLike(post.id)} style={{ borderRadius: "999px", border: `1px solid ${hasLiked ? `${T.accent}55` : T.border}`, backgroundColor: hasLiked ? T.accentSoft : T.chip, color: hasLiked ? T.accent : T.muted, padding: "0.25rem 0.6rem", fontSize: "0.73rem", display: "inline-flex", alignItems: "center", gap: "5px", cursor: "pointer" }}><Heart style={{ width: "12px", height: "12px", fill: hasLiked ? T.accent : "transparent" }} /> {post.likesCount}</button>
-                        <button style={{ borderRadius: "999px", border: `1px solid ${T.border}`, backgroundColor: T.chip, color: T.muted, padding: "0.25rem 0.6rem", fontSize: "0.73rem", display: "inline-flex", alignItems: "center", gap: "5px", cursor: "pointer" }}><MessageCircle style={{ width: "12px", height: "12px" }} /> {post.commentsCount}</button>
-                      </div>
-                      {post.likesCount < 2 && <span style={{ color: T.dim, fontSize: "0.68rem" }}>Be first to like</span>}
-                    </div>
-                  </motion.article>
-                );
-              })}
-            </AnimatePresence>
-          )}
         </section>
 
-        <aside style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
-          <div style={{ border: `1px solid ${T.border}`, borderRadius: "14px", backgroundColor: T.panel, padding: "0.85rem" }}>
-            <p style={{ fontWeight: 700, marginBottom: "0.4rem" }}>Early Access Signal</p>
-            <p style={{ color: T.muted, fontSize: "0.8rem", lineHeight: 1.6 }}>We keep engagement realistic right now, so most posts are in single-digit likes.</p>
-          </div>
-          <div style={{ border: `1px solid ${T.border}`, borderRadius: "14px", backgroundColor: T.panel, padding: "0.85rem" }}>
-            <p style={{ fontWeight: 700, marginBottom: "0.4rem" }}>Trending Tags</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-              {trendingTags.map(([tag, count]) => (
-                <button key={tag} onClick={() => setSearch(tag)} style={{ borderRadius: "9px", border: `1px solid ${T.border}`, backgroundColor: T.chip, color: T.text, padding: "0.35rem 0.55rem", fontSize: "0.74rem", display: "flex", justifyContent: "space-between", cursor: "pointer" }}>
-                  <span>#{tag}</span>
-                  <span style={{ color: T.dim }}>{count}</span>
+        <div className="community-grid">
+          <section style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+            <div
+              style={{
+                border: `1px solid ${T.border}`,
+                borderRadius: "16px",
+                background: T.panel,
+                padding: "1rem",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.68rem" }}>
+                <div>
+                  <p style={{ color: T.text, fontSize: "0.92rem", fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700 }}>Start a conversation</p>
+                  <p style={{ color: T.muted, fontSize: "0.78rem", fontFamily: "'General Sans', sans-serif" }}>
+                    {user ? `Posting as @${user.handle}` : "Sign in to publish to the feed"}
+                  </p>
+                </div>
+                {!user && (
+                  <span style={{ fontSize: "0.73rem", color: T.dim, display: "inline-flex", gap: "0.35rem", alignItems: "center", fontFamily: "'General Sans', sans-serif" }}>
+                    <Lock style={{ width: "12px", height: "12px" }} />
+                    login required
+                  </span>
+                )}
+              </div>
+
+              <textarea
+                value={postText}
+                onChange={(event) => setPostText(event.target.value)}
+                placeholder="Share what you are building..."
+                disabled={!user || setupNeeded || submitPending}
+                rows={4}
+                style={{
+                  width: "100%",
+                  borderRadius: "11px",
+                  border: `1px solid ${T.border}`,
+                  backgroundColor: T.input,
+                  color: T.text,
+                  padding: "0.78rem",
+                  fontSize: "0.88rem",
+                  outline: "none",
+                  resize: "vertical",
+                  fontFamily: "'Satoshi', sans-serif",
+                }}
+              />
+
+              <div className="community-compose-row" style={{ marginTop: "0.58rem" }}>
+                <div style={{ position: "relative" }}>
+                  <Hash style={{ position: "absolute", left: "0.72rem", top: "50%", transform: "translateY(-50%)", width: "12px", height: "12px", color: T.dim }} />
+                  <input
+                    value={postTags}
+                    onChange={(event) => setPostTags(event.target.value)}
+                    disabled={!user || setupNeeded || submitPending}
+                    placeholder="wip, character"
+                    style={{
+                      width: "100%",
+                      borderRadius: "9px",
+                      border: `1px solid ${T.border}`,
+                      backgroundColor: T.input,
+                      color: T.text,
+                      padding: "0.58rem 0.75rem 0.58rem 1.92rem",
+                      fontSize: "0.8rem",
+                      outline: "none",
+                      fontFamily: "'General Sans', sans-serif",
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={publishPost}
+                  disabled={!user || setupNeeded || submitPending}
+                  style={{
+                    borderRadius: "10px",
+                    border: "none",
+                    backgroundColor: user && !setupNeeded ? T.accent : T.chip,
+                    color: user && !setupNeeded ? "#FFFFFF" : T.dim,
+                    fontWeight: 700,
+                    cursor: user && !setupNeeded ? "pointer" : "not-allowed",
+                    fontSize: "0.82rem",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.35rem",
+                    fontFamily: "'General Sans', sans-serif",
+                  }}
+                >
+                  <Send style={{ width: "13px", height: "13px" }} />
+                  {submitPending ? "Posting..." : "Post"}
                 </button>
-              ))}
+              </div>
+
+              <p style={{ marginTop: "0.48rem", fontSize: "0.75rem", color: submitError ? T.danger : T.dim, fontFamily: "'General Sans', sans-serif" }}>
+                {submitError || (setupNeeded ? "Run supabase/community_posts.sql to enable publishing." : "Use tags to help people discover your post quickly.")}
+              </p>
             </div>
-          </div>
-        </aside>
+
+            <div
+              style={{
+                border: `1px solid ${T.border}`,
+                borderRadius: "14px",
+                background: T.panel,
+                padding: "0.72rem",
+                display: "flex",
+                gap: "0.55rem",
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              {(["For You", "Latest", "Following"] as FeedFilter[]).map((tab) => {
+                const active = filter === tab;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setFilter(tab)}
+                    style={{
+                      borderRadius: "999px",
+                      border: `1px solid ${active ? T.accent : T.border}`,
+                      backgroundColor: active ? T.accentSoft : T.chip,
+                      color: active ? T.accent : T.muted,
+                      fontSize: "0.76rem",
+                      fontWeight: active ? 700 : 500,
+                      fontFamily: "'General Sans', sans-serif",
+                      padding: "0.35rem 0.82rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
+              <div style={{ marginLeft: "auto", position: "relative", minWidth: "190px", flex: "1 1 230px" }}>
+                <Search style={{ position: "absolute", left: "0.72rem", top: "50%", transform: "translateY(-50%)", width: "13px", height: "13px", color: T.dim }} />
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search feed"
+                  style={{
+                    width: "100%",
+                    borderRadius: "9px",
+                    border: `1px solid ${T.border}`,
+                    backgroundColor: T.input,
+                    color: T.text,
+                    padding: "0.48rem 0.72rem 0.48rem 1.85rem",
+                    fontSize: "0.8rem",
+                    outline: "none",
+                    fontFamily: "'General Sans', sans-serif",
+                  }}
+                />
+              </div>
+            </div>
+
+            {loading ? (
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.dim, fontFamily: "'General Sans', sans-serif" }}>
+                Loading community feed...
+              </div>
+            ) : filteredPosts.length === 0 ? (
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.muted, fontFamily: "'General Sans', sans-serif" }}>
+                No posts yet. You can be first to post.
+              </div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {filteredPosts.map((post, index) => {
+                  const hasLiked = liked.has(post.id);
+                  return (
+                    <motion.article
+                      key={post.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.22, delay: index * 0.02 }}
+                      style={{
+                        border: `1px solid ${T.border}`,
+                        borderRadius: "16px",
+                        background: T.panel,
+                        padding: "0.95rem",
+                        boxShadow: "0 10px 26px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.52rem" }}>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: "0.89rem", fontFamily: "'Cabinet Grotesk', sans-serif" }}>{post.userName}</p>
+                          <p style={{ color: T.dim, fontSize: "0.73rem", fontFamily: "'General Sans', sans-serif" }}>
+                            @{post.userHandle} - {timeAgo(post.createdAt)}
+                          </p>
+                        </div>
+                        {post.demo && (
+                          <span
+                            style={{
+                              borderRadius: "999px",
+                              border: `1px solid ${T.border}`,
+                              backgroundColor: T.chip,
+                              color: T.dim,
+                              fontSize: "0.66rem",
+                              padding: "0.2rem 0.48rem",
+                              height: "fit-content",
+                              fontFamily: "'General Sans', sans-serif",
+                            }}
+                          >
+                            seed
+                          </span>
+                        )}
+                      </div>
+
+                      <p style={{ fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "0.62rem", fontFamily: "'Satoshi', sans-serif" }}>{post.content}</p>
+
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.38rem", marginBottom: "0.62rem" }}>
+                        {post.tags.map((tag) => (
+                          <button
+                            key={`${post.id}-${tag}`}
+                            onClick={() => setSearch(tag)}
+                            style={{
+                              borderRadius: "999px",
+                              border: `1px solid ${T.border}`,
+                              backgroundColor: T.chip,
+                              color: T.muted,
+                              fontSize: "0.69rem",
+                              padding: "0.16rem 0.52rem",
+                              cursor: "pointer",
+                              fontFamily: "'General Sans', sans-serif",
+                            }}
+                          >
+                            #{tag}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+                        <div style={{ display: "flex", gap: "0.46rem" }}>
+                          <button
+                            onClick={() => toggleLike(post.id)}
+                            style={{
+                              borderRadius: "999px",
+                              border: `1px solid ${hasLiked ? `${T.accent}66` : T.border}`,
+                              backgroundColor: hasLiked ? T.accentSoft : T.chip,
+                              color: hasLiked ? T.accent : T.muted,
+                              padding: "0.28rem 0.62rem",
+                              fontSize: "0.74rem",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.33rem",
+                              cursor: "pointer",
+                              fontFamily: "'General Sans', sans-serif",
+                            }}
+                          >
+                            <Heart style={{ width: "12px", height: "12px", fill: hasLiked ? T.accent : "transparent" }} />
+                            {post.likesCount}
+                          </button>
+                          <button
+                            style={{
+                              borderRadius: "999px",
+                              border: `1px solid ${T.border}`,
+                              backgroundColor: T.chip,
+                              color: T.muted,
+                              padding: "0.28rem 0.62rem",
+                              fontSize: "0.74rem",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.33rem",
+                              cursor: "pointer",
+                              fontFamily: "'General Sans', sans-serif",
+                            }}
+                          >
+                            <MessageCircle style={{ width: "12px", height: "12px" }} />
+                            {post.commentsCount}
+                          </button>
+                        </div>
+                        {post.likesCount < 2 && <span style={{ color: T.dim, fontSize: "0.7rem", fontFamily: "'General Sans', sans-serif" }}>Be first to like</span>}
+                      </div>
+                    </motion.article>
+                  );
+                })}
+              </AnimatePresence>
+            )}
+          </section>
+
+          <aside style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
+            <div
+              style={{
+                border: `1px solid ${T.border}`,
+                borderRadius: "16px",
+                background: T.panel,
+                padding: "0.95rem",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.1)",
+              }}
+            >
+              <p style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: "0.55rem" }}>Community highlights</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.48rem" }}>
+                <div style={{ border: `1px solid ${T.border}`, borderRadius: "11px", padding: "0.5rem 0.58rem", backgroundColor: T.chip, display: "flex", gap: "0.48rem", alignItems: "center" }}>
+                  <Zap style={{ width: "14px", height: "14px", color: T.accent }} />
+                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'General Sans', sans-serif" }}>Fast critique threads on WIP posts</span>
+                </div>
+                <div style={{ border: `1px solid ${T.border}`, borderRadius: "11px", padding: "0.5rem 0.58rem", backgroundColor: T.chip, display: "flex", gap: "0.48rem", alignItems: "center" }}>
+                  <CalendarDays style={{ width: "14px", height: "14px", color: T.accent }} />
+                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'General Sans', sans-serif" }}>Monthly challenge prompts and results</span>
+                </div>
+                <div style={{ border: `1px solid ${T.border}`, borderRadius: "11px", padding: "0.5rem 0.58rem", backgroundColor: T.chip, display: "flex", gap: "0.48rem", alignItems: "center" }}>
+                  <Trophy style={{ width: "14px", height: "14px", color: T.accent }} />
+                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'General Sans', sans-serif" }}>Weekly standout creators board</span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                border: `1px solid ${T.border}`,
+                borderRadius: "16px",
+                background: T.panel,
+                padding: "0.9rem",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.1)",
+              }}
+            >
+              <p style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: "0.5rem" }}>Trending tags</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.42rem" }}>
+                {trendingTags.map(([tag, count]) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSearch(tag)}
+                    style={{
+                      borderRadius: "10px",
+                      border: `1px solid ${T.border}`,
+                      backgroundColor: T.chip,
+                      color: T.text,
+                      padding: "0.4rem 0.58rem",
+                      fontSize: "0.76rem",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      cursor: "pointer",
+                      fontFamily: "'General Sans', sans-serif",
+                    }}
+                  >
+                    <span>#{tag}</span>
+                    <span style={{ color: T.dim }}>{count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div
+              style={{
+                border: `1px solid ${T.border}`,
+                borderRadius: "16px",
+                background: T.panel,
+                padding: "0.9rem",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.1)",
+              }}
+            >
+              <p style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: "0.35rem" }}>Pulse</p>
+              <p style={{ color: T.muted, fontSize: "0.8rem", lineHeight: 1.6, fontFamily: "'Satoshi', sans-serif" }}>
+                Early access is active, so engagement numbers remain intentionally realistic while the community grows.
+              </p>
+              <div style={{ marginTop: "0.58rem", color: T.highlight, fontSize: "0.75rem", fontFamily: "'General Sans', sans-serif", display: "inline-flex", alignItems: "center", gap: "0.36rem" }}>
+                <Sparkles style={{ width: "12px", height: "12px" }} />
+                Healthy growth week over week
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
 
       <style jsx>{`
         .community-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 290px;
+          grid-template-columns: minmax(0, 1fr) 300px;
           gap: 1rem;
           align-items: start;
         }
-        @media (max-width: 1024px) {
+        .community-metric-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.6rem;
+        }
+        .community-metric-card {
+          border: 1px solid;
+          border-radius: 12px;
+          padding: 0.52rem 0.64rem;
+          display: flex;
+          align-items: center;
+          gap: 0.55rem;
+        }
+        .community-compose-row {
+          display: grid;
+          grid-template-columns: 1fr 122px;
+          gap: 0.52rem;
+        }
+        @media (max-width: 1100px) {
           .community-grid {
             grid-template-columns: minmax(0, 1fr);
           }
         }
         @media (max-width: 767px) {
-          div[style*="min-height: 100vh"] {
+          div[style*="padding: 1.4rem 1.6rem 3.2rem"] {
             padding: 1rem 1rem 5.2rem !important;
+          }
+          .community-metric-grid {
+            grid-template-columns: 1fr;
+          }
+          .community-compose-row {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

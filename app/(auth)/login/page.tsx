@@ -32,16 +32,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem(REMEMBER_ME_KEY) !== "false";
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const savedPreference = window.localStorage.getItem(REMEMBER_ME_KEY);
-    if (savedPreference === "false") {
-      setRememberMe(false);
-    }
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         window.location.href = "/dashboard";
