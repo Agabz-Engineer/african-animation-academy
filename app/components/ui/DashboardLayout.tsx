@@ -511,11 +511,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-padding   { padding: 1rem !important; }
           .hide-mobile    { display: none !important; }
           .app-footer-shell { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
-          .app-footer-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+          .app-footer-columns { grid-template-columns: minmax(0, 1fr); gap: 0.85rem; }
           .app-footer-bottom { flex-direction: column; align-items: flex-start; gap: 0.32rem; }
-        }
-        @media (max-width: 540px) {
-          .app-footer-columns { grid-template-columns: minmax(0, 1fr); }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
           .dash-grid-4  { grid-template-columns: 1fr 1fr !important; }
@@ -544,6 +541,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           display: inline-flex;
           align-items: center;
           gap: 0.38rem;
+          flex-wrap: wrap;
           margin-top: 0.55rem;
           font-size: 0.8rem;
           font-family: "General Sans", sans-serif;
@@ -582,6 +580,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .app-footer-socials {
           display: flex;
           align-items: center;
+          flex-wrap: wrap;
           gap: 0.45rem;
           margin-top: 0.65rem;
         }
@@ -607,6 +606,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           align-items: center;
           justify-content: space-between;
           gap: 0.5rem;
+          flex-wrap: wrap;
         }
         nav::-webkit-scrollbar { width: 0; }
         ::-webkit-scrollbar { width: 4px; }
