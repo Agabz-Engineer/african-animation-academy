@@ -45,9 +45,31 @@ const generalSans = localFont({
 
 export const metadata: Metadata = {
   title: "Africa Fx",
-  description: "Africa Fx — Africa's premier animation and creative arts learning platform. Learn, create and connect with African creatives worldwide.",
+  description:
+    "Africa Fx - Africa's premier animation and creative arts learning platform. Learn, create and connect with African creatives worldwide.",
   keywords: ["animation", "learn animation", "African animation", "online courses", "motion graphics"],
 };
+
+const themeBootScript = `
+  (function () {
+    var root = document.documentElement;
+    root.classList.add("theme-init");
+    try {
+      var stored = localStorage.getItem("africafx-theme");
+      var mode = stored === "light" || stored === "dark"
+        ? stored
+        : (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      root.setAttribute("data-theme", mode);
+    } catch (e) {
+      root.setAttribute("data-theme", "dark");
+    }
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        root.classList.remove("theme-init");
+      });
+    });
+  })();
+`;
 
 export default function RootLayout({
   children,
@@ -55,7 +77,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body
         className={`${clashDisplay.variable} ${cabinetGrotesk.variable} ${satoshi.variable} ${generalSans.variable}`}
         suppressHydrationWarning
@@ -65,4 +90,3 @@ export default function RootLayout({
     </html>
   );
 }
-

@@ -25,6 +25,7 @@ type FeedFilter = "For You" | "Latest" | "Following";
 
 type CommunityPost = {
   id: string;
+  userId?: string | null;
   userName: string;
   userHandle: string;
   content: string;
@@ -38,6 +39,7 @@ type CommunityPost = {
 
 type DbPost = {
   id: string;
+  user_id: string | null;
   user_name: string | null;
   user_handle: string | null;
   content: string;
@@ -50,6 +52,7 @@ type DbPost = {
 type CommunityComment = {
   id: string;
   postId: string;
+  userId?: string | null;
   userName: string;
   userHandle: string;
   content: string;
@@ -60,10 +63,16 @@ type CommunityComment = {
 type DbComment = {
   id: string;
   post_id: string;
+  user_id: string | null;
   user_name: string | null;
   user_handle: string | null;
   content: string;
   created_at: string;
+};
+
+type DbLike = {
+  post_id: string;
+  user_id: string;
 };
 
 type UserSummary = { id: string; name: string; handle: string };
@@ -197,6 +206,7 @@ const isUuid = (value: string) =>
 
 const normalizePost = (row: DbPost): CommunityPost => ({
   id: row.id,
+  userId: row.user_id,
   userName: row.user_name || "Animator",
   userHandle: row.user_handle || "animator",
   content: row.content,
@@ -210,6 +220,7 @@ const normalizePost = (row: DbPost): CommunityPost => ({
 const normalizeComment = (row: DbComment): CommunityComment => ({
   id: row.id,
   postId: row.post_id,
+  userId: row.user_id,
   userName: row.user_name || "Animator",
   userHandle: row.user_handle || "animator",
   content: row.content,
@@ -232,6 +243,14 @@ const isCommentSetupError = (error: { message?: string; code?: string } | null) 
         `${error.message || ""}`.toLowerCase().includes("does not exist"))
   );
 
+const isLikeSetupError = (error: { message?: string; code?: string } | null) =>
+  Boolean(
+    error &&
+      (error.code === "42P01" ||
+        `${error.message || ""}`.toLowerCase().includes("community_post_likes") ||
+        `${error.message || ""}`.toLowerCase().includes("does not exist"))
+  );
+
 export default function CommunityPage() {
   const theme = useThemeMode();
   const T = theme === "dark" ? DARK : LIGHT;
@@ -250,6 +269,9 @@ export default function CommunityPage() {
   const [submitInfo, setSubmitInfo] = useState("");
   const [commentsByPost, setCommentsByPost] = useState<Record<string, CommunityComment[]>>({});
   const [commentsSetupNeeded, setCommentsSetupNeeded] = useState(false);
+  const [likesSetupNeeded, setLikesSetupNeeded] = useState(false);
+  const [memberCount, setMemberCount] = useState(0);
+  const [likePendingFor, setLikePendingFor] = useState<string | null>(null);
   const [openCommentFor, setOpenCommentFor] = useState<string | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [commentPendingFor, setCommentPendingFor] = useState<string | null>(null);
@@ -262,17 +284,20 @@ export default function CommunityPage() {
     const load = async () => {
       const localPosts = readLocalPosts();
       const localComments = readLocalComments();
+      const localHandles = new Set<string>();
+      localPosts.forEach((post) => localHandles.add(post.userHandle || ""));
+      localComments.forEach((comment) => localHandles.add(comment.userHandle || ""));
       const [{ data: userData }, { data: postData, error: postError }, { data: commentData, error: commentError }] =
         await Promise.all([
         supabase.auth.getUser(),
         supabase
           .from("community_posts")
-          .select("id,user_name,user_handle,content,tags,likes_count,comments_count,created_at")
+          .select("id,user_id,user_name,user_handle,content,tags,likes_count,comments_count,created_at")
           .order("created_at", { ascending: false })
           .limit(40),
         supabase
           .from("community_post_comments")
-          .select("id,post_id,user_name,user_handle,content,created_at")
+          .select("id,post_id,user_id,user_name,user_handle,content,created_at")
           .order("created_at", { ascending: true })
           .limit(250),
       ]);
@@ -294,9 +319,51 @@ export default function CommunityPage() {
           .replace(/^_+|_+$/g, "")
           .slice(0, 20);
         setUser({ id: authUser.id, name, handle: handle || "creative" });
+        localHandles.add(handle || "creative");
       } else {
         setUser(null);
       }
+
+      const livePosts = Array.isArray(postData) ? (postData as DbPost[]).map(normalizePost) : [];
+      const liveComments = Array.isArray(commentData) ? (commentData as DbComment[]).map(normalizeComment) : [];
+      const livePostIds = livePosts.map((post) => post.id);
+      let likeRows: DbLike[] = [];
+
+      if (!postError && livePostIds.length > 0) {
+        const { data: likeData, error: likeError } = await supabase
+          .from("community_post_likes")
+          .select("post_id,user_id")
+          .in("post_id", livePostIds)
+          .limit(5000);
+
+        if (likeError) {
+          if (isLikeSetupError(likeError)) {
+            setLikesSetupNeeded(true);
+          }
+        } else {
+          setLikesSetupNeeded(false);
+          likeRows = Array.isArray(likeData) ? (likeData as DbLike[]) : [];
+        }
+      } else {
+        setLikesSetupNeeded(false);
+      }
+
+      if (authUser && likeRows.length > 0) {
+        setLiked(
+          new Set(
+            likeRows
+              .filter((row) => row.user_id === authUser.id)
+              .map((row) => row.post_id)
+          )
+        );
+      } else {
+        setLiked(new Set());
+      }
+
+      const likesByPost = likeRows.reduce<Map<string, number>>((acc, row) => {
+        acc.set(row.post_id, (acc.get(row.post_id) || 0) + 1);
+        return acc;
+      }, new Map<string, number>());
 
       if (postError) {
         const missingSetup = isSetupError(postError);
@@ -310,10 +377,13 @@ export default function CommunityPage() {
           setSubmitInfo("");
         }
       } else {
-        const livePosts = Array.isArray(postData) ? (postData as DbPost[]).map(normalizePost) : [];
+        const livePostsWithLikes = livePosts.map((post) => ({
+          ...post,
+          likesCount: likesByPost.get(post.id) ?? post.likesCount,
+        }));
         setSetupNeeded(false);
         setSubmitInfo("");
-        setPosts(mergePosts(localPosts, livePosts));
+        setPosts(mergePosts(localPosts, livePostsWithLikes));
       }
 
       if (commentError) {
@@ -321,10 +391,24 @@ export default function CommunityPage() {
         setCommentsSetupNeeded(missingCommentsSetup);
         setCommentsByPost(groupCommentsByPost(localComments));
       } else {
-        const liveComments = Array.isArray(commentData) ? (commentData as DbComment[]).map(normalizeComment) : [];
         setCommentsSetupNeeded(false);
         setCommentsByPost(groupCommentsByPost(mergeComments(localComments, liveComments)));
       }
+
+      const liveMembers = new Set<string>();
+      livePosts.forEach((post) => {
+        if (typeof post.userId === "string" && post.userId) liveMembers.add(post.userId);
+      });
+      liveComments.forEach((comment) => {
+        if (typeof comment.userId === "string" && comment.userId) liveMembers.add(comment.userId);
+      });
+      likeRows.forEach((row) => {
+        if (row.user_id) liveMembers.add(row.user_id);
+      });
+
+      if (authUser) liveMembers.add(authUser.id);
+      const fallbackLocalMemberCount = Array.from(localHandles).filter(Boolean).length;
+      setMemberCount(Math.max(liveMembers.size, fallbackLocalMemberCount));
 
       setLoading(false);
     };
@@ -364,27 +448,84 @@ export default function CommunityPage() {
     return ranked.length > 0 ? ranked : [["wip", 4], ["character", 3], ["blender", 2]];
   }, [posts]);
 
-  const toggleLike = (postId: string) => {
-    let increment = 1;
-    setLiked((prev) => {
-      const next = new Set(prev);
-      if (next.has(postId)) {
-        next.delete(postId);
-        increment = -1;
-      } else {
-        next.add(postId);
-        increment = 1;
-      }
-      return next;
-    });
+  const toggleLike = async (postId: string) => {
+    const targetPost = posts.find((post) => post.id === postId);
+    const alreadyLiked = liked.has(postId);
 
-    setPosts((prev) =>
-      prev.map((post) =>
-        post.id === postId
-          ? { ...post, likesCount: Math.max(0, post.likesCount + increment) }
-          : post
-      )
-    );
+    const applyLikeLocally = (likeIt: boolean) => {
+      setLiked((prev) => {
+        const next = new Set(prev);
+        if (likeIt) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? { ...post, likesCount: Math.max(0, post.likesCount + (likeIt ? 1 : -1)) }
+            : post
+        )
+      );
+    };
+
+    if (!user) {
+      setSubmitError("Sign in to like posts.");
+      return;
+    }
+
+    if (likePendingFor === postId) return;
+
+    // Local posts or missing DB setup use local-only likes.
+    if (!isUuid(postId) || targetPost?.localOnly || likesSetupNeeded) {
+      applyLikeLocally(!alreadyLiked);
+      return;
+    }
+
+    setLikePendingFor(postId);
+
+    if (alreadyLiked) {
+      const { error } = await supabase
+        .from("community_post_likes")
+        .delete()
+        .eq("post_id", postId)
+        .eq("user_id", user.id);
+      setLikePendingFor(null);
+
+      if (error) {
+        if (isLikeSetupError(error || null)) {
+          setLikesSetupNeeded(true);
+          applyLikeLocally(false);
+          return;
+        }
+        setSubmitError(error.message || "Could not remove like.");
+        return;
+      }
+
+      applyLikeLocally(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("community_post_likes")
+      .insert({ post_id: postId, user_id: user.id });
+    setLikePendingFor(null);
+
+    if (error) {
+      if (error.code === "23505") {
+        // Like row already exists; sync local UI state without re-incrementing.
+        setLiked((prev) => new Set(prev).add(postId));
+        return;
+      }
+      if (isLikeSetupError(error || null)) {
+        setLikesSetupNeeded(true);
+        applyLikeLocally(true);
+        return;
+      }
+      setSubmitError(error.message || "Could not like post.");
+      return;
+    }
+
+    applyLikeLocally(true);
   };
 
   const publishPost = async () => {
@@ -441,7 +582,7 @@ export default function CommunityPage() {
         content,
         tags,
       })
-      .select("id,user_name,user_handle,content,tags,likes_count,comments_count,created_at")
+      .select("id,user_id,user_name,user_handle,content,tags,likes_count,comments_count,created_at")
       .single();
     setSubmitPending(false);
 
@@ -527,7 +668,7 @@ export default function CommunityPage() {
         user_handle: user.handle,
         content,
       })
-      .select("id,post_id,user_name,user_handle,content,created_at")
+      .select("id,post_id,user_id,user_name,user_handle,content,created_at")
       .single();
     setCommentPendingFor(null);
 
@@ -628,7 +769,7 @@ export default function CommunityPage() {
               <Users style={{ width: "15px", height: "15px", color: T.accent }} />
               <div>
                 <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'General Sans', sans-serif", marginBottom: "0.1rem" }}>Members</p>
-                <p style={{ color: T.text, fontSize: "1rem", fontWeight: 700, fontFamily: "'Cabinet Grotesk', sans-serif" }}>{126 + posts.length * 2}</p>
+                <p style={{ color: T.text, fontSize: "1rem", fontWeight: 700, fontFamily: "'Cabinet Grotesk', sans-serif" }}>{memberCount}</p>
               </div>
             </div>
             <div className="community-metric-card" style={{ borderColor: T.border, backgroundColor: T.chip }}>
@@ -883,6 +1024,7 @@ export default function CommunityPage() {
                         <div style={{ display: "flex", gap: "0.46rem" }}>
                           <button
                             onClick={() => toggleLike(post.id)}
+                            disabled={!user || likePendingFor === post.id}
                             style={{
                               borderRadius: "999px",
                               border: `1px solid ${hasLiked ? `${T.accent}66` : T.border}`,
@@ -893,12 +1035,12 @@ export default function CommunityPage() {
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "0.33rem",
-                              cursor: "pointer",
+                              cursor: !user || likePendingFor === post.id ? "not-allowed" : "pointer",
                               fontFamily: "'General Sans', sans-serif",
                             }}
                           >
                             <Heart style={{ width: "12px", height: "12px", fill: hasLiked ? T.accent : "transparent" }} />
-                            {post.likesCount}
+                            {likePendingFor === post.id ? "..." : post.likesCount}
                           </button>
                           <button
                             onClick={() =>

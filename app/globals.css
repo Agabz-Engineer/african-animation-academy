@@ -13,6 +13,14 @@
 
 @import "tailwindcss";
 
+/* Prevent flashy transition jumps while theme is being initialized on first paint. */
+html.theme-init *,
+html.theme-init *::before,
+html.theme-init *::after {
+  transition: none !important;
+  animation-duration: 0s !important;
+}
+
 /* ════════════════════════════════════════
    AFRICA FX — COLOUR SYSTEM
    ────────────────────────────────────────
