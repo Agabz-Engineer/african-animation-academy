@@ -89,16 +89,13 @@ const PLANS: Plan[] = [
 ];
 
 const COMPARISON_ROWS: ComparisonRow[] = [
-  { feature: "Beginner course previews", free: true, pro: true, team: true },
-  { feature: "Intermediate + Advanced courses", free: false, pro: true, team: true },
-  { feature: "Gallery submissions", free: "3/month", pro: "Unlimited", team: "Unlimited" },
-  { feature: "Forum access", free: "Read-only", pro: "Post + create threads", team: "Team channels + full access" },
-  { feature: "Challenge participation", free: "Participation only", pro: "Prize eligibility + leaderboard", team: "Team entries + leaderboard" },
-  { feature: "Resources + project file downloads", free: false, pro: true, team: true },
-  { feature: "Course completion certificates", free: false, pro: true, team: true },
-  { feature: "Priority support", free: false, pro: true, team: true },
-  { feature: "Seats included", free: "1", pro: "1", team: "10 included" },
-  { feature: "Team analytics dashboard", free: false, pro: false, team: true },
+  { feature: "Course access", free: "Previews only", pro: "All levels", team: "All levels" },
+  { feature: "Gallery submissions", free: "3 / month", pro: "Unlimited", team: "Unlimited" },
+  { feature: "Forum participation", free: "Read-only", pro: "Post + threads", team: "Team channels" },
+  { feature: "Challenge rewards", free: "No prizes", pro: "Prize + leaderboard", team: "Team leaderboard" },
+  { feature: "Resources + certificates", free: false, pro: true, team: true },
+  { feature: "Support level", free: "Standard", pro: "Priority", team: "Priority + manager" },
+  { feature: "Seats included", free: "1", pro: "1", team: "10+" },
 ];
 
 const FAQS = [
@@ -166,6 +163,9 @@ const renderCell = (
   }
   return <span style={{ color: colors.text }}>{value}</span>;
 };
+
+const toCellLabel = (value: CellValue) =>
+  typeof value === "boolean" ? (value ? "Included" : "Not included") : value;
 
 export default function PricingPage() {
   const theme = useThemeMode();
@@ -354,12 +354,12 @@ export default function PricingPage() {
       </section>
 
       <section className="comparison" style={{ border: `1px solid ${T.border}`, background: T.panel }}>
-        <h3 style={{ color: T.text }}>Feature Comparison</h3>
+        <h3 style={{ color: T.text }}>Core Feature Comparison</h3>
         <p style={{ color: T.muted }}>
-          Scan quickly to see exactly what changes as you move from Free to Pro and Team.
+          The essentials only, so it is easier to compare plans at a glance.
         </p>
 
-        <div className="table-wrap">
+        <div className="table-wrap comparison-desktop">
           <table>
             <thead>
               <tr style={{ borderBottom: `1px solid ${T.border}` }}>
@@ -380,6 +380,34 @@ export default function PricingPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="comparison-mobile">
+          {planPricing.map((plan) => (
+            <article
+              key={`mobile-compare-${plan.id}`}
+              className="comparison-mobile-card"
+              style={{ border: `1px solid ${T.border}`, background: T.card }}
+            >
+              <div className="comparison-mobile-head" style={{ borderBottom: `1px solid ${T.border}` }}>
+                <h4 style={{ color: T.text }}>{plan.name}</h4>
+                <span style={{ color: T.accent }}>
+                  {plan.amount === 0 ? "Free" : `$${plan.amount}/${plan.periodLabel}`}
+                </span>
+              </div>
+
+              <ul className="comparison-mobile-list">
+                {COMPARISON_ROWS.map((row) => (
+                  <li key={`${plan.id}-${row.feature}`} style={{ borderBottom: `1px solid ${T.border}` }}>
+                    <span style={{ color: T.muted }}>{row.feature}</span>
+                    <strong style={{ color: T.text }}>
+                      {toCellLabel(row[plan.id])}
+                    </strong>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -583,15 +611,18 @@ export default function PricingPage() {
           overflow-x: auto;
           border-radius: 12px;
         }
+        .comparison-mobile {
+          display: none;
+        }
         table {
           width: 100%;
-          min-width: 720px;
+          min-width: 660px;
           border-collapse: collapse;
         }
         th,
         td {
-          padding: 0.56rem 0.45rem;
-          font: 600 0.75rem "General Sans", sans-serif;
+          padding: 0.52rem 0.44rem;
+          font: 600 0.73rem "General Sans", sans-serif;
           text-align: center;
         }
         th {
@@ -600,12 +631,52 @@ export default function PricingPage() {
           font-size: 0.64rem;
           font-weight: 700;
         }
-        td:first-child,
-        th:first-child {
-          position: sticky;
-          left: 0;
-          background: inherit;
-          z-index: 1;
+        .comparison-mobile-card {
+          border-radius: 12px;
+          overflow: hidden;
+        }
+        .comparison-mobile-head {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 0.5rem;
+          padding: 0.58rem 0.62rem;
+        }
+        .comparison-mobile-head h4 {
+          margin: 0;
+          font: 700 0.94rem "Clash Display", sans-serif;
+          letter-spacing: -0.01em;
+        }
+        .comparison-mobile-head span {
+          font: 700 0.72rem "General Sans", sans-serif;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          white-space: nowrap;
+        }
+        .comparison-mobile-list {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .comparison-mobile-list li {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 0.42rem;
+          align-items: center;
+          padding: 0.45rem 0.62rem;
+        }
+        .comparison-mobile-list li:last-child {
+          border-bottom: none !important;
+        }
+        .comparison-mobile-list span {
+          font: 600 0.72rem "General Sans", sans-serif;
+          line-height: 1.35;
+        }
+        .comparison-mobile-list strong {
+          font: 700 0.72rem "General Sans", sans-serif;
+          line-height: 1.25;
+          text-align: right;
+          max-width: 46vw;
         }
         .faq {
           border-radius: 18px;
@@ -674,6 +745,13 @@ export default function PricingPage() {
           .faq {
             padding: 0.75rem;
           }
+          .comparison-desktop {
+            display: none;
+          }
+          .comparison-mobile {
+            display: grid;
+            gap: 0.52rem;
+          }
           th,
           td {
             padding: 0.48rem 0.4rem;
@@ -683,4 +761,3 @@ export default function PricingPage() {
     </div>
   );
 }
-
