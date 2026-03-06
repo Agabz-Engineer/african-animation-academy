@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Home, BookOpen, Calendar, Image, Users, Tag,
+  Home, BookOpen, Calendar, Image, Users, DollarSign,
   User, Settings, LogOut, Sun, Moon,
   ChevronRight, Menu, X, Sparkles, Mail, Instagram, Linkedin, Youtube
 } from "lucide-react";
@@ -18,7 +18,7 @@ const NAV_LINKS = [
   { label: "Events",    href: "/events",     icon: Calendar  },
   { label: "Portfolio", href: "/portfolio",  icon: Image     },
   { label: "Community", href: "/community",  icon: Users     },
-  { label: "Promo",     href: "/promo",      icon: Tag       },
+  { label: "Pricing",   href: "/pricing",    icon: DollarSign},
   { label: "Profile",   href: "/profile",    icon: User      },
 ];
 
@@ -83,6 +83,7 @@ const FOOTER_GROUPS = [
       { label: "Courses", href: "/courses" },
       { label: "Community", href: "/community" },
       { label: "Events", href: "/events" },
+      { label: "Pricing", href: "/pricing" },
     ],
   },
   {
