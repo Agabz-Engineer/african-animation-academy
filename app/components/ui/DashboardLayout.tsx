@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Home, BookOpen, Calendar, Image, Users, Tag,
   User, Settings, LogOut, Sun, Moon,
-  ChevronRight, Menu, X, Sparkles
+  ChevronRight, Menu, X, Sparkles, Mail, Instagram, Linkedin, Youtube
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -75,12 +75,39 @@ const LIGHT = {
 
 const W_EXPANDED  = 224;
 const W_COLLAPSED = 64;
-const FOOTER_LINKS = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Courses", href: "/courses" },
-  { label: "Community", href: "/community" },
-  { label: "Events", href: "/events" },
-  { label: "Settings", href: "/settings" },
+const FOOTER_GROUPS = [
+  {
+    title: "Explore",
+    links: [
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Courses", href: "/courses" },
+      { label: "Community", href: "/community" },
+      { label: "Events", href: "/events" },
+    ],
+  },
+  {
+    title: "Account",
+    links: [
+      { label: "Settings", href: "/settings" },
+      { label: "Home", href: "/home" },
+      { label: "Login", href: "/login" },
+      { label: "Sign up", href: "/signup" },
+    ],
+  },
+  {
+    title: "Support",
+    links: [
+      { label: "Email support", href: "mailto:info@africafx.com" },
+      { label: "Report issue", href: "mailto:info@africafx.com?subject=Platform%20Issue" },
+      { label: "Creator feed", href: "/community" },
+    ],
+  },
+];
+
+const FOOTER_SOCIALS = [
+  { label: "Instagram", href: "https://instagram.com", icon: Instagram },
+  { label: "YouTube", href: "https://youtube.com", icon: Youtube },
+  { label: "LinkedIn", href: "https://linkedin.com", icon: Linkedin },
 ];
 
 const getInitialTheme = (): "dark" | "light" => {
@@ -359,31 +386,100 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main style={{ flex: 1, overflowX: "hidden" }}>{children}</main>
         <footer
           style={{
+            marginTop: "1.1rem",
             borderTop: `1px solid ${T.border}`,
-            backgroundColor: theme === "dark" ? "rgba(20,18,16,0.86)" : "rgba(245,237,220,0.86)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-            padding: "0.85rem 1.25rem 0.95rem",
+            background: theme === "dark"
+              ? "linear-gradient(180deg, rgba(20,18,16,0.96) 0%, rgba(20,18,16,0.9) 100%)"
+              : "linear-gradient(180deg, rgba(245,237,220,0.92) 0%, rgba(245,237,220,0.88) 100%)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            padding: "1.45rem 1.25rem calc(1.15rem + env(safe-area-inset-bottom))",
           }}
         >
-          <div className="app-footer-row">
-            <p
-              style={{
-                margin: 0,
-                color: T.textDim,
-                fontSize: "0.72rem",
-                fontFamily: "'General Sans',sans-serif",
-              }}
-            >
-              © {year} Africa Fx. All rights reserved.
-            </p>
-            <nav className="app-footer-links" aria-label="Footer links" style={{ color: T.textMuted }}>
-              {FOOTER_LINKS.map((item) => (
-                <Link key={item.href} href={item.href} className="app-footer-link">
-                  {item.label}
-                </Link>
+          <div className="app-footer-shell">
+            <div className="app-footer-brand">
+              <p className="app-footer-title" style={{ color: T.text }}>Africa Fx</p>
+              <p
+                style={{
+                  margin: "0.3rem 0 0",
+                  color: T.textMuted,
+                  lineHeight: 1.65,
+                  fontSize: "0.82rem",
+                  fontFamily: "'General Sans',sans-serif",
+                  maxWidth: "320px",
+                }}
+              >
+                A creative platform for African animators to learn faster, share work, and grow with community feedback.
+              </p>
+              <a
+                href="mailto:info@africafx.com"
+                className="app-footer-email"
+                style={{ color: T.accent }}
+              >
+                <Mail style={{ width: "13px", height: "13px" }} />
+                info@africafx.com
+              </a>
+
+              <div className="app-footer-socials">
+                {FOOTER_SOCIALS.map((social) => (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className="app-footer-social"
+                    style={{
+                      border: `1px solid ${T.border}`,
+                      color: T.textMuted,
+                      backgroundColor: theme === "dark" ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)",
+                    }}
+                  >
+                    <social.icon style={{ width: "14px", height: "14px" }} />
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            <div className="app-footer-columns">
+              {FOOTER_GROUPS.map((group) => (
+                <div key={group.title}>
+                  <p className="app-footer-heading" style={{ color: T.text }}>{group.title}</p>
+                  <div className="app-footer-list">
+                    {group.links.map((item) =>
+                      item.href.startsWith("mailto:") ? (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          className="app-footer-link"
+                          style={{ color: T.textMuted }}
+                        >
+                          {item.label}
+                        </a>
+                      ) : (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          className="app-footer-link"
+                          style={{ color: T.textMuted }}
+                        >
+                          {item.label}
+                        </Link>
+                      )
+                    )}
+                  </div>
+                </div>
               ))}
-            </nav>
+            </div>
+          </div>
+
+          <div className="app-footer-bottom" style={{ borderTop: `1px solid ${T.border}` }}>
+            <p style={{ margin: 0, color: T.textDim, fontSize: "0.73rem", fontFamily: "'General Sans',sans-serif" }}>
+              (c) {year} Africa Fx. All rights reserved.
+            </p>
+            <p style={{ margin: 0, color: T.textDim, fontSize: "0.73rem", fontFamily: "'General Sans',sans-serif" }}>
+              Proudly African. Globally Creative.
+            </p>
           </div>
         </footer>
       </div>
@@ -413,7 +509,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-hero      { height: 180px !important; }
           .dash-padding   { padding: 1rem !important; }
           .hide-mobile    { display: none !important; }
-          .app-footer-row { flex-direction: column; align-items: flex-start !important; gap: 0.45rem !important; }
+          .app-footer-shell { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+          .app-footer-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+          .app-footer-bottom { flex-direction: column; align-items: flex-start; gap: 0.32rem; }
+        }
+        @media (max-width: 540px) {
+          .app-footer-columns { grid-template-columns: minmax(0, 1fr); }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
           .dash-grid-4  { grid-template-columns: 1fr 1fr !important; }
@@ -425,30 +526,86 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-grid-stats{ grid-template-columns: repeat(4,1fr); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .app-footer-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 0.65rem;
+        .app-footer-shell {
+          display: grid;
+          grid-template-columns: minmax(250px, 1.2fr) minmax(0, 2fr);
+          gap: 1.2rem;
+          align-items: start;
         }
-        .app-footer-links {
+        .app-footer-title {
+          margin: 0;
+          font-family: "Clash Display", sans-serif;
+          font-size: clamp(1.4rem, 3vw, 1.95rem);
+          letter-spacing: -0.03em;
+          line-height: 1.1;
+        }
+        .app-footer-email {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.38rem;
+          margin-top: 0.55rem;
+          font-size: 0.8rem;
+          font-family: "General Sans", sans-serif;
+          text-decoration: none;
+        }
+        .app-footer-columns {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.9rem;
+        }
+        .app-footer-heading {
+          margin: 0;
+          font-family: "Clash Display", sans-serif;
+          font-size: 0.95rem;
+          letter-spacing: -0.015em;
+          font-weight: 600;
+        }
+        .app-footer-list {
+          margin-top: 0.42rem;
           display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-          gap: 0.28rem 0.68rem;
+          flex-direction: column;
+          gap: 0.35rem;
         }
         .app-footer-link {
           color: inherit;
           text-decoration: none;
-          font-size: 0.75rem;
+          font-size: 0.8rem;
           font-family: "General Sans", sans-serif;
-          transition: opacity 0.2s ease;
-          opacity: 0.95;
+          transition: color 0.2s ease, opacity 0.2s ease;
+          opacity: 0.93;
         }
         .app-footer-link:hover {
+          color: ${T.accent};
           opacity: 1;
-          text-decoration: underline;
-          text-underline-offset: 2px;
+        }
+        .app-footer-socials {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          margin-top: 0.65rem;
+        }
+        .app-footer-social {
+          width: 31px;
+          height: 31px;
+          border-radius: 10px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .app-footer-social:hover {
+          color: ${T.accent} !important;
+          border-color: ${T.accent} !important;
+          transform: translateY(-1px);
+        }
+        .app-footer-bottom {
+          margin-top: 0.95rem;
+          padding-top: 0.75rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.5rem;
         }
         nav::-webkit-scrollbar { width: 0; }
         ::-webkit-scrollbar { width: 4px; }
