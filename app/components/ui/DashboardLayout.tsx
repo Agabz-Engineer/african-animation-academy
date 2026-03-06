@@ -75,6 +75,13 @@ const LIGHT = {
 
 const W_EXPANDED  = 224;
 const W_COLLAPSED = 64;
+const FOOTER_LINKS = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Courses", href: "/courses" },
+  { label: "Community", href: "/community" },
+  { label: "Events", href: "/events" },
+  { label: "Settings", href: "/settings" },
+];
 
 const getInitialTheme = (): "dark" | "light" => {
   if (typeof window === "undefined") return "dark";
@@ -127,6 +134,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const sidebarW  = expanded ? W_EXPANDED : W_COLLAPSED;
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? user?.email?.split("@")[0] ?? "Creative";
   const initial   = firstName.charAt(0).toUpperCase();
+  const year = new Date().getFullYear();
 
   const switchTheme = (mode: "dark"|"light") => {
     setTheme(mode);
@@ -349,6 +357,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
         <main style={{ flex: 1, overflowX: "hidden" }}>{children}</main>
+        <footer
+          style={{
+            borderTop: `1px solid ${T.border}`,
+            backgroundColor: theme === "dark" ? "rgba(20,18,16,0.86)" : "rgba(245,237,220,0.86)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            padding: "0.85rem 1.25rem 0.95rem",
+          }}
+        >
+          <div className="app-footer-row">
+            <p
+              style={{
+                margin: 0,
+                color: T.textDim,
+                fontSize: "0.72rem",
+                fontFamily: "'General Sans',sans-serif",
+              }}
+            >
+              © {year} Africa Fx. All rights reserved.
+            </p>
+            <nav className="app-footer-links" aria-label="Footer links" style={{ color: T.textMuted }}>
+              {FOOTER_LINKS.map((item) => (
+                <Link key={item.href} href={item.href} className="app-footer-link">
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </footer>
       </div>
 
       {/* MOBILE BOTTOM NAV */}
@@ -376,6 +413,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-hero      { height: 180px !important; }
           .dash-padding   { padding: 1rem !important; }
           .hide-mobile    { display: none !important; }
+          .app-footer-row { flex-direction: column; align-items: flex-start !important; gap: 0.45rem !important; }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
           .dash-grid-4  { grid-template-columns: 1fr 1fr !important; }
@@ -387,6 +425,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-grid-stats{ grid-template-columns: repeat(4,1fr); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .app-footer-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.65rem;
+        }
+        .app-footer-links {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 0.28rem 0.68rem;
+        }
+        .app-footer-link {
+          color: inherit;
+          text-decoration: none;
+          font-size: 0.75rem;
+          font-family: "General Sans", sans-serif;
+          transition: opacity 0.2s ease;
+          opacity: 0.95;
+        }
+        .app-footer-link:hover {
+          opacity: 1;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
         nav::-webkit-scrollbar { width: 0; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
