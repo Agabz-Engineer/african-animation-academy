@@ -222,14 +222,17 @@ export default function SettingsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const metadata = user.user_metadata || {};
+      const previousAvatarPath =
+        typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
 
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const filePath = `${user.id}/avatar.${ext}`;
+      const filePath = `${user.id}/${Date.now()}-avatar.${ext}`;
 
       /* Upload to Supabase Storage bucket "avatars" */
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file, { upsert: true, contentType: file.type });
+        .upload(filePath, file, { upsert: false, contentType: file.type });
 
       if (uploadError) throw uploadError;
 
@@ -247,12 +250,20 @@ export default function SettingsPage() {
         data: { avatar_url: publicUrl, avatar_path: filePath }
       });
 
+      if (previousAvatarPath && previousAvatarPath !== filePath) {
+        await supabase.storage.from("avatars").remove([previousAvatarPath]);
+      }
+
       setAvatarUrl(addCacheBuster(signedData?.signedUrl || publicUrl));
       setAvatarLoadError(false);
       showSavedToast();
     } catch (err) {
       console.error("Avatar upload failed:", err);
       const message = err instanceof Error ? err.message : "Unknown error";
+      if (message.toLowerCase().includes("row-level security")) {
+        alert("Upload failed: avatar storage policy is blocking this. Apply the latest Supabase migration, then try again.");
+        return;
+      }
       alert(`Upload failed: ${message}`);
     } finally {
       setAvatarUploading(false);
