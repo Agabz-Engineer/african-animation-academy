@@ -41,10 +41,10 @@ html.theme-init *::after {
 ════════════════════════════════════════ */
 :root {
   /* Fonts */
-  --font-display: 'General Sans', sans-serif;
-  --font-heading: 'General Sans', sans-serif;
-  --font-body:    'General Sans', sans-serif;
-  --font-ui:      'General Sans', sans-serif;
+  --font-display: 'Clash Display', sans-serif;
+  --font-heading: 'Cabinet Grotesk', sans-serif;
+  --font-body:    'Satoshi', sans-serif;
+  --font-ui:      'Satoshi', sans-serif;
   --font-brand:   'Tahalonia', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
@@ -189,7 +189,7 @@ html.theme-init *::after {
     background-repeat: no-repeat;
     background-attachment: scroll;
     color: var(--text);
-    font-family: 'General Sans', sans-serif;
+    font-family: 'Satoshi', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;

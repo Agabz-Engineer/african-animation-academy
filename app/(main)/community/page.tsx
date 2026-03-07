@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useGamification } from "@/lib/useGamification";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 type FeedFilter = "For You" | "Latest" | "Following";
@@ -277,6 +278,18 @@ export default function CommunityPage() {
   const [commentPendingFor, setCommentPendingFor] = useState<string | null>(null);
   const [commentErrorByPost, setCommentErrorByPost] = useState<Record<string, string>>({});
   const [commentInfoByPost, setCommentInfoByPost] = useState<Record<string, string>>({});
+  const {
+    state: momentum,
+    quests,
+    questsCompletedToday,
+    questsTotalToday,
+    recordAction,
+  } = useGamification(user?.id || null);
+  const pendingQuestPreview = quests.filter((quest) => !quest.completed).slice(0, 3);
+  const questReminder =
+    pendingQuestPreview.length > 0
+      ? `${pendingQuestPreview[0].title} (${pendingQuestPreview[0].remaining} left)`
+      : "All daily tasks complete. Keep posting and supporting others.";
 
   useEffect(() => {
     let mounted = true;
@@ -466,6 +479,9 @@ export default function CommunityPage() {
             : post
         )
       );
+      if (likeIt && !alreadyLiked) {
+        recordAction("like");
+      }
     };
 
     if (!user) {
@@ -565,6 +581,7 @@ export default function CommunityPage() {
       setFilter("Latest");
       setPostText("");
       setSubmitInfo(notice);
+      recordAction("post");
     };
 
     if (setupNeeded) {
@@ -600,6 +617,7 @@ export default function CommunityPage() {
     setFilter("Latest");
     setPostText("");
     setSubmitInfo("Posted to live community.");
+    recordAction("post");
   };
 
   const submitComment = async (postId: string) => {
@@ -632,6 +650,7 @@ export default function CommunityPage() {
         )
       );
       setCommentDrafts((prev) => ({ ...prev, [postId]: "" }));
+      recordAction("comment");
     };
 
     const saveLocalComment = (notice: string) => {
@@ -729,7 +748,7 @@ export default function CommunityPage() {
               backgroundColor: T.accentSoft,
               color: T.accent,
               padding: "0.34rem 0.78rem",
-              fontFamily: "'General Sans', sans-serif",
+              fontFamily: "'Satoshi', sans-serif",
               fontSize: "0.74rem",
               fontWeight: 700,
               marginBottom: "0.85rem",
@@ -768,21 +787,21 @@ export default function CommunityPage() {
             <div className="community-metric-card" style={{ borderColor: T.border, backgroundColor: T.chip }}>
               <Users style={{ width: "15px", height: "15px", color: T.accent }} />
               <div>
-                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'General Sans', sans-serif", marginBottom: "0.1rem" }}>Members</p>
+                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'Satoshi', sans-serif", marginBottom: "0.1rem" }}>Members</p>
                 <p style={{ color: T.text, fontSize: "1rem", fontWeight: 700, fontFamily: "'Cabinet Grotesk', sans-serif" }}>{memberCount}</p>
               </div>
             </div>
             <div className="community-metric-card" style={{ borderColor: T.border, backgroundColor: T.chip }}>
               <PenSquare style={{ width: "15px", height: "15px", color: T.accent }} />
               <div>
-                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'General Sans', sans-serif", marginBottom: "0.1rem" }}>Posts</p>
+                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'Satoshi', sans-serif", marginBottom: "0.1rem" }}>Posts</p>
                 <p style={{ color: T.text, fontSize: "1rem", fontWeight: 700, fontFamily: "'Cabinet Grotesk', sans-serif" }}>{posts.length}</p>
               </div>
             </div>
             <div className="community-metric-card" style={{ borderColor: T.border, backgroundColor: T.chip }}>
               <Flame style={{ width: "15px", height: "15px", color: T.accent }} />
               <div>
-                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'General Sans', sans-serif", marginBottom: "0.1rem" }}>Likes</p>
+                <p style={{ color: T.dim, fontSize: "0.68rem", fontFamily: "'Satoshi', sans-serif", marginBottom: "0.1rem" }}>Likes</p>
                 <p style={{ color: T.text, fontSize: "1rem", fontWeight: 700, fontFamily: "'Cabinet Grotesk', sans-serif" }}>{totalLikes}</p>
               </div>
             </div>
@@ -803,7 +822,7 @@ export default function CommunityPage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.68rem" }}>
                 <div>
                   <p style={{ color: T.text, fontSize: "0.92rem", fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700 }}>Start a conversation</p>
-                  <p style={{ color: T.muted, fontSize: "0.78rem", fontFamily: "'General Sans', sans-serif" }}>
+                  <p style={{ color: T.muted, fontSize: "0.78rem", fontFamily: "'Satoshi', sans-serif" }}>
                     {user ? `Posting as @${user.handle}` : "Sign in to publish to the feed"}
                   </p>
                 </div>
@@ -816,7 +835,7 @@ export default function CommunityPage() {
                       display: "inline-flex",
                       gap: "0.35rem",
                       alignItems: "center",
-                      fontFamily: "'General Sans', sans-serif",
+                      fontFamily: "'Satoshi', sans-serif",
                       textDecoration: "none",
                       fontWeight: 700,
                     }}
@@ -864,7 +883,7 @@ export default function CommunityPage() {
                       padding: "0.58rem 0.75rem 0.58rem 1.92rem",
                       fontSize: "0.8rem",
                       outline: "none",
-                      fontFamily: "'General Sans', sans-serif",
+                      fontFamily: "'Satoshi', sans-serif",
                     }}
                   />
                 </div>
@@ -883,7 +902,7 @@ export default function CommunityPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "0.35rem",
-                    fontFamily: "'General Sans', sans-serif",
+                    fontFamily: "'Satoshi', sans-serif",
                   }}
                 >
                   <Send style={{ width: "13px", height: "13px" }} />
@@ -896,7 +915,7 @@ export default function CommunityPage() {
                   marginTop: "0.48rem",
                   fontSize: "0.75rem",
                   color: submitError ? T.danger : submitInfo ? T.accent : T.dim,
-                  fontFamily: "'General Sans', sans-serif",
+                  fontFamily: "'Satoshi', sans-serif",
                 }}
               >
                 {submitError || submitInfo || "Use tags to help people discover your post quickly."}
@@ -928,7 +947,7 @@ export default function CommunityPage() {
                       color: active ? T.accent : T.muted,
                       fontSize: "0.76rem",
                       fontWeight: active ? 700 : 500,
-                      fontFamily: "'General Sans', sans-serif",
+                      fontFamily: "'Satoshi', sans-serif",
                       padding: "0.35rem 0.82rem",
                       cursor: "pointer",
                     }}
@@ -952,18 +971,18 @@ export default function CommunityPage() {
                     padding: "0.48rem 0.72rem 0.48rem 1.85rem",
                     fontSize: "0.8rem",
                     outline: "none",
-                    fontFamily: "'General Sans', sans-serif",
+                    fontFamily: "'Satoshi', sans-serif",
                   }}
                 />
               </div>
             </div>
 
             {loading ? (
-              <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.dim, fontFamily: "'General Sans', sans-serif" }}>
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.dim, fontFamily: "'Satoshi', sans-serif" }}>
                 Loading community feed...
               </div>
             ) : filteredPosts.length === 0 ? (
-              <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.muted, fontFamily: "'General Sans', sans-serif" }}>
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.muted, fontFamily: "'Satoshi', sans-serif" }}>
                 No posts yet. You can be first to post.
               </div>
             ) : (
@@ -991,7 +1010,7 @@ export default function CommunityPage() {
                       <div style={{ display: "flex", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.52rem" }}>
                         <div>
                           <p style={{ fontWeight: 700, fontSize: "0.89rem", fontFamily: "'Cabinet Grotesk', sans-serif" }}>{post.userName}</p>
-                          <p style={{ color: T.dim, fontSize: "0.73rem", fontFamily: "'General Sans', sans-serif" }}>
+                          <p style={{ color: T.dim, fontSize: "0.73rem", fontFamily: "'Satoshi', sans-serif" }}>
                             @{post.userHandle} - {timeAgo(post.createdAt)}
                           </p>
                         </div>
@@ -1012,7 +1031,7 @@ export default function CommunityPage() {
                               fontSize: "0.69rem",
                               padding: "0.16rem 0.52rem",
                               cursor: "pointer",
-                              fontFamily: "'General Sans', sans-serif",
+                              fontFamily: "'Satoshi', sans-serif",
                             }}
                           >
                             #{tag}
@@ -1036,7 +1055,7 @@ export default function CommunityPage() {
                               alignItems: "center",
                               gap: "0.33rem",
                               cursor: !user || likePendingFor === post.id ? "not-allowed" : "pointer",
-                              fontFamily: "'General Sans', sans-serif",
+                              fontFamily: "'Satoshi', sans-serif",
                             }}
                           >
                             <Heart style={{ width: "12px", height: "12px", fill: hasLiked ? T.accent : "transparent" }} />
@@ -1057,14 +1076,14 @@ export default function CommunityPage() {
                               alignItems: "center",
                               gap: "0.33rem",
                               cursor: "pointer",
-                              fontFamily: "'General Sans', sans-serif",
+                              fontFamily: "'Satoshi', sans-serif",
                             }}
                           >
                             <MessageCircle style={{ width: "12px", height: "12px" }} />
                             {visibleCommentCount}
                           </button>
                         </div>
-                        {post.likesCount < 2 && <span style={{ color: T.dim, fontSize: "0.7rem", fontFamily: "'General Sans', sans-serif" }}>Be first to like</span>}
+                        {post.likesCount < 2 && <span style={{ color: T.dim, fontSize: "0.7rem", fontFamily: "'Satoshi', sans-serif" }}>Be first to like</span>}
                       </div>
 
                       {(commentOpen || postComments.length > 0) && (
@@ -1087,7 +1106,7 @@ export default function CommunityPage() {
                                     padding: "0.45rem 0.56rem",
                                   }}
                                 >
-                                  <p style={{ fontSize: "0.72rem", color: T.dim, fontFamily: "'General Sans', sans-serif", marginBottom: "0.2rem" }}>
+                                  <p style={{ fontSize: "0.72rem", color: T.dim, fontFamily: "'Satoshi', sans-serif", marginBottom: "0.2rem" }}>
                                     @{comment.userHandle} - {timeAgo(comment.createdAt)}
                                   </p>
                                   <p style={{ fontSize: "0.82rem", color: T.text, lineHeight: 1.5, fontFamily: "'Satoshi', sans-serif" }}>{comment.content}</p>
@@ -1118,7 +1137,7 @@ export default function CommunityPage() {
                                     padding: "0.44rem 0.66rem",
                                     fontSize: "0.78rem",
                                     outline: "none",
-                                    fontFamily: "'General Sans', sans-serif",
+                                    fontFamily: "'Satoshi', sans-serif",
                                   }}
                                 />
                                 <button
@@ -1130,7 +1149,7 @@ export default function CommunityPage() {
                                     backgroundColor: user ? T.accent : T.chip,
                                     color: user ? "#FFFFFF" : T.dim,
                                     cursor: user ? "pointer" : "not-allowed",
-                                    fontFamily: "'General Sans', sans-serif",
+                                    fontFamily: "'Satoshi', sans-serif",
                                     fontSize: "0.74rem",
                                     fontWeight: 700,
                                     padding: "0.44rem 0.55rem",
@@ -1148,7 +1167,7 @@ export default function CommunityPage() {
                                     : commentInfoByPost[post.id]
                                     ? T.accent
                                     : T.dim,
-                                  fontFamily: "'General Sans', sans-serif",
+                                  fontFamily: "'Satoshi', sans-serif",
                                 }}
                               >
                                 {commentErrorByPost[post.id] ||
@@ -1182,17 +1201,85 @@ export default function CommunityPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "0.48rem" }}>
                 <div style={{ border: `1px solid ${T.border}`, borderRadius: "11px", padding: "0.5rem 0.58rem", backgroundColor: T.chip, display: "flex", gap: "0.48rem", alignItems: "center" }}>
                   <Zap style={{ width: "14px", height: "14px", color: T.accent }} />
-                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'General Sans', sans-serif" }}>Fast critique threads on WIP posts</span>
+                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'Satoshi', sans-serif" }}>Fast critique threads on WIP posts</span>
                 </div>
                 <div style={{ border: `1px solid ${T.border}`, borderRadius: "11px", padding: "0.5rem 0.58rem", backgroundColor: T.chip, display: "flex", gap: "0.48rem", alignItems: "center" }}>
                   <CalendarDays style={{ width: "14px", height: "14px", color: T.accent }} />
-                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'General Sans', sans-serif" }}>Monthly challenge prompts and results</span>
+                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'Satoshi', sans-serif" }}>Monthly challenge prompts and results</span>
                 </div>
                 <div style={{ border: `1px solid ${T.border}`, borderRadius: "11px", padding: "0.5rem 0.58rem", backgroundColor: T.chip, display: "flex", gap: "0.48rem", alignItems: "center" }}>
                   <Trophy style={{ width: "14px", height: "14px", color: T.accent }} />
-                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'General Sans', sans-serif" }}>Weekly standout creators board</span>
+                  <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'Satoshi', sans-serif" }}>Weekly standout creators board</span>
                 </div>
               </div>
+            </div>
+
+            <div
+              style={{
+                border: `1px solid ${T.border}`,
+                borderRadius: "16px",
+                background: T.panel,
+                padding: "0.9rem",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.1)",
+              }}
+            >
+              <p style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: "0.2rem" }}>
+                Daily creator tasks
+              </p>
+              <p style={{ color: T.muted, fontSize: "0.75rem", fontFamily: "'Satoshi', sans-serif", marginBottom: "0.42rem" }}>
+                {questsCompletedToday}/{questsTotalToday} completed - Level {momentum.level + 1}
+              </p>
+              <div style={{ height: "4px", borderRadius: "999px", backgroundColor: T.border, overflow: "hidden", marginBottom: "0.5rem" }}>
+                <div
+                  style={{
+                    width: `${questsTotalToday > 0 ? Math.round((questsCompletedToday / questsTotalToday) * 100) : 0}%`,
+                    height: "100%",
+                    borderRadius: "999px",
+                    backgroundColor: T.accent,
+                  }}
+                />
+              </div>
+              {pendingQuestPreview.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.36rem" }}>
+                  {pendingQuestPreview.map((quest) => (
+                    <Link
+                      key={quest.id}
+                      href={quest.href}
+                      onClick={() => {
+                        if (quest.action === "course_session") {
+                          recordAction("course_session");
+                        }
+                      }}
+                      style={{
+                        borderRadius: "10px",
+                        border: `1px solid ${T.border}`,
+                        backgroundColor: T.chip,
+                        color: T.text,
+                        padding: "0.38rem 0.55rem",
+                        fontSize: "0.75rem",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        textDecoration: "none",
+                        fontFamily: "'Satoshi', sans-serif",
+                      }}
+                    >
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{quest.title}</span>
+                      <span style={{ color: T.accent, fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700 }}>
+                        {quest.remaining}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: T.muted, fontSize: "0.78rem", lineHeight: 1.5, fontFamily: "'Satoshi', sans-serif" }}>
+                  You are clear for today. Keep helping the community to keep your momentum rising.
+                </p>
+              )}
+              <p style={{ color: T.dim, fontSize: "0.72rem", marginTop: "0.52rem", fontFamily: "'Satoshi', sans-serif" }}>
+                Next reminder: {questReminder}
+              </p>
             </div>
 
             <div
@@ -1220,7 +1307,7 @@ export default function CommunityPage() {
                       display: "flex",
                       justifyContent: "space-between",
                       cursor: "pointer",
-                      fontFamily: "'General Sans', sans-serif",
+                      fontFamily: "'Satoshi', sans-serif",
                     }}
                   >
                     <span>#{tag}</span>
@@ -1243,7 +1330,7 @@ export default function CommunityPage() {
               <p style={{ color: T.muted, fontSize: "0.8rem", lineHeight: 1.6, fontFamily: "'Satoshi', sans-serif" }}>
                 Early access is active, so engagement numbers remain intentionally realistic while the community grows.
               </p>
-              <div style={{ marginTop: "0.58rem", color: T.highlight, fontSize: "0.75rem", fontFamily: "'General Sans', sans-serif", display: "inline-flex", alignItems: "center", gap: "0.36rem" }}>
+              <div style={{ marginTop: "0.58rem", color: T.highlight, fontSize: "0.75rem", fontFamily: "'Satoshi', sans-serif", display: "inline-flex", alignItems: "center", gap: "0.36rem" }}>
                 <Sparkles style={{ width: "12px", height: "12px" }} />
                 Healthy growth week over week
               </div>
@@ -1320,3 +1407,4 @@ export default function CommunityPage() {
     </div>
   );
 }
+

@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  BookOpen, Calendar, Users, Bell, Trophy,
+  Calendar, Users, Bell, Trophy,
   Flame, Clock, ChevronRight, Camera, Play,
   TrendingUp, Star, Filter, Search
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useGamification } from "@/lib/useGamification";
 
 const FILTER_TABS = ["Hot", "New", "Event"];
 
@@ -77,7 +78,7 @@ const getInitialTheme = (): "dark" | "light" => {
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("Hot");
   const [theme, setTheme]         = useState<"dark"|"light">(getInitialTheme);
-  const [user, setUser]           = useState<{ email?: string; user_metadata?: { full_name?: string } } | null>(null);
+  const [user, setUser]           = useState<{ id: string; email?: string; user_metadata?: { full_name?: string } } | null>(null);
 
   useEffect(() => {
     const obs = new MutationObserver(() => {
@@ -93,6 +94,25 @@ export default function DashboardPage() {
   const firstName = user?.user_metadata?.full_name?.split(" ")[0]
                  || user?.email?.split("@")[0]
                  || "Creative";
+  const {
+    state: momentum,
+    quests,
+    levelName,
+    levelProgressPct,
+    xpToNextLevel,
+    questsCompletedToday,
+    questsTotalToday,
+    recordAction,
+  } = useGamification(user?.id || null);
+  const pendingQuests = quests.filter((quest) => !quest.completed);
+  const displayLevel = momentum.level + 1;
+  const dailyQuestPreview = pendingQuests.slice(0, 3);
+  const questCompletionPct =
+    questsTotalToday > 0 ? Math.round((questsCompletedToday / questsTotalToday) * 100) : 0;
+  const nextReminder =
+    pendingQuests.length > 0
+      ? `${pendingQuests[0].title} - ${pendingQuests[0].remaining} left`
+      : "All daily tasks completed. Keep creating to bank more XP.";
 
   /*
     FIX 1: tagColor now uses only 4-colour palette.
@@ -128,7 +148,7 @@ export default function DashboardPage() {
               <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: T.accent }}>Animated</span>
               <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: T.text }}>Collective</span>
             </div>
-            <div style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>Your art. Our identity.</div>
+            <div style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>Your art. Our identity.</div>
           </div>
         </div>
 
@@ -138,7 +158,7 @@ export default function DashboardPage() {
           <input
             type="text"
             placeholder="Search courses, events, artists..."
-            style={{ width: "100%", backgroundColor: T.inputBg, border: `1px solid ${T.border}`, borderRadius: "10px", padding: "0.5rem 1rem 0.5rem 2.4rem", color: T.text, fontSize: "0.8rem", outline: "none", fontFamily: "'General Sans',sans-serif" }}
+            style={{ width: "100%", backgroundColor: T.inputBg, border: `1px solid ${T.border}`, borderRadius: "10px", padding: "0.5rem 1rem 0.5rem 2.4rem", color: T.text, fontSize: "0.8rem", outline: "none", fontFamily: "'Satoshi',sans-serif" }}
           />
         </div>
 
@@ -153,12 +173,16 @@ export default function DashboardPage() {
           {/* Streak — orange accent */}
           <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", backgroundColor: T.accentSoft, border: `1px solid ${T.accent}33` }}>
             <Flame style={{ width: "12px", height: "12px", color: T.accent }} />
-            <span style={{ fontSize: "0.72rem", color: T.accent, fontFamily: "'General Sans',sans-serif", fontWeight: 700 }}>3 day streak</span>
+            <span style={{ fontSize: "0.72rem", color: T.accent, fontFamily: "'Satoshi',sans-serif", fontWeight: 700 }}>
+              {momentum.streak} day streak
+            </span>
           </div>
           {/* FIX 4: Rank — uses surface + textMuted, no terracotta hardcode */}
           <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", backgroundColor: T.surface, border: `1px solid ${T.border}` }}>
             <Trophy style={{ width: "12px", height: "12px", color: T.textMuted }} />
-            <span style={{ fontSize: "0.72rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", fontWeight: 600 }}>Rank #42</span>
+            <span style={{ fontSize: "0.72rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif", fontWeight: 600 }}>
+              Level {displayLevel}
+            </span>
           </div>
         </div>
       </div>
@@ -173,8 +197,115 @@ export default function DashboardPage() {
             {/* FIX 2: flat accent colour — no gradient, keeps it clean */}
             <span style={{ color: T.accent }}>{firstName}</span>{" "}👋
           </h1>
-          <p style={{ fontSize: "0.8rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>
+          <p style={{ fontSize: "0.8rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif" }}>
             Here is what is happening in your creative world today
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.1 }}
+          style={{
+            border: `1px solid ${T.border}`,
+            borderRadius: "16px",
+            backgroundColor: T.cardBg,
+            padding: "1rem",
+            marginBottom: "1rem",
+          }}
+        >
+          <div className="dash-momentum-grid" style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "0.75rem" }}>
+            <div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  borderRadius: "999px",
+                  border: `1px solid ${T.accent}44`,
+                  backgroundColor: T.accentSoft,
+                  color: T.accent,
+                  padding: "0.22rem 0.56rem",
+                  fontSize: "0.67rem",
+                  fontFamily: "'Cabinet Grotesk',sans-serif",
+                  fontWeight: 700,
+                }}
+              >
+                <Flame style={{ width: "11px", height: "11px" }} />
+                Creator Momentum
+              </div>
+              <div style={{ marginTop: "0.5rem", display: "flex", alignItems: "baseline", gap: "0.45rem", flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'Clash Display',sans-serif", fontSize: "1.85rem", color: T.accent, lineHeight: 1 }}>
+                  {momentum.totalXp.toLocaleString()}
+                </span>
+                <span style={{ fontSize: "0.72rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif", letterSpacing: "0.04em" }}>
+                  TOTAL XP
+                </span>
+              </div>
+              <p style={{ marginTop: "0.2rem", fontSize: "0.76rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif" }}>
+                Level {displayLevel} - {levelName}
+              </p>
+              <div style={{ marginTop: "0.56rem", height: "6px", backgroundColor: T.border, borderRadius: "999px", overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: `${levelProgressPct}%`,
+                    height: "100%",
+                    borderRadius: "999px",
+                    background: `linear-gradient(90deg, ${T.accent}, ${theme === "dark" ? "#FFB347" : "#FF9F2A"})`,
+                  }}
+                />
+              </div>
+              <p style={{ marginTop: "0.33rem", fontSize: "0.68rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>
+                {xpToNextLevel} XP to next level - {questCompletionPct}% of daily quests done
+              </p>
+            </div>
+
+            <div style={{ border: `1px solid ${T.border}`, borderRadius: "12px", backgroundColor: T.surface, padding: "0.68rem 0.72rem" }}>
+              <p style={{ fontSize: "0.74rem", color: T.text, fontWeight: 700, fontFamily: "'Cabinet Grotesk',sans-serif", marginBottom: "0.35rem" }}>
+                Today&apos;s Reminders
+              </p>
+              {dailyQuestPreview.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.38rem" }}>
+                  {dailyQuestPreview.map((quest) => (
+                    <Link
+                      key={quest.id}
+                      href={quest.href}
+                      onClick={() => {
+                        if (quest.action === "course_session") {
+                          recordAction("course_session");
+                        }
+                      }}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        textDecoration: "none",
+                        borderRadius: "8px",
+                        border: `1px solid ${T.border}`,
+                        backgroundColor: T.cardBg,
+                        padding: "0.36rem 0.45rem",
+                        color: T.text,
+                        fontSize: "0.72rem",
+                        fontFamily: "'Satoshi',sans-serif",
+                      }}
+                    >
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{quest.title}</span>
+                      <span style={{ color: T.accent, fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700 }}>
+                        {quest.remaining}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: "0.72rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.45 }}>
+                  All tasks completed for today. Keep creating to stack extra XP.
+                </p>
+              )}
+            </div>
+          </div>
+          <p style={{ marginTop: "0.5rem", fontSize: "0.72rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>
+            Next up: {nextReminder}
           </p>
         </motion.div>
 
@@ -188,7 +319,7 @@ export default function DashboardPage() {
                 padding: "0.4rem 1.25rem", borderRadius: "8px",
                 border: `1px solid ${activeTab === tab ? T.accent : T.border}`,
                 cursor: "pointer",
-                fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.825rem",
+                fontFamily: "'Satoshi',sans-serif", fontWeight: 600, fontSize: "0.825rem",
                 transition: "all 0.18s",
                 backgroundColor: activeTab === tab ? T.accent : T.cardBg,
                 color: activeTab === tab ? T.accentText : T.textMuted,
@@ -197,7 +328,7 @@ export default function DashboardPage() {
               {tab}
             </button>
           ))}
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "5px", color: T.textDim, fontSize: "0.75rem", fontFamily: "'General Sans',sans-serif", cursor: "pointer" }}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "5px", color: T.textDim, fontSize: "0.75rem", fontFamily: "'Satoshi',sans-serif", cursor: "pointer" }}>
             <Filter style={{ width: "13px", height: "13px" }} /> Filter
           </div>
         </div>
@@ -219,7 +350,7 @@ export default function DashboardPage() {
             <Camera style={{ width: "22px", height: "22px", color: T.accent }} />
           </div>
           <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text, marginBottom: "3px" }}>Featured Banner</p>
-          <p style={{ fontSize: "0.72rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>Recommended: 1200 × 400px</p>
+          <p style={{ fontSize: "0.72rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>Recommended: 1200 × 400px</p>
 
           {/* Play button */}
           <div style={{ position: "absolute", right: "1.25rem", bottom: "1.25rem", width: "40px", height: "40px", borderRadius: "50%", backgroundColor: T.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
@@ -229,7 +360,7 @@ export default function DashboardPage() {
           {/* Date range */}
           <div style={{ position: "absolute", left: "1.25rem", bottom: "1.25rem", display: "flex", alignItems: "center", gap: "6px" }}>
             {["25 July 2025", "29 July 2025"].map((d, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "5px 10px", borderRadius: "7px", backgroundColor: T.dateBg, border: `1px solid ${T.border}`, fontSize: "0.68rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "5px 10px", borderRadius: "7px", backgroundColor: T.dateBg, border: `1px solid ${T.border}`, fontSize: "0.68rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif" }}>
                 <Calendar style={{ width: "10px", height: "10px" }} />{d}
               </div>
             ))}
@@ -259,9 +390,9 @@ export default function DashboardPage() {
                 {/* Image placeholder */}
                 <div style={{ width: "100%", height: "145px", backgroundColor: T.imgBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
                   <Camera style={{ width: "22px", height: "22px", color: T.textDim, opacity: 0.5, marginBottom: "5px" }} />
-                  <span style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>400 × 290px</span>
+                  <span style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>400 × 290px</span>
                   {/* FIX 1: tag uses tokenised colours */}
-                  <div style={{ position: "absolute", top: "8px", left: "8px", padding: "2px 8px", borderRadius: "6px", fontSize: "0.6rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, backgroundColor: ts.bg, color: ts.color }}>
+                  <div style={{ position: "absolute", top: "8px", left: "8px", padding: "2px 8px", borderRadius: "6px", fontSize: "0.6rem", fontFamily: "'Satoshi',sans-serif", fontWeight: 700, backgroundColor: ts.bg, color: ts.color }}>
                     {card.tag}
                   </div>
                 </div>
@@ -269,11 +400,11 @@ export default function DashboardPage() {
                 {/* Card info */}
                 <div style={{ padding: "0.75rem" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                    <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.8rem", color: T.text }}>{card.title}</span>
+                    <span style={{ fontFamily: "'Satoshi',sans-serif", fontWeight: 700, fontSize: "0.8rem", color: T.text }}>{card.title}</span>
                     <Star style={{ width: "13px", height: "13px", color: T.accent, flexShrink: 0 }} />
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "0.68rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>{card.category}</span>
+                    <span style={{ fontSize: "0.68rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>{card.category}</span>
                     <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.85rem", color: T.accent }}>${card.price}</span>
                   </div>
                 </div>
@@ -285,7 +416,7 @@ export default function DashboardPage() {
         {/* Bottom row */}
         <div className="dash-grid-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1.1rem" }}>
 
-          {/* Continue Learning */}
+          {/* Creator Momentum */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -293,19 +424,53 @@ export default function DashboardPage() {
             style={{ backgroundColor: T.cardBg, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "1.1rem" }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.875rem" }}>
-              <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.875rem", color: T.text }}>Continue Learning</h3>
-              <Link href="/courses" style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "0.7rem", color: T.accent, textDecoration: "none", fontFamily: "'General Sans',sans-serif", fontWeight: 600 }}>
-                View all <ChevronRight style={{ width: "11px", height: "11px" }} />
+              <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.875rem", color: T.text }}>
+                Momentum Control
+              </h3>
+              <Link
+                href="/courses"
+                onClick={() => recordAction("course_session")}
+                style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "0.7rem", color: T.accent, textDecoration: "none", fontFamily: "'Satoshi',sans-serif", fontWeight: 600 }}
+              >
+                Start session <ChevronRight style={{ width: "11px", height: "11px" }} />
               </Link>
             </div>
-            <div style={{ width: "100%", height: "90px", borderRadius: "12px", backgroundColor: T.imgBg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.75rem" }}>
-              <Camera style={{ width: "18px", height: "18px", color: T.textDim, opacity: 0.4 }} />
+            <div style={{ width: "100%", borderRadius: "12px", backgroundColor: T.imgBg, border: `1px solid ${T.border}`, padding: "0.75rem", marginBottom: "0.75rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.5rem" }}>
+                <div>
+                  <p style={{ fontSize: "0.62rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif", marginBottom: "0.12rem" }}>XP</p>
+                  <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", color: T.text, fontWeight: 700, fontSize: "1rem" }}>
+                    {momentum.totalXp.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ fontSize: "0.62rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif", marginBottom: "0.12rem" }}>Level</p>
+                  <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", color: T.text, fontWeight: 700, fontSize: "1rem" }}>L{displayLevel}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: "0.62rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif", marginBottom: "0.12rem" }}>Streak</p>
+                  <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", color: T.text, fontWeight: 700, fontSize: "1rem" }}>
+                    {momentum.streak}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.8rem", color: T.text, marginBottom: "4px" }}>Enrol in a course to start</p>
+            <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.8rem", color: T.text, marginBottom: "4px" }}>
+              {pendingQuests.length > 0 ? pendingQuests[0].title : "You are fully caught up today"}
+            </p>
             <div style={{ height: "4px", borderRadius: "999px", backgroundColor: T.border, marginBottom: "4px" }}>
-              <div style={{ width: "0%", height: "100%", borderRadius: "999px", backgroundColor: T.accent }} />
+              <div
+                style={{
+                  width: `${questCompletionPct}%`,
+                  height: "100%",
+                  borderRadius: "999px",
+                  backgroundColor: T.accent,
+                }}
+              />
             </div>
-            <p style={{ fontSize: "0.63rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>0% complete</p>
+            <p style={{ fontSize: "0.63rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>
+              {questsCompletedToday} of {questsTotalToday} quests completed
+            </p>
           </motion.div>
 
           {/* Recent Activity */}
@@ -332,7 +497,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p style={{ fontSize: "0.72rem", color: T.text, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.4 }}>{item.text}</p>
-                    <p style={{ fontSize: "0.62rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginTop: "1px" }}>{item.time}</p>
+                    <p style={{ fontSize: "0.62rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif", marginTop: "1px" }}>{item.time}</p>
                   </div>
                 </div>
               ))}
@@ -347,10 +512,10 @@ export default function DashboardPage() {
             All stat icons now use T.accent (orange only — 4-colour rule).
           */}
           {[
-            { label: "Courses Enrolled", value: "0",   icon: BookOpen },
-            { label: "Lessons Done",     value: "0",   icon: Clock    },
-            { label: "Day Streak",       value: "3",   icon: Flame    },
-            { label: "Community Rank",   value: "#42", icon: Trophy   },
+            { label: "Total XP",      value: momentum.totalXp.toLocaleString(),             icon: Trophy },
+            { label: "Creator Level", value: `L${displayLevel}`,                            icon: Star   },
+            { label: "Day Streak",    value: `${momentum.streak}`,                          icon: Flame  },
+            { label: "Daily Quests",  value: `${questsCompletedToday}/${questsTotalToday}`, icon: Clock  },
           ].map((stat, i) => (
             <motion.div
               key={i}
@@ -364,7 +529,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <div style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.2rem", color: T.text }}>{stat.value}</div>
-                <div style={{ fontSize: "0.65rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>{stat.label}</div>
+                <div style={{ fontSize: "0.65rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif" }}>{stat.label}</div>
               </div>
             </motion.div>
           ))}
@@ -374,3 +539,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+

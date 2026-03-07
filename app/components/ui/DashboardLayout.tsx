@@ -507,6 +507,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-grid-4    { grid-template-columns: 1fr 1fr !important; }
           .dash-grid-2    { grid-template-columns: 1fr !important; }
           .dash-grid-stats{ grid-template-columns: 1fr 1fr !important; }
+          .dash-momentum-grid { grid-template-columns: 1fr !important; }
           .dash-hero      { height: 180px !important; }
           .dash-padding   { padding: 1rem !important; }
           .hide-mobile    { display: none !important; }
@@ -516,6 +517,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
         @media (min-width: 768px) and (max-width: 1023px) {
           .dash-grid-4  { grid-template-columns: 1fr 1fr !important; }
+          .dash-momentum-grid { grid-template-columns: 1fr !important; }
           .dash-padding { padding: 1.25rem !important; }
         }
         @media (min-width: 1024px) {
