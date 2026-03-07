@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Home, BookOpen, Calendar, Image, Users, DollarSign,
+  Home, BookOpen, Calendar, Image as ImageIcon, Users, DollarSign,
   User, Settings, LogOut, Sun, Moon,
   ChevronRight, Menu, X, Sparkles, Mail, Instagram, Linkedin, Youtube
 } from "lucide-react";
@@ -16,7 +17,7 @@ const NAV_LINKS = [
   { label: "Home",      href: "/dashboard",  icon: Home      },
   { label: "Courses",   href: "/courses",    icon: BookOpen  },
   { label: "Events",    href: "/events",     icon: Calendar  },
-  { label: "Portfolio", href: "/portfolio",  icon: Image     },
+  { label: "Portfolio", href: "/portfolio",  icon: ImageIcon },
   { label: "Community", href: "/community",  icon: Users     },
   { label: "Pricing",   href: "/pricing",    icon: DollarSign},
   { label: "Profile",   href: "/profile",    icon: User      },
@@ -26,7 +27,7 @@ const BOTTOM_NAV = [
   { label: "Home",      href: "/dashboard",  icon: Home      },
   { label: "Courses",   href: "/courses",    icon: BookOpen  },
   { label: "Community", href: "/community",  icon: Users     },
-  { label: "Portfolio", href: "/portfolio",  icon: Image     },
+  { label: "Portfolio", href: "/portfolio",  icon: ImageIcon },
   { label: "Profile",   href: "/profile",    icon: User      },
 ];
 
@@ -119,6 +120,31 @@ const getInitialTheme = (): "dark" | "light" => {
   return attr === "light" ? "light" : "dark";
 };
 
+const addCacheBuster = (url: string) =>
+  `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+
+const resolveAvatarDisplayUrl = async (
+  avatarPath: string | null,
+  avatarPublicUrl: string | null
+) => {
+  if (avatarPath) {
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(avatarPath, 60 * 60);
+
+    if (!signedError && signedData?.signedUrl) {
+      return addCacheBuster(signedData.signedUrl);
+    }
+
+    const { data: publicData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(avatarPath);
+    if (publicData?.publicUrl) return addCacheBuster(publicData.publicUrl);
+  }
+
+  return avatarPublicUrl ? addCacheBuster(avatarPublicUrl) : null;
+};
+
 const getViewportFlags = () => {
   if (typeof window === "undefined") return { isMobile: false, isTablet: false };
   const width = window.innerWidth;
@@ -135,7 +161,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMobile,   setIsMobile  ] = useState(() => getViewportFlags().isMobile);
   const [isTablet,   setIsTablet  ] = useState(() => getViewportFlags().isTablet);
   const [hovered,    setHovered   ] = useState<string|null>(null);
-  const [user,       setUser      ] = useState<{ email?: string; user_metadata?: { full_name?: string } } | null>(null);
+  const [user,       setUser      ] = useState<{
+    id: string;
+    email?: string;
+    user_metadata?: { full_name?: string; avatar_path?: string; avatar_url?: string };
+  } | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   useEffect(() => {
     const obs = new MutationObserver(() => {
@@ -149,9 +181,61 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setIsTablet(next.isTablet);
     };
     window.addEventListener("resize", onResize);
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    return () => { obs.disconnect(); window.removeEventListener("resize", onResize); };
+
+    let cancelled = false;
+    const hydrateUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const authUser = data.user;
+      setUser(authUser);
+
+      if (!authUser) {
+        setAvatarUrl(null);
+        setAvatarLoadError(false);
+        return;
+      }
+
+      const metadata = authUser.user_metadata || {};
+      const avatarPath = typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
+      const avatarPublicUrl = typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
+      const resolvedAvatarUrl = await resolveAvatarDisplayUrl(avatarPath, avatarPublicUrl);
+      if (cancelled) return;
+      setAvatarUrl(resolvedAvatarUrl);
+      setAvatarLoadError(false);
+    };
+
+    hydrateUser();
+    const { data: authSub } = supabase.auth.onAuthStateChange(() => {
+      hydrateUser();
+    });
+
+    return () => {
+      cancelled = true;
+      authSub.subscription.unsubscribe();
+      obs.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refreshAvatar = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (cancelled || !data.user) return;
+      const metadata = data.user.user_metadata || {};
+      const avatarPath = typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
+      const avatarPublicUrl = typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
+      const resolvedAvatarUrl = await resolveAvatarDisplayUrl(avatarPath, avatarPublicUrl);
+      if (cancelled) return;
+      setAvatarUrl(resolvedAvatarUrl);
+      setAvatarLoadError(false);
+    };
+
+    refreshAvatar();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -223,9 +307,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* User pill */}
       <div style={{ padding: wide ? "0.875rem 1.25rem" : "0.875rem 0", borderBottom: `1px solid ${T.sidebarBorder}`, display: "flex", alignItems: "center", justifyContent: wide ? "flex-start" : "center", gap: 10 }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, #E06400)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.82rem", color: "#fff", boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}` }}>
-            {initial}
-          </div>
+          {avatarUrl && !avatarLoadError ? (
+            <Image
+              src={avatarUrl}
+              alt="Profile"
+              width={32}
+              height={32}
+              unoptimized
+              onError={() => setAvatarLoadError(true)}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                objectFit: "cover",
+                boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}`,
+              }}
+            />
+          ) : (
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, #E06400)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.82rem", color: "#fff", boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}` }}>
+              {initial}
+            </div>
+          )}
           <div style={{ position: "absolute", bottom: 1, right: 1, width: 7, height: 7, borderRadius: "50%", backgroundColor: "#4CAF50", border: `1.5px solid ${T.sidebarBg}` }} />
         </div>
         {wide && (
