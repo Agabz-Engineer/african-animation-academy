@@ -1,8 +1,3 @@
-@import url('https://api.fontshare.com/v2/css?f[]=clash-display@700,600,500&display=swap');
-@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500,400&display=swap');
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&display=swap');
-@import url('https://api.fontshare.com/v2/css?f[]=general-sans@600,500,400&display=swap');
-
 @font-face {
   font-family: 'Tahalonia';
   src: url('/fonts/Tahalonia.ttf') format('truetype');
@@ -41,10 +36,11 @@ html.theme-init *::after {
 ════════════════════════════════════════ */
 :root {
   /* Fonts */
-  --font-display: 'Clash Display', sans-serif;
-  --font-heading: 'Cabinet Grotesk', sans-serif;
-  --font-body:    'Satoshi', sans-serif;
-  --font-ui:      'Satoshi', sans-serif;
+  --font-display: var(--font-clash-display), sans-serif;
+  --font-heading: var(--font-cabinet-grotesk), sans-serif;
+  --font-body:    var(--font-satoshi), sans-serif;
+  --font-ui:      var(--font-satoshi), sans-serif;
+  --font-general: var(--font-general-sans), sans-serif;
   --font-brand:   'Tahalonia', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
