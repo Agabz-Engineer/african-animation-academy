@@ -80,6 +80,7 @@ const FOOTER_GROUPS = [
   {
     title: "Explore",
     links: [
+      { label: "About Us", href: "/#about" },
       { label: "Dashboard", href: "/dashboard" },
       { label: "Courses", href: "/courses" },
       { label: "Community", href: "/community" },
