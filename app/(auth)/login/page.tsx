@@ -296,6 +296,13 @@ export default function LoginPage() {
               Create one free
             </Link>
           </p>
+
+          <p style={{ textAlign: "center", color: C.dim, fontSize: "0.75rem", marginTop: "1rem", fontFamily: "'General Sans', sans-serif" }}>
+            Want to learn more about us?{" "}
+            <Link href="/home" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>
+              View our story
+            </Link>
+          </p>
         </motion.div>
       </div>
     </div>
