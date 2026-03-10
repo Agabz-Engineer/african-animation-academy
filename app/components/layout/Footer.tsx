@@ -29,6 +29,7 @@ const footerLinks = [
   {
     title: "Community",
     links: [
+      { label: "About Us", href: "/#about" },
       { label: "Challenges", href: "/community/challenges" },
       { label: "Leaderboard", href: "/community/leaderboard" },
       { label: "Forum", href: "/community/forum" },
