@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -77,18 +77,53 @@ const getInitialTheme = (): "dark" | "light" => {
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("Hot");
-  const [theme, setTheme]         = useState<"dark"|"light">(getInitialTheme);
-  const [user, setUser]           = useState<{ id: string; email?: string; user_metadata?: { full_name?: string } } | null>(null);
+  const [theme, setTheme] = useState<"dark" | "light">(getInitialTheme);
+  const [userLoading, setUserLoading] = useState(true);
+  const [userError, setUserError] = useState<string | null>(null);
+  const [user, setUser] = useState<{
+    id: string;
+    email?: string;
+    user_metadata?: { full_name?: string };
+  } | null>(null);
+
+  const hydrateUser = useCallback(async () => {
+    setUserLoading(true);
+    setUserError(null);
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      setUser(data.user);
+    } catch (error) {
+      setUserError(
+        error instanceof Error ? error.message : "Unable to load your account."
+      );
+    } finally {
+      setUserLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const obs = new MutationObserver(() => {
-      const t = document.documentElement.getAttribute("data-theme") as "dark"|"light";
+      const t = document.documentElement.getAttribute("data-theme") as
+        | "dark"
+        | "light";
       if (t) setTheme(t);
     });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
-    return () => obs.disconnect();
-  }, []);
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    void hydrateUser();
+    const { data: authSub } = supabase.auth.onAuthStateChange(() => {
+      void hydrateUser();
+    });
+
+    return () => {
+      obs.disconnect();
+      authSub.subscription.unsubscribe();
+    };
+  }, [hydrateUser]);
 
   const T = theme === "dark" ? DARK : LIGHT;
   const firstName = user?.user_metadata?.full_name?.split(" ")[0]
@@ -107,6 +142,10 @@ export default function DashboardPage() {
   const pendingQuests = quests.filter((quest) => !quest.completed);
   const displayLevel = momentum.level + 1;
   const dailyQuestPreview = pendingQuests.slice(0, 3);
+  const filteredShowcaseCards = useMemo(
+    () => SHOWCASE_CARDS.filter((card) => card.tag === activeTab),
+    [activeTab]
+  );
   const questCompletionPct =
     questsTotalToday > 0 ? Math.round((questsCompletedToday / questsTotalToday) * 100) : 0;
   const nextReminder =
@@ -126,6 +165,92 @@ export default function DashboardPage() {
       : tag === "New"
         ? { color: "#4CAF50",   bg: "rgba(76,175,80,0.14)" }
         : { color: T.textMuted, bg: theme === "dark" ? "rgba(200,196,188,0.12)" : "rgba(74,71,68,0.10)" };
+
+  if (userLoading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          backgroundColor: T.pageBg,
+          color: T.text,
+          fontFamily: "'Satoshi',sans-serif",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem" }}>
+          <motion.div
+            aria-hidden
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, ease: "linear", duration: 1 }}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: `2px solid ${T.border}`,
+              borderTopColor: T.accent,
+            }}
+          />
+          <p style={{ margin: 0, color: T.textMuted, fontSize: "0.86rem" }}>
+            Loading dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (userError) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          backgroundColor: T.pageBg,
+          color: T.text,
+          padding: "1rem",
+          fontFamily: "'Satoshi',sans-serif",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            border: `1px solid ${T.border}`,
+            borderRadius: "14px",
+            backgroundColor: T.cardBg,
+            padding: "1rem",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: "1rem", fontWeight: 700 }}>
+            Could not load dashboard data
+          </p>
+          <p style={{ margin: "0.45rem 0 0", color: T.textMuted, fontSize: "0.82rem", lineHeight: 1.5 }}>
+            {userError}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void hydrateUser();
+            }}
+            style={{
+              marginTop: "0.82rem",
+              border: `1px solid ${T.accent}`,
+              backgroundColor: T.accentSoft,
+              color: T.accent,
+              borderRadius: "9px",
+              padding: "0.4rem 0.68rem",
+              fontWeight: 600,
+              fontSize: "0.77rem",
+              cursor: "pointer",
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: T.pageBg, minHeight: "100vh", color: T.text, transition: "background-color 0.3s,color 0.3s" }}>
@@ -376,7 +501,25 @@ export default function DashboardPage() {
 
         {/* Card grid */}
         <div className="dash-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1rem" }}>
-          {SHOWCASE_CARDS.map((card, i) => {
+          {filteredShowcaseCards.length === 0 && (
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                borderRadius: "14px",
+                border: `1px dashed ${T.border}`,
+                backgroundColor: T.cardBg,
+                padding: "1.1rem",
+              }}
+            >
+              <p style={{ margin: 0, color: T.text, fontWeight: 700, fontFamily: "'Cabinet Grotesk',sans-serif" }}>
+                Nothing new in {activeTab} yet
+              </p>
+              <p style={{ margin: "0.35rem 0 0", color: T.textMuted, fontSize: "0.74rem", fontFamily: "'Satoshi',sans-serif" }}>
+                Try another filter while we load more recommendations.
+              </p>
+            </div>
+          )}
+          {filteredShowcaseCards.map((card, i) => {
             const ts = tagColor(card.tag);
             return (
               <motion.div

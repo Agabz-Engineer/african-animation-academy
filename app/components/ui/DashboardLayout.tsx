@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Home, BookOpen, Calendar, Image as ImageIcon, Users, DollarSign,
@@ -151,17 +151,32 @@ const getViewportFlags = () => {
   return { isMobile: width < 768, isTablet: width >= 768 && width < 1024 };
 };
 
+type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "error";
+
+const ACTIVE_ROUTE_ALIASES: Record<string, string[]> = {
+  "/dashboard": ["/home"],
+};
+
+const isRouteActive = (pathname: string, href: string) => {
+  const candidates = [href, ...(ACTIVE_ROUTE_ALIASES[href] || [])];
+  return candidates.some((candidate) =>
+    pathname === candidate || pathname.startsWith(`${candidate}/`)
+  );
+};
+
 // ─── Main Component ──────────────────────────────────────
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
 
-  const [theme,      setTheme     ] = useState<"dark"|"light">(getInitialTheme);
-  const [expanded,   setExpanded  ] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">(getInitialTheme);
+  const [expanded, setExpanded] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isMobile,   setIsMobile  ] = useState(() => getViewportFlags().isMobile);
-  const [isTablet,   setIsTablet  ] = useState(() => getViewportFlags().isTablet);
-  const [hovered,    setHovered   ] = useState<string|null>(null);
-  const [user,       setUser      ] = useState<{
+  const [isMobile, setIsMobile] = useState(() => getViewportFlags().isMobile);
+  const [isTablet, setIsTablet] = useState(() => getViewportFlags().isTablet);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [user, setUser] = useState<{
     id: string;
     email?: string;
     user_metadata?: { full_name?: string; avatar_path?: string; avatar_url?: string };
@@ -169,90 +184,160 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarLoadError, setAvatarLoadError] = useState(false);
 
-  useEffect(() => {
-    const obs = new MutationObserver(() => {
-      const t = document.documentElement.getAttribute("data-theme") as "dark"|"light";
-      if (t) setTheme(t);
-    });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    const onResize = () => {
-      const next = getViewportFlags();
-      setIsMobile(next.isMobile);
-      setIsTablet(next.isTablet);
-    };
-    window.addEventListener("resize", onResize);
+  const hydrateUser = useCallback(async (silent = false) => {
+    if (!silent) {
+      setAuthStatus((previous) =>
+        previous === "authenticated" ? previous : "loading"
+      );
+    }
+    setAuthError(null);
 
-    let cancelled = false;
-    const hydrateUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (cancelled) return;
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+
       const authUser = data.user;
       setUser(authUser);
 
       if (!authUser) {
         setAvatarUrl(null);
         setAvatarLoadError(false);
+        setAuthStatus("unauthenticated");
         return;
       }
 
       const metadata = authUser.user_metadata || {};
-      const avatarPath = typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
-      const avatarPublicUrl = typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
-      const resolvedAvatarUrl = await resolveAvatarDisplayUrl(avatarPath, avatarPublicUrl);
-      if (cancelled) return;
+      const avatarPath =
+        typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
+      const avatarPublicUrl =
+        typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
+      const resolvedAvatarUrl = await resolveAvatarDisplayUrl(
+        avatarPath,
+        avatarPublicUrl
+      );
       setAvatarUrl(resolvedAvatarUrl);
       setAvatarLoadError(false);
-    };
+      setAuthStatus("authenticated");
+    } catch (error) {
+      console.error("Failed to load authenticated user", error);
+      setAuthStatus("error");
+      setAuthError(
+        error instanceof Error ? error.message : "Unable to verify your session."
+      );
+    }
+  }, []);
 
-    hydrateUser();
-    const { data: authSub } = supabase.auth.onAuthStateChange(() => {
-      hydrateUser();
+  useEffect(() => {
+    const obs = new MutationObserver(() => {
+      const t = document.documentElement.getAttribute("data-theme") as
+        | "dark"
+        | "light";
+      if (t) setTheme(t);
+    });
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
     });
 
+    const onResize = () => {
+      const next = getViewportFlags();
+      setIsMobile(next.isMobile);
+      setIsTablet(next.isTablet);
+    };
+
+    const onEscapeClose = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+    };
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("keydown", onEscapeClose);
+
     return () => {
-      cancelled = true;
-      authSub.subscription.unsubscribe();
       obs.disconnect();
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("keydown", onEscapeClose);
     };
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    const refreshAvatar = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (cancelled || !data.user) return;
-      const metadata = data.user.user_metadata || {};
-      const avatarPath = typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
-      const avatarPublicUrl = typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
-      const resolvedAvatarUrl = await resolveAvatarDisplayUrl(avatarPath, avatarPublicUrl);
+    const runHydration = async () => {
+      await hydrateUser();
       if (cancelled) return;
-      setAvatarUrl(resolvedAvatarUrl);
-      setAvatarLoadError(false);
     };
 
-    refreshAvatar();
+    void runHydration();
+    const { data: authSub } = supabase.auth.onAuthStateChange(() => {
+      void hydrateUser(true);
+    });
+
     return () => {
       cancelled = true;
+      authSub.subscription.unsubscribe();
     };
-  }, [pathname]);
+  }, [hydrateUser]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  const T         = theme === "dark" ? DARK : LIGHT;
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (isMobile || isTablet) return;
+    setMobileOpen(false);
+  }, [isMobile, isTablet]);
+
+  useEffect(() => {
+    if (!(isMobile || isTablet) || !mobileOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobile, isTablet, mobileOpen]);
+
+  useEffect(() => {
+    if (authStatus !== "unauthenticated") return;
+    const nextPath = encodeURIComponent(pathname || "/dashboard");
+    router.replace(`/login?next=${nextPath}`);
+  }, [authStatus, pathname, router]);
+
+  const T = theme === "dark" ? DARK : LIGHT;
   const isDesktop = !isMobile && !isTablet;
-  const sidebarW  = expanded ? W_EXPANDED : W_COLLAPSED;
+  const sidebarW = expanded ? W_EXPANDED : W_COLLAPSED;
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? user?.email?.split("@")[0] ?? "Creative";
-  const initial   = firstName.charAt(0).toUpperCase();
+  const initial = firstName.charAt(0).toUpperCase();
+  const hasProfileDetails =
+    Boolean(user?.user_metadata?.full_name) ||
+    Boolean(user?.user_metadata?.avatar_path) ||
+    Boolean(user?.user_metadata?.avatar_url);
   const year = new Date().getFullYear();
 
-  const switchTheme = (mode: "dark"|"light") => {
+  const switchTheme = useCallback((mode: "dark" | "light") => {
     setTheme(mode);
     localStorage.setItem("africafx-theme", mode);
     document.documentElement.setAttribute("data-theme", mode);
-  };
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+  }, [router]);
+
+  const handleCloseMobileMenu = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
+
+  const handleOpenMobileMenu = useCallback(() => {
+    setMobileOpen(true);
+  }, []);
+
+  const retryAuthLoad = useCallback(() => {
+    void hydrateUser();
+  }, [hydrateUser]);
 
   // ── Theme Toggle ─────────────────────────────────────
   const renderThemeToggle = (compact = false) => {
@@ -349,15 +434,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
         {NAV_LINKS.map(link => {
-          const active = pathname === link.href;
+          const active = isRouteActive(pathname, link.href);
           return (
             <Link
               key={link.label}
               href={link.href}
-              onClick={() => setMobileOpen(false)}
+              onClick={handleCloseMobileMenu}
               title={!wide ? link.label : undefined}
-              onMouseEnter={() => setHovered(link.label)}
-              onMouseLeave={() => setHovered(null)}
+              className={active ? "dash-nav-link is-active" : "dash-nav-link"}
               style={{
                 display: "flex", alignItems: "center",
                 gap: wide ? "0.75rem" : 0,
@@ -366,8 +450,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 margin: wide ? "1px 0.625rem" : "1px 0.5rem",
                 borderRadius: 9,
                 textDecoration: "none",
-                color: active ? T.accent : hovered === link.label ? T.text : T.textMuted,
-                backgroundColor: active ? T.activeNavBg : hovered === link.label ? T.navHoverBg : "transparent",
+                color: active ? T.accent : T.textMuted,
+                backgroundColor: active ? T.activeNavBg : "transparent",
                 border: `1px solid ${active ? T.accent + "22" : "transparent"}`,
                 transition: "color 0.15s, background-color 0.15s",
                 fontSize: "0.82rem",
@@ -375,6 +459,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 fontWeight: active ? 600 : 400,
                 whiteSpace: "nowrap",
                 position: "relative",
+                ["--dash-nav-hover-bg" as string]: T.navHoverBg,
+                ["--dash-nav-hover-color" as string]: T.text,
               }}
             >
               {active && !wide && (
@@ -397,12 +483,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ) : (
           <div style={{ marginBottom: 4 }}>{renderThemeToggle(true)}</div>
         )}
-        <Link href="/settings" onClick={() => setMobileOpen(false)}
+        <Link href="/settings" onClick={handleCloseMobileMenu}
           style={{ display: "flex", alignItems: "center", justifyContent: wide ? "flex-start" : "center", gap: wide ? "0.625rem" : 0, padding: wide ? "0.45rem 0.375rem" : "0.55rem 0", borderRadius: 8, textDecoration: "none", color: T.textDim, fontSize: "0.78rem", fontFamily: "'General Sans',sans-serif" }}>
           <Settings style={{ width: 14, height: 14, flexShrink: 0 }} />
           {wide && "Settings"}
         </Link>
-        <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/login"; }}
+        <button onClick={handleSignOut}
           style={{ display: "flex", alignItems: "center", justifyContent: wide ? "flex-start" : "center", gap: wide ? "0.625rem" : 0, padding: wide ? "0.45rem 0.375rem" : "0.55rem 0", width: "100%", background: "none", border: "none", cursor: "pointer", color: T.textDim, fontSize: "0.78rem", fontFamily: "'General Sans',sans-serif", borderRadius: 8 }}>
           <LogOut style={{ width: 14, height: 14, flexShrink: 0 }} />
           {wide && "Log Out"}
@@ -412,6 +498,125 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 
   // ── RENDER ───────────────────────────────────────────
+  if (authStatus === "loading") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          backgroundColor: T.mainBg,
+          color: T.text,
+          fontFamily: "'General Sans',sans-serif",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.7rem" }}>
+          <motion.div
+            aria-hidden
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, ease: "linear", duration: 1 }}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              border: `2px solid ${T.border}`,
+              borderTopColor: T.accent,
+            }}
+          />
+          <p style={{ margin: 0, fontSize: "0.9rem", color: T.textMuted }}>
+            Loading your dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authStatus === "error") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          backgroundColor: T.mainBg,
+          color: T.text,
+          padding: "1rem",
+          fontFamily: "'General Sans',sans-serif",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            borderRadius: 14,
+            border: `1px solid ${T.border}`,
+            backgroundColor: T.cardBg,
+            padding: "1rem",
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem" }}>
+            We could not verify your session.
+          </p>
+          <p style={{ margin: "0.45rem 0 0", color: T.textMuted, fontSize: "0.84rem", lineHeight: 1.5 }}>
+            {authError || "Please retry. If this keeps happening, sign in again."}
+          </p>
+          <div style={{ display: "flex", gap: "0.55rem", marginTop: "0.9rem" }}>
+            <button
+              type="button"
+              onClick={retryAuthLoad}
+              style={{
+                border: `1px solid ${T.accent}`,
+                backgroundColor: T.accentSoft,
+                color: T.accent,
+                borderRadius: 9,
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                padding: "0.45rem 0.72rem",
+                cursor: "pointer",
+              }}
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              style={{
+                border: `1px solid ${T.border}`,
+                backgroundColor: "transparent",
+                color: T.textMuted,
+                borderRadius: 9,
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                padding: "0.45rem 0.72rem",
+                cursor: "pointer",
+              }}
+            >
+              Go to login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (authStatus === "unauthenticated") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          backgroundColor: T.mainBg,
+          color: T.textMuted,
+          fontSize: "0.9rem",
+          fontFamily: "'General Sans',sans-serif",
+        }}
+      >
+        Redirecting to login...
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "transparent", color: T.text, fontFamily: "'Satoshi',sans-serif", transition: "color 0.3s" }}>
 
@@ -442,7 +647,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <>
             <motion.div key="backdrop"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-              onClick={() => setMobileOpen(false)}
+              onClick={handleCloseMobileMenu}
               style={{ position: "fixed", inset: 0, backgroundColor: T.overlayBg, zIndex: 30, backdropFilter: "blur(4px)" }}
             />
             <motion.div key="drawer"
@@ -451,7 +656,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 31, width: W_EXPANDED }}
             >
               {renderSidebarInner(true)}
-              <button onClick={() => setMobileOpen(false)}
+              <button onClick={handleCloseMobileMenu}
                 style={{ position: "absolute", top: 14, right: -44, width: 34, height: 34, borderRadius: "50%", backgroundColor: T.accent, border: `2px solid ${T.mainBg}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 16px ${T.accentGlow}` }}>
                 <X style={{ width: 14, height: 14, color: "#fff" }} />
               </button>
@@ -473,7 +678,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Mobile topbar */}
         {(isMobile || isTablet) && (
           <div style={{ position: "sticky", top: 0, zIndex: 19, backgroundColor: T.topbarBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `1px solid ${T.border}`, padding: "0.75rem 1.25rem", display: "flex", alignItems: "center", gap: "0.875rem" }}>
-            <button onClick={() => setMobileOpen(true)}
+            <button onClick={handleOpenMobileMenu}
               style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
               <Menu style={{ width: 17, height: 17, color: T.textMuted }} />
             </button>
@@ -486,7 +691,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {renderThemeToggle(true)}
           </div>
         )}
-        <main style={{ flex: 1, overflowX: "hidden" }}>{children}</main>
+        <main style={{ flex: 1, overflowX: "hidden" }}>
+          {!hasProfileDetails && (
+            <div
+              style={{
+                margin: "0.9rem 1.1rem 0",
+                borderRadius: 10,
+                border: `1px solid ${T.border}`,
+                backgroundColor: T.cardBg,
+                padding: "0.65rem 0.75rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.75rem",
+                flexWrap: "wrap",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: "0.76rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>
+                Your profile is still empty. Add your display name and avatar to personalize the dashboard.
+              </p>
+              <Link
+                href="/settings"
+                style={{
+                  textDecoration: "none",
+                  borderRadius: 8,
+                  border: `1px solid ${T.accent}`,
+                  backgroundColor: T.accentSoft,
+                  color: T.accent,
+                  padding: "0.35rem 0.58rem",
+                  fontSize: "0.72rem",
+                  fontFamily: "'General Sans',sans-serif",
+                  fontWeight: 600,
+                }}
+              >
+                Complete profile
+              </Link>
+            </div>
+          )}
+          {children}
+        </main>
         <footer
           style={{
             marginTop: "1.1rem",
@@ -591,7 +834,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {(isMobile || isTablet) && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20, backgroundColor: T.bottomNavBg, borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "0.5rem 0 calc(0.625rem + env(safe-area-inset-bottom))", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
           {BOTTOM_NAV.map(link => {
-            const active = pathname === link.href;
+            const active = isRouteActive(pathname, link.href);
             return (
               <Link key={link.label} href={link.href}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", padding: "0.3rem 0.875rem", borderRadius: 12, color: active ? T.accent : T.textDim, position: "relative", minWidth: 52, transition: "color 0.18s" }}>
@@ -626,6 +869,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-grid-4    { grid-template-columns: repeat(4,1fr); }
           .dash-grid-2    { grid-template-columns: 1fr 1fr; }
           .dash-grid-stats{ grid-template-columns: repeat(4,1fr); }
+        }
+        .dash-nav-link:hover:not(.is-active) {
+          background-color: var(--dash-nav-hover-bg) !important;
+          color: var(--dash-nav-hover-color) !important;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .app-footer-shell {

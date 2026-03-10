@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "./supabase";
 
 export type GamificationAction =
   | "daily_login"
@@ -43,6 +44,12 @@ export type QuestWithProgress = QuestDefinition & {
   progress: number;
   completed: boolean;
   remaining: number;
+};
+
+type RemoteGamificationRow = {
+  user_id: string;
+  state: unknown;
+  updated_at: string;
 };
 
 const STORAGE_VERSION = 1;
@@ -277,6 +284,43 @@ const saveState = (storageKey: string, state: GamificationState) => {
   );
 };
 
+const loadRemoteState = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("user_gamification_states")
+    .select("user_id,state,updated_at")
+    .eq("user_id", userId)
+    .maybeSingle<RemoteGamificationRow>();
+
+  if (error) throw error;
+  return data;
+};
+
+const saveRemoteState = async (userId: string, state: GamificationState) => {
+  const { error } = await supabase
+    .from("user_gamification_states")
+    .upsert(
+      {
+        user_id: userId,
+        state,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    );
+
+  if (error) throw error;
+};
+
+const getProgressScore = (state: GamificationState) =>
+  state.totalXp * 10000 +
+  state.streak * 100 +
+  state.completedQuestIds.length * 10 +
+  Object.values(state.questProgress).reduce((sum, value) => sum + value, 0);
+
+const pickMostProgressedState = (
+  first: GamificationState,
+  second: GamificationState
+) => (getProgressScore(second) > getProgressScore(first) ? second : first);
+
 export const useGamification = (userId?: string | null) => {
   const storageKey = useMemo(() => getStorageKey(userId), [userId]);
 
@@ -284,14 +328,63 @@ export const useGamification = (userId?: string | null) => {
     getDefaultState(toDayKey())
   );
 
+  const persistState = useCallback(
+    (next: GamificationState) => {
+      saveState(storageKey, next);
+      if (!userId) return;
+
+      void saveRemoteState(userId, next).catch((error) => {
+        console.error("Failed to persist gamification state", error);
+      });
+    },
+    [storageKey, userId]
+  );
+
   useEffect(() => {
-    const today = toDayKey();
-    const loaded = sanitizeState(loadState(storageKey), today);
-    const normalized = normalizeState(loaded, today);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate per-user state when storage key changes
-    setState(normalized);
-    saveState(storageKey, normalized);
-  }, [storageKey]);
+    let cancelled = false;
+
+    const hydrateState = async () => {
+      const today = toDayKey();
+      const localLoaded = sanitizeState(loadState(storageKey), today);
+      const localNormalized = normalizeState(localLoaded, today);
+
+      if (!userId) {
+        if (cancelled) return;
+        setState(localNormalized);
+        saveState(storageKey, localNormalized);
+        return;
+      }
+
+      let resolved = localNormalized;
+
+      try {
+        const remoteRow = await loadRemoteState(userId);
+        if (remoteRow?.state) {
+          const remoteLoaded = sanitizeState(remoteRow.state, today);
+          const remoteNormalized = normalizeState(remoteLoaded, today);
+          resolved = pickMostProgressedState(remoteNormalized, localNormalized);
+
+          if (resolved !== remoteNormalized) {
+            await saveRemoteState(userId, resolved);
+          }
+        } else {
+          await saveRemoteState(userId, localNormalized);
+        }
+      } catch (error) {
+        console.error("Failed to hydrate gamification state from Supabase", error);
+      }
+
+      if (cancelled) return;
+      setState(resolved);
+      saveState(storageKey, resolved);
+    };
+
+    void hydrateState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [storageKey, userId]);
 
   useEffect(() => {
     const onSync = (event: Event) => {
@@ -307,15 +400,59 @@ export const useGamification = (userId?: string | null) => {
     return () => window.removeEventListener(SYNC_EVENT, onSync);
   }, [storageKey]);
 
-  const recordAction = (action: GamificationAction, amount = 1) => {
+  useEffect(() => {
+    if (!userId) return undefined;
+
+    const onRemoteChange = (payload: { new?: { state?: unknown } }) => {
+      const today = toDayKey();
+      const remoteLoaded = sanitizeState(payload.new?.state, today);
+      const remoteNormalized = normalizeState(remoteLoaded, today);
+      setState((previous) => {
+        const localNormalized = normalizeState(previous, today);
+        const resolved = pickMostProgressedState(remoteNormalized, localNormalized);
+        saveState(storageKey, resolved);
+        return resolved;
+      });
+    };
+
+    const channel = supabase
+      .channel(`gamification-state:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "user_gamification_states",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => onRemoteChange(payload as { new?: { state?: unknown } })
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "user_gamification_states",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => onRemoteChange(payload as { new?: { state?: unknown } })
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [storageKey, userId]);
+
+  const recordAction = useCallback((action: GamificationAction, amount = 1) => {
     setState((previous) => {
       const today = toDayKey();
       const normalized = normalizeState(previous, today);
       const next = applyAction(normalized, action, amount);
-      saveState(storageKey, next);
+      persistState(next);
       return next;
     });
-  };
+  }, [persistState]);
 
   const quests = useMemo<QuestWithProgress[]>(
     () =>
