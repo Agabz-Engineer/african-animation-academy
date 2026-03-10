@@ -299,7 +299,7 @@ export default function LoginPage() {
 
           <p style={{ textAlign: "center", color: C.dim, fontSize: "0.75rem", marginTop: "1rem", fontFamily: "'General Sans', sans-serif" }}>
             Want to learn more about us?{" "}
-            <Link href="/home" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>
+            <Link href="/about" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>
               View our story
             </Link>
           </p>
