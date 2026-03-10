@@ -91,7 +91,7 @@ const FOOTER_GROUPS = [
     title: "Account",
     links: [
       { label: "Settings", href: "/settings" },
-      { label: "Home", href: "/home" },
+      { label: "Home", href: "/" },
       { label: "Login", href: "/login" },
       { label: "Sign up", href: "/signup" },
     ],
@@ -153,9 +153,7 @@ const getViewportFlags = () => {
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "error";
 
-const ACTIVE_ROUTE_ALIASES: Record<string, string[]> = {
-  "/dashboard": ["/home"],
-};
+const ACTIVE_ROUTE_ALIASES: Record<string, string[]> = {};
 
 const isRouteActive = (pathname: string, href: string) => {
   const candidates = [href, ...(ACTIVE_ROUTE_ALIASES[href] || [])];
