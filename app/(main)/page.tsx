@@ -54,13 +54,15 @@ const rollContainer = {
   },
 };
 
+const rollEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
 const rollItem = {
   hidden: { y: "120%", rotateX: 80, opacity: 0 },
   show: {
     y: "0%",
     rotateX: 0,
     opacity: 1,
-    transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.85, ease: rollEase },
   },
 };
 
