@@ -193,7 +193,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     try {
       const { data, error } = await supabase.auth.getUser();
-      if (error) throw error;
+      
+      if (error) {
+        if (error.message.includes("Auth session missing")) {
+          setAvatarUrl(null);
+          setAvatarLoadError(false);
+          setAuthStatus("unauthenticated");
+          return;
+        }
+        throw error;
+      }
 
       const authUser = data.user;
       setUser(authUser);
