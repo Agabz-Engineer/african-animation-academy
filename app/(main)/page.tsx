@@ -17,6 +17,8 @@ import {
   Film,
   Layers,
 } from "lucide-react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
@@ -80,8 +82,13 @@ const RollLine = ({ text, className, style }: RollLineProps) => (
   </span>
 );
 
-export default function Home() {
+export default function LandingPage() {
+  const router = useRouter();
   const theme = useThemeMode();
+
+  useEffect(() => {
+    router.push("/login");
+  }, [router]);
   const C = theme === "dark" ? DARK_UI : LIGHT_UI;
 
   const [openDiscover, setOpenDiscover] = useState<number | null>(null);

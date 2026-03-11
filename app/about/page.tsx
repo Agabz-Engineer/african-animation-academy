@@ -302,7 +302,7 @@ export default function AboutPage() {
               className="text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed px-4"
               style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}
             >
-              We're revolutionizing animation education across Africa by bridging the gap between 
+              We&apos;re revolutionizing animation education across Africa by bridging the gap between 
               talented creators and world-class opportunities.
             </motion.p>
           </motion.div>
@@ -439,7 +439,7 @@ export default function AboutPage() {
               </h2>
               
               <p className="text-xl max-w-2xl mx-auto" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
-                The passionate team building Africa's animation future
+                The passionate team building Africa&apos;s animation future
               </p>
             </motion.div>
 

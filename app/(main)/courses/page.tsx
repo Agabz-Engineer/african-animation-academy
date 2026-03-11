@@ -80,7 +80,12 @@ export default function CoursesPage() {
         setLoading(false);
       });
     } else {
-      setLoading(false);
+      // Small delay to avoid synchronous state update in effect
+      const timer = setTimeout(() => setLoading(false), 0);
+      return () => {
+        obs.disconnect();
+        clearTimeout(timer);
+      };
     }
     return () => obs.disconnect();
   }, []);

@@ -381,7 +381,10 @@ export default function SignupPage() {
                         backdropFilter: "blur(8px)"
                       }}
                     >
-                        background: "rgba(255,109,31,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <div style={{
+                        width: "42px", height: "42px", borderRadius: "10px",
+                        background: "rgba(255,109,31,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                      }}>
                         <level.Icon style={{ width: "20px", height: "20px", color: "#FF6D1F" }} />
                       </div>
                       <div style={{ flex: 1 }}>
