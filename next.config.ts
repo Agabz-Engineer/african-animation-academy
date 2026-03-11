@@ -26,11 +26,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      {
-        source: "/",
-        destination: "/login",
-        permanent: false,
-      },
+      // No redirect from root - let it show the about page
     ];
   },
 };
