@@ -12,42 +12,42 @@ import { supabase } from "@/lib/supabase";
 
 /* ── Palette ── */
 const DARK = {
-  pageBg:    "#0F0D0B",
-  cardBg:    "#1A1714",
-  surface:   "#161412",
-  border:    "#242018",
-  inputBg:   "#1A1714",
-  inputBorder:"#2E2A24",
-  text:      "#FAF8F0",
-  textMuted: "#B0ACA4",
-  textDim:   "#5E5A56",
-  accent:    "#FF8C00",
-  accentSoft:"rgba(255,140,0,0.09)",
-  accentGlow:"rgba(255,140,0,0.22)",
+  pageBg:    "#222222",
+  cardBg:    "#2C2C2C",
+  surface:   "#333333",
+  border:    "#444444",
+  inputBg:   "#2C2C2C",
+  inputBorder:"#555555",
+  text:      "#FAF3E1",
+  textMuted: "#D2C9B8",
+  textDim:   "#9E9688",
+  accent:    "#FF6D1F",
+  accentSoft:"rgba(255,109,31,0.09)",
+  accentGlow:"rgba(255,109,31,0.22)",
   danger:    "#E05252",
   dangerSoft:"rgba(224,82,82,0.10)",
   success:   "#4CAF50",
-  sidebarBg: "#161412",
-  toggleOff: "#2E2A24",
+  sidebarBg: "#333333",
+  toggleOff: "#555555",
 };
 const LIGHT = {
-  pageBg:    "#FAF8F0",
+  pageBg:    "#FAF3E1",
   cardBg:    "#FFFFFF",
-  surface:   "#F5EFE3",
-  border:    "#E8E0D0",
+  surface:   "#F5E7C6",
+  border:    "#E7DBBD",
   inputBg:   "#FFFFFF",
-  inputBorder:"#DDD0B8",
-  text:      "#1C1C1C",
-  textMuted: "#4A4744",
-  textDim:   "#9A9590",
-  accent:    "#FF8C00",
-  accentSoft:"rgba(255,140,0,0.09)",
-  accentGlow:"rgba(255,140,0,0.18)",
+  inputBorder:"#E7DBBD",
+  text:      "#222222",
+  textMuted: "#555555",
+  textDim:   "#9E9688",
+  accent:    "#FF6D1F",
+  accentSoft:"rgba(255,109,31,0.09)",
+  accentGlow:"rgba(255,109,31,0.18)",
   danger:    "#D94040",
   dangerSoft:"rgba(217,64,64,0.08)",
   success:   "#4CAF50",
-  sidebarBg: "#EEE6D2",
-  toggleOff: "#DDD0B8",
+  sidebarBg: "#F5E7C6",
+  toggleOff: "#E7DBBD",
 };
 
 const TABS = [
@@ -361,7 +361,7 @@ export default function SettingsPage() {
 
   if (loading) return (
     <div style={{ backgroundColor: DARK.pageBg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ width: "28px", height: "28px", border: "2px solid #2A2520", borderTopColor: "#FF8C00", borderRadius: "50%", animation: "spin 0.75s linear infinite" }} />
+      <div style={{ width: "28px", height: "28px", border: "2px solid #444444", borderTopColor: "#FF6D1F", borderRadius: "50%", animation: "spin 0.75s linear infinite" }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -390,7 +390,7 @@ export default function SettingsPage() {
                   style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}
                 />
               ) : (
-                <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "linear-gradient(135deg,#FF8C00,#E06400)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "#FFFFFF", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}>
+                <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "linear-gradient(135deg,#FF6D1F,#E04D00)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "#FFFFFF", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}>
                   {(fullName || email).charAt(0).toUpperCase()}
                 </div>
               )}
@@ -398,7 +398,7 @@ export default function SettingsPage() {
               {/* Upload button — triggers hidden file input */}
               <label htmlFor="avatar-upload" style={{ position: "absolute", bottom: 0, right: 0, width: "22px", height: "22px", borderRadius: "50%", backgroundColor: avatarUploading ? T.textDim : T.accent, border: `2px solid ${T.pageBg}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: avatarUploading ? "wait" : "pointer" }}>
                 {avatarUploading
-                  ? <div style={{ width: "8px", height: "8px", border: "1.5px solid #FFFFFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                  ? <div style={{ width: "12px", height: "12px", border: "1.5px solid #FFFFFF", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
                   : <Camera style={{ width: "10px", height: "10px", color: "#FFFFFF" }} />
                 }
               </label>

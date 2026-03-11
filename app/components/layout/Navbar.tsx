@@ -4,15 +4,15 @@ import Link from "next/link";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
-  navBg: "rgba(34,24,8,0.58)",
-  navBorder: "rgba(61,46,16,0.70)",
-  brandText: "#F5ECD7",
+  navBg: "rgba(34,34,34,0.58)",
+  navBorder: "rgba(68,68,68,0.70)",
+  brandText: "#FAF3E1",
 };
 
 const LIGHT_UI = {
-  navBg: "rgba(255,255,255,0.84)",
-  navBorder: "rgba(188,165,125,0.58)",
-  brandText: "#1C1C1C",
+  navBg: "rgba(250,243,225,0.84)",
+  navBorder: "rgba(231,219,189,0.58)",
+  brandText: "#222222",
 };
 
 export default function Navbar() {
@@ -36,20 +36,20 @@ export default function Navbar() {
 
         <Link href="/" className="group flex items-center gap-3">
           <div
-            className="w-12 h-10 rounded-xl flex items-center justify-center overflow-hidden relative transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(232,160,32,0.5)]"
+            className="w-12 h-10 rounded-xl flex items-center justify-center overflow-hidden relative transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(255,109,31,0.5)]"
             style={{
-              background: "linear-gradient(135deg, #221808, #2D1F0A)",
-              border: "1px solid rgba(232, 160, 32, 0.4)",
+              background: "linear-gradient(135deg, #222222, #333333)",
+              border: "1px solid rgba(255, 109, 31, 0.4)",
             }}
           >
             <div
               className="absolute inset-0"
-              style={{ background: "linear-gradient(135deg, rgba(232,160,32,0.08) 0%, transparent 60%)" }}
+              style={{ background: "linear-gradient(135deg, rgba(255,109,31,0.08) 0%, transparent 60%)" }}
             />
             <div className="relative z-10 flex items-center tracking-tighter" style={{ letterSpacing: "-0.5px" }}>
-              <span className="font-black text-base tracking-tight" style={{ color: "#E8A020", fontFamily: "Space Grotesk, sans-serif" }}>A</span>
-              <span className="font-black text-base tracking-tight" style={{ color: "#F5ECD7", fontFamily: "Space Grotesk, sans-serif" }}>F</span>
-              <span className="font-black text-base tracking-tight" style={{ color: "#C1440E", fontFamily: "Space Grotesk, sans-serif" }}>X</span>
+              <span className="font-black text-base tracking-tight" style={{ color: "#FF6D1F", fontFamily: "Space Grotesk, sans-serif" }}>A</span>
+              <span className="font-black text-base tracking-tight" style={{ color: "#FAF3E1", fontFamily: "Space Grotesk, sans-serif" }}>F</span>
+              <span className="font-black text-base tracking-tight" style={{ color: "#E04D00", fontFamily: "Space Grotesk, sans-serif" }}>X</span>
             </div>
           </div>
           <div className="flex flex-col leading-tight">
@@ -60,7 +60,7 @@ export default function Navbar() {
               className="font-bold text-sm bg-clip-text text-transparent"
               style={{
                 fontFamily: "Space Grotesk, sans-serif",
-                backgroundImage: "linear-gradient(90deg, #E8A020, #C1440E)",
+                backgroundImage: "linear-gradient(90deg, #FF6D1F, #E04D00)",
               }}
             >
               Academy

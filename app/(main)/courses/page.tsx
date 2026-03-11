@@ -25,32 +25,32 @@ const ACCESSIBLE: Record<string, string[]> = {
 };
 
 const DARK = {
-  pageBg:    "#1C1C1C",
-  cardBg:    "#2C2926",
-  surface:   "#252320",
-  border:    "#3A3530",
-  text:      "#FAF8F0",
-  textMuted: "#C8C4BC",
-  textDim:   "#8A8680",
-  accent:    "#FF8C00",
-  accentText:"#1C1C1C",
-  accentSoft:"rgba(255,140,0,0.10)",
-  imgBg:     "#252320",
-  inputBg:   "#2C2926",
+  pageBg:    "#222222",
+  cardBg:    "#2C2C2C",
+  surface:   "#333333",
+  border:    "#444444",
+  text:      "#FAF3E1",
+  textMuted: "#D2C9B8",
+  textDim:   "#9E9688",
+  accent:    "#FF6D1F",
+  accentText:"#222222",
+  accentSoft:"rgba(255,109,31,0.10)",
+  imgBg:     "#333333",
+  inputBg:   "#2C2C2C",
 };
 
 const LIGHT = {
-  pageBg:    "#FAF8F0",
+  pageBg:    "#FAF3E1",
   cardBg:    "#FFFFFF",
-  surface:   "#EDE5CC",
-  border:    "#E0D8C3",
-  text:      "#1C1C1C",
-  textMuted: "#4A4744",
-  textDim:   "#7A7570",
-  accent:    "#FF8C00",
+  surface:   "#F5E7C6",
+  border:    "#E7DBBD",
+  text:      "#222222",
+  textMuted: "#555555",
+  textDim:   "#9E9688",
+  accent:    "#FF6D1F",
   accentText:"#FFFFFF",
-  accentSoft:"rgba(255,140,0,0.10)",
-  imgBg:     "#EDE5CC",
+  accentSoft:"rgba(255,109,31,0.10)",
+  imgBg:     "#F5E7C6",
   inputBg:   "#FFFFFF",
 };
 
@@ -98,8 +98,8 @@ export default function CoursesPage() {
     l === "Intermediate" ? "#FF8C00" : "#888";
 
   if (loading) return (
-    <div style={{ backgroundColor: "#1C1C1C", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ width: "28px", height: "28px", border: "2px solid #3A3530", borderTopColor: "#FF8C00", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <div style={{ backgroundColor: "#222222", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: "28px", height: "28px", border: "2px solid #444444", borderTopColor: "#FF6D1F", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
     </div>
   );
 
@@ -109,7 +109,7 @@ export default function CoursesPage() {
       {/* Header */}
       <div style={{ padding: "3rem 2.5rem 0" }}>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div style={{ width: "28px", height: "3px", background: "repeating-linear-gradient(90deg,#FF8C00 0,#FF8C00 8px,#1C1C1C 8px,#1C1C1C 16px)", borderRadius: "999px", marginBottom: "1.25rem" }} />
+          <div style={{ width: "28px", height: "3px", background: "repeating-linear-gradient(90deg,#FF6D1F 0,#FF6D1F 8px,#222222 8px,#222222 16px)", borderRadius: "999px", marginBottom: "1.25rem" }} />
           <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: T.text, marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>
             Your Courses
           </h1>
@@ -170,7 +170,7 @@ export default function CoursesPage() {
               <div style={{ width: "96px", height: "68px", borderRadius: "10px", backgroundColor: T.imgBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}`, position: "relative", overflow: "hidden" }}>
                 <Camera style={{ width: "16px", height: "16px", color: T.textDim, opacity: 0.4 }} />
                 {locked && (
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: theme === "dark" ? "rgba(28,28,28,0.85)" : "rgba(250,248,240,0.85)" }}>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: theme === "dark" ? "rgba(34,34,34,0.85)" : "rgba(250,243,225,0.85)" }}>
                     <Lock style={{ width: "15px", height: "15px", color: T.textDim }} />
                   </div>
                 )}

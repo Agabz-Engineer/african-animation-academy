@@ -122,28 +122,28 @@ const FAQS = [
 ];
 
 const DARK = {
-  text: "#FAF8F0",
-  muted: "#C8C0B2",
-  dim: "#968C7C",
-  border: "#383029",
-  panel: "rgba(20,17,14,0.9)",
-  card: "rgba(28,24,20,0.92)",
+  text: "#FAF3E1",
+  muted: "#D2C9B8",
+  dim: "#9E9688",
+  border: "#444444",
+  panel: "rgba(44,44,44,0.9)",
+  card: "rgba(51,51,51,0.92)",
   chip: "rgba(255,255,255,0.04)",
-  accent: "#FF8C00",
-  accentSoft: "rgba(255,140,0,0.15)",
+  accent: "#FF6D1F",
+  accentSoft: "rgba(255,109,31,0.15)",
   success: "#6AD07D",
 };
 
 const LIGHT = {
-  text: "#1C1C1C",
-  muted: "#5A534A",
-  dim: "#8A8175",
-  border: "#E2D5C2",
-  panel: "rgba(255,250,241,0.92)",
+  text: "#222222",
+  muted: "#555555",
+  dim: "#9E9688",
+  border: "#E7DBBD",
+  panel: "rgba(255,255,255,0.92)",
   card: "rgba(255,255,255,0.95)",
   chip: "rgba(0,0,0,0.04)",
-  accent: "#FF8C00",
-  accentSoft: "rgba(255,140,0,0.13)",
+  accent: "#FF6D1F",
+  accentSoft: "rgba(255,109,31,0.13)",
   success: "#2F9D47",
 };
 
@@ -231,7 +231,7 @@ export default function PricingPage() {
               className={billing === "monthly" ? "active" : ""}
               style={{
                 background: billing === "monthly" ? T.accent : "transparent",
-                color: billing === "monthly" ? (theme === "dark" ? "#1C1C1C" : "#FFFFFF") : T.muted,
+                color: billing === "monthly" ? (theme === "dark" ? "#222222" : "#FFFFFF") : T.muted,
               }}
             >
               Monthly
@@ -242,7 +242,7 @@ export default function PricingPage() {
               className={billing === "annual" ? "active" : ""}
               style={{
                 background: billing === "annual" ? T.accent : "transparent",
-                color: billing === "annual" ? (theme === "dark" ? "#1C1C1C" : "#FFFFFF") : T.muted,
+                color: billing === "annual" ? (theme === "dark" ? "#222222" : "#FFFFFF") : T.muted,
               }}
             >
               Annual
@@ -281,7 +281,7 @@ export default function PricingPage() {
             ? `linear-gradient(180deg, ${T.accentSoft} 0%, ${T.card} 35%)`
             : T.card;
           const ctaBg = plan.recommended ? T.accent : "transparent";
-          const ctaText = plan.recommended ? (theme === "dark" ? "#1C1C1C" : "#FFFFFF") : T.text;
+          const ctaText = plan.recommended ? (theme === "dark" ? "#222222" : "#FFFFFF") : T.text;
 
           return (
             <article
@@ -292,7 +292,7 @@ export default function PricingPage() {
               {plan.recommended && (
                 <span
                   className="recommended"
-                  style={{ background: T.accent, color: theme === "dark" ? "#1C1C1C" : "#FFFFFF" }}
+                  style={{ background: T.accent, color: theme === "dark" ? "#222222" : "#FFFFFF" }}
                 >
                   Recommended
                 </span>

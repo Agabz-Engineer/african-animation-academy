@@ -17,28 +17,28 @@ import Link from "next/link";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
-  text: "#F5ECD7",
-  muted: "#A89070",
-  line: "#3D2E10",
-  softPanelBg: "rgba(34, 24, 8, 0.75)",
-  softPanelBorder: "rgba(61,46,16,0.6)",
-  ghostBg: "rgba(26, 18, 8, 0.45)",
-  ghostBorder: "rgba(61,46,16,0.8)",
-  cardBg: "rgba(13, 9, 5, 0.60)",
-  cardBorder: "rgba(61, 46, 16, 0.40)",
-  navBg: "rgba(34,24,8,0.55)",
+  text: "#FAF3E1",
+  muted: "#D2C9B8",
+  line: "#444444",
+  softPanelBg: "rgba(44, 44, 44, 0.75)",
+  softPanelBorder: "rgba(68, 68, 68, 0.6)",
+  ghostBg: "rgba(34, 34, 34, 0.45)",
+  ghostBorder: "rgba(68, 68, 68, 0.8)",
+  cardBg: "rgba(51, 51, 51, 0.60)",
+  cardBorder: "rgba(68, 68, 68, 0.40)",
+  navBg: "rgba(44, 44, 44, 0.55)",
 };
 
 const LIGHT_UI = {
-  text: "#1C1C1C",
-  muted: "#544F49",
-  line: "#D7C7A7",
+  text: "#222222",
+  muted: "#555555",
+  line: "#E7DBBD",
   softPanelBg: "rgba(255, 255, 255, 0.78)",
-  softPanelBorder: "rgba(188, 165, 125, 0.48)",
+  softPanelBorder: "rgba(231, 219, 189, 0.48)",
   ghostBg: "rgba(255, 255, 255, 0.72)",
-  ghostBorder: "rgba(188, 165, 125, 0.58)",
+  ghostBorder: "rgba(231, 219, 189, 0.58)",
   cardBg: "rgba(255, 255, 255, 0.80)",
-  cardBorder: "rgba(188, 165, 125, 0.42)",
+  cardBorder: "rgba(231, 219, 189, 0.42)",
   navBg: "rgba(255, 255, 255, 0.78)",
 };
 
@@ -228,7 +228,7 @@ export default function AboutPage() {
       <div style={{ 
         padding: "1rem 2rem", 
         borderBottom: `1px solid ${C.line}`,
-        backgroundColor: theme === "dark" ? "rgba(13, 9, 5, 0.8)" : "rgba(255, 255, 255, 0.8)",
+        backgroundColor: theme === "dark" ? "rgba(34, 34, 34, 0.8)" : "rgba(250, 243, 225, 0.8)",
         backdropFilter: "blur(8px)"
       }}>
         <Link 
@@ -272,9 +272,9 @@ export default function AboutPage() {
                   borderColor: C.cardBorder,
                   backdropFilter: "blur(8px)"
                 }}>
-                <Sparkles className="w-4 h-4" style={{ color: "#E8A020" }} />
+                <Sparkles className="w-4 h-4" style={{ color: "#FF6D1F" }} />
                 <span className="text-xs font-semibold tracking-widest uppercase" 
-                  style={{ color: "#E8A020", fontFamily: "General Sans, sans-serif" }}>
+                  style={{ color: "#FF6D1F", fontFamily: "General Sans, sans-serif" }}>
                   Our Story
                 </span>
               </div>
@@ -286,7 +286,7 @@ export default function AboutPage() {
               style={{ 
                 fontFamily: "Clash Display, sans-serif", 
                 letterSpacing: "-0.02em",
-                background: "linear-gradient(135deg, #E8A020, #C1440E)",
+                background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 color: "transparent"
@@ -326,7 +326,7 @@ export default function AboutPage() {
             >
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ 
-                  background: "linear-gradient(135deg, rgba(232,160,32,0.08) 0%, transparent 60%)",
+                  background: "linear-gradient(135deg, rgba(255,109,31,0.08) 0%, transparent 60%)",
                   pointerEvents: "none"
                 }}
               />
@@ -334,15 +334,15 @@ export default function AboutPage() {
               <div className="relative z-10">
                 <motion.div variants={premiumImage} className="mb-8">
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, rgba(232,160,32,0.2), rgba(193,68,14,0.2))" }}>
-                    <Target className="w-8 h-8" style={{ color: "#E8A020" }} />
+                    style={{ background: "linear-gradient(135deg, rgba(255,109,31,0.2), rgba(224,77,0,0.2))" }}>
+                    <Target className="w-8 h-8" style={{ color: "#FF6D1F" }} />
                   </div>
                 </motion.div>
                 
                 <motion.h2 variants={premiumText} 
                   className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6"
                   style={{ 
-                    color: "#E8A020", 
+                    color: "#FF6D1F", 
                     fontFamily: "Clash Display, sans-serif", 
                     letterSpacing: "-0.02em" 
                   }}
@@ -373,7 +373,7 @@ export default function AboutPage() {
             >
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{ 
-                  background: "linear-gradient(135deg, rgba(232,160,32,0.08) 0%, transparent 60%)",
+                  background: "linear-gradient(135deg, rgba(255,109,31,0.08) 0%, transparent 60%)",
                   pointerEvents: "none"
                 }}
               />
@@ -381,15 +381,15 @@ export default function AboutPage() {
               <div className="relative z-10">
                 <motion.div variants={premiumImage} className="mb-8">
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, rgba(232,160,32,0.2), rgba(193,68,14,0.2))" }}>
-                    <Zap className="w-8 h-8" style={{ color: "#E8A020" }} />
+                    style={{ background: "linear-gradient(135deg, rgba(255,109,31,0.2), rgba(224,77,0,0.2))" }}>
+                    <Zap className="w-8 h-8" style={{ color: "#FF6D1F" }} />
                   </div>
                 </motion.div>
                 
                 <motion.h2 variants={premiumText}
                   className="text-4xl md:text-5xl font-bold mb-6"
                   style={{ 
-                    color: "#E8A020", 
+                    color: "#FF6D1F", 
                     fontFamily: "Clash Display, sans-serif", 
                     letterSpacing: "-0.02em" 
                   }}
@@ -420,7 +420,7 @@ export default function AboutPage() {
             <motion.div variants={premiumText} className="text-center mb-16">
               <div className="inline-flex items-center gap-3 mb-6">
                 <div className="w-12 h-px" style={{ backgroundColor: C.line }} />
-                <Users className="w-5 h-5" style={{ color: "#E8A020" }} />
+                <Users className="w-5 h-5" style={{ color: "#FF6D1F" }} />
                 <div className="w-12 h-px" style={{ backgroundColor: C.line }} />
               </div>
               
@@ -428,7 +428,7 @@ export default function AboutPage() {
                 <span style={{ color: C.text }}>Meet the </span>
                 <span
                   style={{
-                    background: "linear-gradient(135deg, #E8A020, #C1440E)",
+                    background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                     color: "transparent",
@@ -464,7 +464,7 @@ export default function AboutPage() {
                     <div 
                       className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                       style={{ 
-                        background: "linear-gradient(135deg, rgba(232,160,32,0.05) 0%, transparent 60%)",
+                        background: "linear-gradient(135deg, rgba(255,109,31,0.05) 0%, transparent 60%)",
                         pointerEvents: "none"
                       }}
                     />
@@ -477,13 +477,13 @@ export default function AboutPage() {
                           <div 
                             className="w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden"
                             style={{ 
-                              background: "linear-gradient(135deg, rgba(232,160,32,0.15), rgba(193,68,14,0.15))",
+                              background: "linear-gradient(135deg, rgba(255,109,31,0.15), rgba(224,77,0,0.15))",
                               border: `2px solid ${C.cardBorder}`
                             }}
                           >
                             {/* Initials as fallback */}
                             <span className="text-xl sm:text-2xl font-bold" style={{ 
-                              color: "#E8A020", 
+                              color: "#FF6D1F", 
                               fontFamily: "Clash Display, sans-serif" 
                             }}>
                               {member.initials}
@@ -508,15 +508,15 @@ export default function AboutPage() {
                         </h3>
                         
                         <div className="flex items-center justify-center gap-2 mb-4">
-                          <Star className="w-4 h-4" style={{ color: "#E8A020" }} />
+                          <Star className="w-4 h-4" style={{ color: "#FF6D1F" }} />
                           <p className="text-sm font-semibold text-center" 
                             style={{ 
-                              color: "#E8A020", 
+                              color: "#FF6D1F", 
                               fontFamily: "General Sans, sans-serif" 
                             }}>
                             {member.role}
                           </p>
-                          <Star className="w-4 h-4" style={{ color: "#E8A020" }} />
+                          <Star className="w-4 h-4" style={{ color: "#FF6D1F" }} />
                         </div>
                         
                         <p className="text-xs sm:text-sm leading-relaxed mb-3 md:mb-4 text-center" 
@@ -531,9 +531,9 @@ export default function AboutPage() {
                           <div
                             className="inline-flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border"
                             style={{ 
-                              background: "rgba(232,160,32,0.08)", 
-                              borderColor: "rgba(232,160,32,0.2)",
-                              color: "#E8A020", 
+                              background: "rgba(255,109,31,0.08)", 
+                              borderColor: "rgba(255,109,31,0.2)",
+                              color: "#FF6D1F", 
                               fontFamily: "General Sans, sans-serif",
                               fontSize: "0.625rem sm:text-xs",
                               fontWeight: 600
@@ -565,7 +565,7 @@ export default function AboutPage() {
                 <span className="text-base sm:text-lg font-semibold text-center" style={{ color: C.text, fontFamily: "General Sans, sans-serif" }}>
                   Join our mission to transform African animation
                 </span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: "#E8A020" }} />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: "#FF6D1F" }} />
               </div>
             </motion.div>
           </motion.div>

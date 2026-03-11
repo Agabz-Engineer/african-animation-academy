@@ -80,7 +80,7 @@ export default function Footer() {
   };
 
   return (
-    <footer style={{ backgroundColor: "#0D0905" }} className="relative mt-20">
+    <footer style={{ backgroundColor: "#222222" }} className="relative mt-20">
       {/* Kente stripe at top of footer */}
       <div className="kente-stripe" />
 
@@ -90,14 +90,14 @@ export default function Footer() {
         style={{
           backgroundImage: `repeating-linear-gradient(
             45deg,
-            #E8A020 0px,
-            #E8A020 1px,
+            #FF6D1F 0px,
+            #FF6D1F 1px,
             transparent 1px,
             transparent 20px
           ), repeating-linear-gradient(
             -45deg,
-            #E8A020 0px,
-            #E8A020 1px,
+            #FF6D1F 0px,
+            #FF6D1F 1px,
             transparent 1px,
             transparent 20px
           )`,
@@ -112,29 +112,29 @@ export default function Footer() {
             {/* AFX Logo */}
             <Link href="/" className="group flex items-center gap-3 mb-6 w-fit">
               <div
-                className="w-12 h-10 rounded-xl flex items-center justify-center overflow-hidden relative transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(232,160,32,0.5)]"
+                className="w-12 h-10 rounded-xl flex items-center justify-center overflow-hidden relative transition-all duration-300 group-hover:shadow-[0_0_20px_rgba(255,109,31,0.5)]"
                 style={{
-                  background: "linear-gradient(135deg, #221808, #2D1F0A)",
-                  border: "1px solid rgba(232, 160, 32, 0.4)",
+                  background: "linear-gradient(135deg, #222222, #333333)",
+                  border: "1px solid rgba(255, 109, 31, 0.4)",
                 }}
               >
                 <div
                   className="absolute inset-0"
-                  style={{ background: "linear-gradient(135deg, rgba(232,160,32,0.08) 0%, transparent 60%)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(255,109,31,0.08) 0%, transparent 60%)" }}
                 />
                 <div className="relative z-10 flex items-center tracking-tighter" style={{ letterSpacing: "-0.5px" }}>
-                  <span className="font-black text-base tracking-tight" style={{ color: "#E8A020", fontFamily: "Space Grotesk, sans-serif" }}>A</span>
-                  <span className="font-black text-base tracking-tight" style={{ color: "#F5ECD7", fontFamily: "Space Grotesk, sans-serif" }}>F</span>
-                  <span className="font-black text-base tracking-tight" style={{ color: "#C1440E", fontFamily: "Space Grotesk, sans-serif" }}>X</span>
+                  <span className="font-black text-base tracking-tight" style={{ color: "#FF6D1F", fontFamily: "Space Grotesk, sans-serif" }}>A</span>
+                  <span className="font-black text-base tracking-tight" style={{ color: "#FAF3E1", fontFamily: "Space Grotesk, sans-serif" }}>F</span>
+                  <span className="font-black text-base tracking-tight" style={{ color: "#E04D00", fontFamily: "Space Grotesk, sans-serif" }}>X</span>
                 </div>
               </div>
               <div className="flex items-center">
-                <span className="font-bold text-sm" style={{ color: "#F5ECD7", fontFamily: "Space Grotesk, sans-serif" }}>Africa</span>
+                <span className="font-bold text-sm" style={{ color: "#FAF3E1", fontFamily: "Space Grotesk, sans-serif" }}>Africa</span>
                 <span
                   className="font-bold text-sm bg-clip-text text-transparent"
                   style={{
                     fontFamily: "Space Grotesk, sans-serif",
-                    backgroundImage: "linear-gradient(90deg, #E8A020, #C1440E)",
+                    backgroundImage: "linear-gradient(90deg, #FF6D1F, #E04D00)",
                   }}
                 >
                   {" "}Fx
@@ -143,12 +143,12 @@ export default function Footer() {
             </Link>
 
             {/* Tagline */}
-            <p style={{ color: "#A89070", fontSize: "0.875rem", lineHeight: "1.6", marginBottom: "1.5rem", maxWidth: "280px" }}>
+            <p style={{ color: "#D2C9B8", fontSize: "0.875rem", lineHeight: "1.6", marginBottom: "1.5rem", maxWidth: "280px" }}>
               Africa&apos;s premier animation learning platform. Learn, create, and connect with animators across the continent and beyond.
             </p>
 
             {/* Proudly African tagline */}
-            <p className="italic mb-6" style={{ color: "#D4A853", fontSize: "0.8rem" }}>
+            <p className="italic mb-6" style={{ color: "#F5E7C6", fontSize: "0.8rem" }}>
               Proudly African. Globally Creative.
             </p>
 
@@ -163,17 +163,17 @@ export default function Footer() {
                   aria-label={social.label}
                   className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
                   style={{
-                    backgroundColor: "#221808",
-                    border: "1px solid #3D2E10",
-                    color: "#A89070",
+                    backgroundColor: "#222222",
+                    border: "1px solid #444444",
+                    color: "#D2C9B8",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = "#E8A020";
-                    (e.currentTarget as HTMLElement).style.color = "#E8A020";
+                    (e.currentTarget as HTMLElement).style.borderColor = "#FF6D1F";
+                    (e.currentTarget as HTMLElement).style.color = "#FF6D1F";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = "#3D2E10";
-                    (e.currentTarget as HTMLElement).style.color = "#A89070";
+                    (e.currentTarget as HTMLElement).style.borderColor = "#444444";
+                    (e.currentTarget as HTMLElement).style.color = "#D2C9B8";
                   }}
                 >
                   <social.icon className="w-4 h-4" />
@@ -186,7 +186,7 @@ export default function Footer() {
           <div className="lg:col-span-2 grid grid-cols-2 gap-8">
             {footerLinks.slice(0, 2).map((group) => (
               <div key={group.title}>
-                <h4 className="font-bold mb-4 text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#E8A020" }}>
+                <h4 className="font-bold mb-4 text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#FF6D1F" }}>
                   {group.title}
                 </h4>
                 <ul className="space-y-2.5">
@@ -194,8 +194,8 @@ export default function Footer() {
                     <li key={link.label}>
                       <Link
                         href={link.href}
-                        className="text-sm transition-colors duration-150 hover:text-[#E8A020]"
-                        style={{ color: "#A89070" }}
+                        className="text-sm transition-colors duration-150 hover:text-[#FF6D1F]"
+                        style={{ color: "#D2C9B8" }}
                       >
                         {link.label}
                       </Link>
@@ -209,7 +209,7 @@ export default function Footer() {
           <div className="lg:col-span-2 grid grid-cols-2 gap-8">
             {footerLinks.slice(2).map((group) => (
               <div key={group.title}>
-                <h4 className="font-bold mb-4 text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#E8A020" }}>
+                <h4 className="font-bold mb-4 text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#FF6D1F" }}>
                   {group.title}
                 </h4>
                 <ul className="space-y-2.5">
@@ -217,8 +217,8 @@ export default function Footer() {
                     <li key={link.label}>
                       <Link
                         href={link.href}
-                        className="text-sm transition-colors duration-150 hover:text-[#E8A020]"
-                        style={{ color: "#A89070" }}
+                        className="text-sm transition-colors duration-150 hover:text-[#FF6D1F]"
+                        style={{ color: "#D2C9B8" }}
                       >
                         {link.label}
                       </Link>
@@ -234,19 +234,19 @@ export default function Footer() {
         <div
           className="rounded-2xl p-8 mb-12"
           style={{
-            backgroundColor: "#1A1208",
-            border: "1px solid #3D2E10",
+            backgroundColor: "#222222",
+            border: "1px solid #444444",
           }}
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Mail className="w-5 h-5" style={{ color: "#E8A020" }} />
-                <h4 className="font-bold text-lg" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#F5ECD7" }}>
+                <Mail className="w-5 h-5" style={{ color: "#FF6D1F" }} />
+                <h4 className="font-bold text-lg" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#FAF3E1" }}>
                   Stay in the loop
                 </h4>
               </div>
-              <p className="text-sm" style={{ color: "#A89070" }}>
+              <p className="text-sm" style={{ color: "#D2C9B8" }}>
                 Get the latest courses, challenges and African animation news delivered to your inbox.
               </p>
             </div>
@@ -256,10 +256,10 @@ export default function Footer() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex items-center gap-2 px-6 py-3 rounded-full"
-                style={{ backgroundColor: "#221808", border: "1px solid #E8A020" }}
+                style={{ backgroundColor: "#222222", border: "1px solid #FF6D1F" }}
               >
-                <CheckCircle className="w-4 h-4" style={{ color: "#E8A020" }} />
-                <span style={{ color: "#E8A020", fontSize: "0.875rem", fontWeight: 600 }}>
+                <CheckCircle className="w-4 h-4" style={{ color: "#FF6D1F" }} />
+                <span style={{ color: "#FF6D1F", fontSize: "0.875rem", fontWeight: 600 }}>
                   Successfully subscribed
                 </span>
               </motion.div>
@@ -282,8 +282,8 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8" style={{ borderTop: "1px solid #3D2E10" }}>
-          <p className="text-xs text-center md:text-left" style={{ color: "#6B5A40" }}>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8" style={{ borderTop: "1px solid #444444" }}>
+          <p className="text-xs text-center md:text-left" style={{ color: "#9E9688" }}>
             Copyright {year} Africa Fx. All rights reserved.
           </p>
 
@@ -292,12 +292,12 @@ export default function Footer() {
             <div
               className="hidden md:block h-3 w-24 rounded-full overflow-hidden"
               style={{
-                background: "repeating-linear-gradient(90deg, #E8A020 0px, #E8A020 8px, #C1440E 8px, #C1440E 16px, #D4A853 16px, #D4A853 24px, #8B2E08 24px, #8B2E08 32px)",
+                background: "repeating-linear-gradient(90deg, #FF6D1F 0px, #FF6D1F 8px, #E04D00 8px, #E04D00 16px, #F5E7C6 16px, #F5E7C6 24px, #A03000 24px, #A03000 32px)",
               }}
             />
-            <p className="text-xs italic" style={{ color: "#6B5A40" }}>
+            <p className="text-xs italic" style={{ color: "#9E9688" }}>
               <span className="inline-flex items-center gap-1">
-                Made with <Heart className="w-3 h-3" style={{ color: "#C1440E" }} /> in Africa
+                Made with <Heart className="w-3 h-3" style={{ color: "#E04D00" }} /> in Africa
               </span>
             </p>
           </div>

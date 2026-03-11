@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -8,21 +8,21 @@ import { REMEMBER_ME_KEY, setRememberSessionPreference, supabase } from "@/lib/s
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
-  surface: "#221808",
-  border: "#3D2E10",
-  text: "#F5ECD7",
-  muted: "#A89070",
-  dim: "#6B5A40",
-  divider: "rgba(61,46,16,0.4)",
+  surface: "#222222",
+  border: "#444444",
+  text: "#FAF3E1",
+  muted: "#D2C9B8",
+  dim: "#9E9688",
+  divider: "rgba(68,68,68,0.4)",
 };
 
 const LIGHT_UI = {
-  surface: "rgba(255,255,255,0.86)",
-  border: "#DCCFB7",
-  text: "#1C1C1C",
-  muted: "#5A5550",
-  dim: "#7A746A",
-  divider: "rgba(183,164,132,0.55)",
+  surface: "rgba(250,243,225,0.86)",
+  border: "#E7DBBD",
+  text: "#222222",
+  muted: "#555555",
+  dim: "#888888",
+  divider: "rgba(231,219,189,0.55)",
 };
 
 export default function LoginPage() {
@@ -82,13 +82,13 @@ export default function LoginPage() {
         <div style={{
           position: "absolute", top: "25%", left: "25%",
           width: "320px", height: "320px",
-          background: "rgba(232,160,32,0.08)",
+          background: "rgba(255,109,31,0.08)",
           borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none"
         }} />
         <div style={{
           position: "absolute", bottom: "25%", right: "20%",
           width: "200px", height: "200px",
-          background: "rgba(193,68,14,0.07)",
+          background: "rgba(224,77,0,0.07)",
           borderRadius: "50%", filter: "blur(60px)", pointerEvents: "none"
         }} />
 
@@ -107,9 +107,9 @@ export default function LoginPage() {
               borderRadius: "12px",
               display: "flex", alignItems: "center", justifyContent: "center"
             }}>
-              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#E8A020" }}>A</span>
-              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#C1440E" }}>F</span>
-              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#D4A853" }}>X</span>
+              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#FF6D1F" }}>A</span>
+              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#E04D00" }}>F</span>
+              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#F5E7C6" }}>X</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.875rem", color: C.text }}>
@@ -117,7 +117,7 @@ export default function LoginPage() {
               </span>
               <span style={{
                 fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.875rem",
-                background: "linear-gradient(135deg, #E8A020, #C1440E)",
+                background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
                 WebkitBackgroundClip: "text", backgroundClip: "text",
                 WebkitTextFillColor: "transparent"
               }}>
@@ -144,7 +144,7 @@ export default function LoginPage() {
             Join African creatives learning animation, building portfolios and connecting with a global community.
           </p>
 
-          <p style={{ fontFamily: "'General Sans', sans-serif", fontStyle: "italic", color: "#D4A853", fontSize: "0.8rem" }}>
+          <p style={{ fontFamily: "'General Sans', sans-serif", fontStyle: "italic", color: "#FF6D1F", fontSize: "0.8rem" }}>
             Proudly African. Globally Creative.
           </p>
         </motion.div>
@@ -175,9 +175,9 @@ export default function LoginPage() {
               border: `1px solid ${C.border}`, borderRadius: "10px",
               display: "flex", alignItems: "center", justifyContent: "center"
             }}>
-              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#E8A020", fontSize: "0.85rem" }}>A</span>
-              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#C1440E", fontSize: "0.95rem" }}>F</span>
-              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#D4A853", fontSize: "0.85rem" }}>X</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#FF6D1F", fontSize: "0.85rem" }}>A</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#E04D00", fontSize: "0.95rem" }}>F</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#F5E7C6", fontSize: "0.85rem" }}>X</span>
             </div>
             <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, color: C.text, fontSize: "1rem" }}>
               Africa Fx
@@ -227,7 +227,7 @@ export default function LoginPage() {
                 <label style={{ fontSize: "0.875rem", fontWeight: 500, color: C.muted, fontFamily: "'General Sans', sans-serif" }}>
                   Password
                 </label>
-                <Link href="/forgot-password" style={{ fontSize: "0.8rem", color: "#E8A020", textDecoration: "none" }}>
+                <Link href="/forgot-password" style={{ fontSize: "0.8rem", color: "#FF6D1F", textDecoration: "none" }}>
                   Forgot password?
                 </Link>
               </div>
@@ -263,7 +263,7 @@ export default function LoginPage() {
                 style={{
                   width: "15px",
                   height: "15px",
-                  accentColor: "#E8A020",
+                  accentColor: "#FF6D1F",
                   cursor: "pointer",
                 }}
               />
@@ -300,14 +300,14 @@ export default function LoginPage() {
 
           <p style={{ textAlign: "center", color: C.muted, fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'General Sans', sans-serif" }}>
             Don&apos;t have an account?{" "}
-            <Link href="/signup" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>
+            <Link href="/signup" style={{ color: "#FF6D1F", fontWeight: 600, textDecoration: "none" }}>
               Create one free
             </Link>
           </p>
 
           <p style={{ textAlign: "center", color: C.dim, fontSize: "0.75rem", marginTop: "1rem", fontFamily: "'General Sans', sans-serif" }}>
             Want to learn more about us?{" "}
-            <Link href="/about" style={{ color: "#E8A020", fontWeight: 600, textDecoration: "none" }}>
+            <Link href="/about" style={{ color: "#FF6D1F", fontWeight: 600, textDecoration: "none" }}>
               View our story
             </Link>
           </p>

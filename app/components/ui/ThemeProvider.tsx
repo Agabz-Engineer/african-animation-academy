@@ -53,8 +53,8 @@ export function ThemeToggle() {
         width: "40px",
         height: "40px",
         borderRadius: "10px",
-        backgroundColor: theme === "dark" ? "rgba(34,24,8,0.80)" : "rgba(255,248,240,0.90)",
-        border: `1px solid ${theme === "dark" ? "#3D2E10" : "#E8D5B0"}`,
+        backgroundColor: theme === "dark" ? "rgba(34,34,34,0.80)" : "rgba(250,243,225,0.90)",
+        border: `1px solid ${theme === "dark" ? "#444444" : "#E7DBBD"}`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -63,8 +63,8 @@ export function ThemeToggle() {
       }}
     >
       {theme === "dark"
-        ? <Sun style={{ width: "16px", height: "16px", color: "#E8A020" }} />
-        : <Moon style={{ width: "16px", height: "16px", color: "#C47D0E" }} />
+        ? <Sun style={{ width: "16px", height: "16px", color: "#FF6D1F" }} />
+        : <Moon style={{ width: "16px", height: "16px", color: "#E04D00" }} />
       }
     </button>
   );

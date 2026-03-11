@@ -16,27 +16,27 @@ import {
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
-  text: "#F5ECD7",
-  muted: "#A89070",
-  line: "#3D2E10",
-  cardBg: "rgba(13, 9, 5, 0.60)",
-  cardBorder: "rgba(61, 46, 16, 0.40)",
-  hoverBg: "rgba(232,160,32,0.1)",
+  text: "#FAF3E1",
+  muted: "#D2C9B8",
+  line: "#444444",
+  cardBg: "rgba(34, 34, 34, 0.60)",
+  cardBorder: "rgba(68, 68, 68, 0.40)",
+  hoverBg: "rgba(255,109,31,0.1)",
   overlayBg: "rgba(0,0,0,0.8)",
-  filterBg: "rgba(34,24,8,0.95)",
-  filterBorder: "rgba(61,46,16,0.6)",
+  filterBg: "rgba(34, 34, 34, 0.95)",
+  filterBorder: "rgba(68, 68, 68, 0.6)",
 };
 
 const LIGHT_UI = {
-  text: "#1C1C1C",
-  muted: "#544F49",
-  line: "#D7C7A7",
-  cardBg: "rgba(255, 255, 255, 0.80)",
-  cardBorder: "rgba(188, 165, 125, 0.42)",
-  hoverBg: "rgba(232,160,32,0.08)",
+  text: "#222222",
+  muted: "#555555",
+  line: "#E7DBBD",
+  cardBg: "rgba(250, 243, 225, 0.80)",
+  cardBorder: "rgba(231, 219, 189, 0.42)",
+  hoverBg: "rgba(255,109,31,0.08)",
   overlayBg: "rgba(0,0,0,0.6)",
-  filterBg: "rgba(255,255,255,0.95)",
-  filterBorder: "rgba(188,165,125,0.6)",
+  filterBg: "rgba(250, 243, 225, 0.95)",
+  filterBorder: "rgba(231, 219, 189, 0.6)",
 };
 
 // Animation portfolio data
@@ -172,7 +172,7 @@ export default function PortfolioPage() {
   return (
     <div style={{ 
       minHeight: "100vh", 
-      backgroundColor: theme === "dark" ? "#0F0D0B" : "#FAF8F0",
+      backgroundColor: theme === "dark" ? "#222222" : "#FAF3E1",
       color: C.text,
       transition: "all 0.3s ease" 
     }}>
@@ -203,7 +203,7 @@ export default function PortfolioPage() {
                 fontSize: "2.5rem",
                 fontWeight: 700,
                 margin: "0 0 0.5rem 0",
-                background: "linear-gradient(135deg, #E8A020, #C1440E)",
+                background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 color: "transparent",
@@ -234,8 +234,8 @@ export default function PortfolioPage() {
                   style={{
                     padding: "0.5rem 0.75rem",
                     border: "none",
-                    backgroundColor: viewMode === "grid" ? "#E8A020" : "transparent",
-                    color: viewMode === "grid" ? "#0D0905" : C.text,
+                    backgroundColor: viewMode === "grid" ? "#FF6D1F" : "transparent",
+                    color: viewMode === "grid" ? "#222222" : C.text,
                     borderRadius: "6px 0 0 6px",
                     cursor: "pointer",
                     display: "flex",
@@ -254,8 +254,8 @@ export default function PortfolioPage() {
                   style={{
                     padding: "0.5rem 0.75rem",
                     border: "none",
-                    backgroundColor: viewMode === "list" ? "#E8A020" : "transparent",
-                    color: viewMode === "list" ? "#0D0905" : C.text,
+                    backgroundColor: viewMode === "list" ? "#FF6D1F" : "transparent",
+                    color: viewMode === "list" ? "#222222" : C.text,
                     borderRadius: "0 6px 6px 0",
                     cursor: "pointer",
                     display: "flex",
@@ -328,8 +328,8 @@ export default function PortfolioPage() {
                   width: "100%",
                   padding: "0.5rem 0.75rem",
                   border: "none",
-                  backgroundColor: selectedCategory === category ? "#E8A020" : "transparent",
-                  color: selectedCategory === category ? "#0D0905" : C.text,
+                  backgroundColor: selectedCategory === category ? "#FF6D1F" : "transparent",
+                  color: selectedCategory === category ? "#222222" : C.text,
                   borderRadius: "4px",
                   cursor: "pointer",
                   textAlign: "left",
@@ -391,12 +391,12 @@ export default function PortfolioPage() {
                     <div style={{
                       position: "absolute",
                       inset: 0,
-                      background: `linear-gradient(135deg, rgba(232,160,32,0.1), rgba(193,68,14,0.1))`,
+                      background: `linear-gradient(135deg, rgba(255,109,31,0.1), rgba(224,77,0,0.1))`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}>
-                      <Play size={48} style={{ color: "#E8A020" }} />
+                      <Play size={48} style={{ color: "#FF6D1F" }} />
                     </div>
                     
                     {/* Hover Overlay */}
@@ -510,7 +510,7 @@ export default function PortfolioPage() {
                           style={{
                             padding: "0.25rem 0.5rem",
                             backgroundColor: C.hoverBg,
-                            color: "#E8A020",
+                            color: "#FF6D1F",
                             borderRadius: "4px",
                             fontSize: "0.75rem",
                             fontFamily: "General Sans, sans-serif",
@@ -566,8 +566,8 @@ export default function PortfolioPage() {
                       
                       <button style={{
                         padding: "0.375rem 0.75rem",
-                        backgroundColor: "#E8A020",
-                        color: "#0D0905",
+                        backgroundColor: "#FF6D1F",
+                        color: "#222222",
                         border: "none",
                         borderRadius: "6px",
                         fontSize: "0.75rem",
@@ -650,12 +650,12 @@ export default function PortfolioPage() {
                       <div style={{
                         position: "absolute",
                         inset: 0,
-                        background: `linear-gradient(135deg, rgba(232,160,32,0.1), rgba(193,68,14,0.1))`,
+                        background: `linear-gradient(135deg, rgba(255,109,31,0.1), rgba(224,77,0,0.1))`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                       }}>
-                        <Play size={32} style={{ color: "#E8A020" }} />
+                        <Play size={32} style={{ color: "#FF6D1F" }} />
                       </div>
                     </div>
 
@@ -699,7 +699,7 @@ export default function PortfolioPage() {
                             style={{
                               padding: "0.125rem 0.375rem",
                               backgroundColor: C.hoverBg,
-                              color: "#E8A020",
+                              color: "#FF6D1F",
                               borderRadius: "3px",
                               fontSize: "0.625rem",
                               fontFamily: "General Sans, sans-serif",
@@ -726,12 +726,12 @@ export default function PortfolioPage() {
                       <div style={{
                         position: "absolute",
                         inset: 0,
-                        background: `linear-gradient(135deg, rgba(232,160,32,0.1), rgba(193,68,14,0.1))`,
+                        background: `linear-gradient(135deg, rgba(255,109,31,0.1), rgba(224,77,0,0.1))`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                       }}>
-                        <Play size={24} style={{ color: "#E8A020" }} />
+                        <Play size={24} style={{ color: "#FF6D1F" }} />
                       </div>
                     </div>
 
@@ -812,7 +812,7 @@ export default function PortfolioPage() {
                             style={{
                               padding: "0.25rem 0.5rem",
                               backgroundColor: C.hoverBg,
-                              color: "#E8A020",
+                              color: "#FF6D1F",
                               borderRadius: "4px",
                               fontSize: "0.75rem",
                               fontFamily: "General Sans, sans-serif",

@@ -181,35 +181,35 @@ const PAST_EVENTS = [
 ];
 
 const DARK = {
-  panel: "rgba(20,17,14,0.92)",
-  card: "rgba(28,24,20,0.9)",
-  border: "#383029",
-  text: "#FAF8F0",
-  muted: "#C8C0B2",
-  dim: "#968C7C",
-  accent: "#FF8C00",
-  accentSoft: "rgba(255,140,0,0.14)",
-  coolA: "rgba(38,88,156,0.34)",
-  coolB: "rgba(20,48,98,0.56)",
-  slot: "linear-gradient(135deg, rgba(23,57,106,0.48), rgba(17,18,24,0.68))",
-  slotStroke: "rgba(173,205,255,0.35)",
-  overlay: "rgba(12,11,9,0.82)",
+  panel: "rgba(44,44,44,0.92)",
+  card: "rgba(51,51,51,0.9)",
+  border: "#444444",
+  text: "#FAF3E1",
+  muted: "#D2C9B8",
+  dim: "#9E9688",
+  accent: "#FF6D1F",
+  accentSoft: "rgba(255,109,31,0.14)",
+  coolA: "rgba(255,109,31,0.12)",
+  coolB: "rgba(255,109,31,0.08)",
+  slot: "linear-gradient(135deg, rgba(44,44,44,0.48), rgba(34,34,34,0.68))",
+  slotStroke: "rgba(255,109,31,0.25)",
+  overlay: "rgba(34,34,34,0.82)",
 };
 
 const LIGHT = {
-  panel: "rgba(255,250,241,0.92)",
+  panel: "rgba(255,255,255,0.92)",
   card: "rgba(255,255,255,0.92)",
-  border: "#E2D5C2",
-  text: "#1C1C1C",
-  muted: "#5A534A",
-  dim: "#8A8175",
-  accent: "#FF8C00",
-  accentSoft: "rgba(255,140,0,0.12)",
-  coolA: "rgba(116,162,232,0.25)",
-  coolB: "rgba(156,193,245,0.36)",
-  slot: "linear-gradient(135deg, rgba(208,229,255,0.78), rgba(236,243,255,0.96))",
-  slotStroke: "rgba(41,86,145,0.26)",
-  overlay: "rgba(18,18,18,0.74)",
+  border: "#E7DBBD",
+  text: "#222222",
+  muted: "#555555",
+  dim: "#9E9688",
+  accent: "#FF6D1F",
+  accentSoft: "rgba(255,109,31,0.12)",
+  coolA: "rgba(255,109,31,0.08)",
+  coolB: "rgba(255,109,31,0.05)",
+  slot: "linear-gradient(135deg, rgba(245,231,198,0.78), rgba(250,243,225,0.96))",
+  slotStroke: "rgba(255,109,31,0.16)",
+  overlay: "rgba(34,34,34,0.74)",
 };
 
 const getInitialTheme = (): "dark" | "light" => {
@@ -337,7 +337,7 @@ export default function EventsPage() {
       backgroundImage: `linear-gradient(135deg, ${from}, ${to}), linear-gradient(0deg, ${veil}, ${veil}), url('/images/bg-desktop.jpg')`,
       backgroundSize: "cover, cover, cover",
       backgroundPosition: "center, center, center",
-      color: theme === "dark" ? "#FAF8F0" : "#1C1C1C",
+      color: theme === "dark" ? "#FAF3E1" : "#222222",
     };
   };
 
@@ -369,7 +369,7 @@ export default function EventsPage() {
               <button
                 key="c"
                 className="primaryBtn"
-                style={{ background: T.accent, color: theme === "dark" ? "#1C1C1C" : "#FFFFFF" }}
+                style={{ background: T.accent, color: theme === "dark" ? "#222222" : "#FFFFFF" }}
               >
                 Join Live Session <ArrowRight style={{ width: "15px", height: "15px" }} />
               </button>,
@@ -429,7 +429,7 @@ export default function EventsPage() {
                 style={{
                   borderColor: active ? T.accent : T.border,
                   background: active ? T.accent : T.card,
-                  color: active ? (theme === "dark" ? "#1C1C1C" : "#FFFFFF") : T.muted,
+                  color: active ? (theme === "dark" ? "#222222" : "#FFFFFF") : T.muted,
                 }}
               >
                 {active && <motion.span layoutId="filterPill" className="pillActive" />}
@@ -488,7 +488,7 @@ export default function EventsPage() {
                     >
                       <p>{event.description}</p>
                       <div className="overlayActions">
-                        <button style={{ background: T.accent, color: theme === "dark" ? "#1C1C1C" : "#FFFFFF" }}>
+                        <button style={{ background: T.accent, color: theme === "dark" ? "#222222" : "#FFFFFF" }}>
                           Reserve Seat
                         </button>
                         <button style={{ borderColor: `${T.accent}77`, color: T.text }}>Details</button>
@@ -673,7 +673,7 @@ export default function EventsPage() {
               </div>
               <h3>{event.title}</h3>
               <p style={{ color: T.dim }}>{event.replay}</p>
-              <button className="replay" style={{ background: T.accent, color: theme === "dark" ? "#1C1C1C" : "#FFFFFF" }}>
+              <button className="replay" style={{ background: T.accent, color: theme === "dark" ? "#222222" : "#FFFFFF" }}>
                 <Video style={{ width: "14px", height: "14px" }} /> Watch Replay
               </button>
               <div className="chips">

@@ -8,15 +8,15 @@ import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
-  bg: "#140902",
-  text: "#F5ECD7",
-  muted: "#A89070",
+  bg: "#222222",
+  text: "#FAF3E1",
+  muted: "#D2C9B8",
 };
 
 const LIGHT_UI = {
-  bg: "rgba(250,248,240,0.86)",
-  text: "#1C1C1C",
-  muted: "#5A5550",
+  bg: "rgba(250,243,225,0.86)",
+  text: "#222222",
+  muted: "#555555",
 };
 
 export default function AuthCallbackPage() {
@@ -141,14 +141,14 @@ export default function AuthCallbackPage() {
           >
             Sign-in failed
           </h1>
-          <p style={{ color: theme === "dark" ? "#FFB4A1" : "#B3452C", marginBottom: "1.5rem" }}>{error}</p>
+          <p style={{ color: theme === "dark" ? "#FF6D1F" : "#E04D00", marginBottom: "1.5rem" }}>{error}</p>
           <Link
             href="/login"
             style={{
               display: "inline-block",
               textDecoration: "none",
-              background: "#E8A020",
-              color: "#140902",
+               background: "#FF6D1F",
+               color: "#222222",
               padding: "0.7rem 1.1rem",
               borderRadius: "10px",
               fontWeight: 600,

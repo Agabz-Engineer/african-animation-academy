@@ -33,45 +33,45 @@ const BOTTOM_NAV = [
 
 // ─── Colour tokens ───────────────────────────────────────
 const DARK = {
-  sidebarBg:    "#161412",
-  sidebarBorder:"#272320",
-  mainBg:       "#0F0D0B",
-  topbarBg:     "rgba(15,13,11,0.95)",
-  text:         "#FAF8F0",
-  textMuted:    "#B8B4AC",
-  textDim:      "#6A6660",
-  border:       "#272320",
-  accent:       "#FF8C00",
-  accentSoft:   "rgba(255,140,0,0.09)",
-  accentGlow:   "rgba(255,140,0,0.22)",
-  activeNavBg:  "rgba(255,140,0,0.09)",
+  sidebarBg:    "#2C2C2C",
+  sidebarBorder:"#444444",
+  mainBg:       "#222222",
+  topbarBg:     "rgba(34,34,34,0.95)",
+  text:         "#FAF3E1",
+  textMuted:    "#D2C9B8",
+  textDim:      "#9E9688",
+  border:       "#444444",
+  accent:       "#FF6D1F",
+  accentSoft:   "rgba(255,109,31,0.09)",
+  accentGlow:   "rgba(255,109,31,0.22)",
+  activeNavBg:  "rgba(255,109,31,0.09)",
   overlayBg:    "rgba(0,0,0,0.72)",
-  bottomNavBg:  "rgba(22,20,18,0.98)",
+  bottomNavBg:  "rgba(44,44,44,0.98)",
   navHoverBg:   "rgba(255,255,255,0.04)",
-  cardBg:       "#1C1916",
-  avatarRing:   "rgba(255,140,0,0.30)",
-  toggleBg:     "#0A0806",
+  cardBg:       "#2C2C2C",
+  avatarRing:   "rgba(255,109,31,0.30)",
+  toggleBg:     "#333333",
 };
 
 const LIGHT = {
-  sidebarBg:    "#F0E8D4",
-  sidebarBorder:"#DDD0B8",
-  mainBg:       "#FAF8F0",
-  topbarBg:     "rgba(250,248,240,0.95)",
-  text:         "#1C1C1C",
-  textMuted:    "#5A5550",
-  textDim:      "#9A9590",
-  border:       "#DDD0B8",
-  accent:       "#FF8C00",
-  accentSoft:   "rgba(255,140,0,0.09)",
-  accentGlow:   "rgba(255,140,0,0.18)",
-  activeNavBg:  "rgba(255,140,0,0.10)",
+  sidebarBg:    "#F5E7C6",
+  sidebarBorder:"#E7DBBD",
+  mainBg:       "#FAF3E1",
+  topbarBg:     "rgba(250,243,225,0.95)",
+  text:         "#222222",
+  textMuted:    "#555555",
+  textDim:      "#9E9688",
+  border:       "#E7DBBD",
+  accent:       "#FF6D1F",
+  accentSoft:   "rgba(255,109,31,0.09)",
+  accentGlow:   "rgba(255,109,31,0.18)",
+  activeNavBg:  "rgba(255,109,31,0.10)",
   overlayBg:    "rgba(0,0,0,0.32)",
-  bottomNavBg:  "rgba(240,232,212,0.98)",
+  bottomNavBg:  "rgba(245,231,198,0.98)",
   navHoverBg:   "rgba(0,0,0,0.04)",
   cardBg:       "#FFFFFF",
   avatarRing:   "rgba(255,140,0,0.25)",
-  toggleBg:     "#E4DBC8",
+  toggleBg:     "#E7DBBD",
 };
 
 const W_EXPANDED  = 224;
@@ -423,7 +423,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             />
           ) : (
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, #E06400)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.82rem", color: "#fff", boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}` }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, #E04D00)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.82rem", color: "#fff", boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}` }}>
               {initial}
             </div>
           )}
@@ -754,6 +754,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             backdropFilter: "blur(10px)",
             WebkitBackdropFilter: "blur(10px)",
             padding: "1.45rem 1.25rem calc(1.15rem + env(safe-area-inset-bottom))",
+            backgroundColor: theme === "dark" ? "#222222" : "#FAF3E1",
           }}
         >
           <div className="app-footer-shell">

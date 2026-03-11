@@ -20,14 +20,14 @@ html.theme-init *::after {
    AFRICA FX — COLOUR SYSTEM
    ────────────────────────────────────────
    4 base colours:
-   #FAF8F0  cream   → light backgrounds
-   #EDE5CC  sand    → light surfaces, sidebar
-   #FF8C00  orange  → accent only
-   #1C1C1C  black   → text (light) / bg (dark)
+   #FAF3E1  cream   → light backgrounds
+   #F5E7C6  sand    → light surfaces, sidebar
+   #FF6D1F  orange  → accent only
+   #222222  black   → text (light) / bg (dark)
 
    READABILITY RULE — never break this:
-   → dark text (#1C1C1C) only on light surfaces
-   → light text (#FAF8F0) only on dark surfaces
+   → dark text (#222222) only on light surfaces
+   → light text (#FAF3E1) only on dark surfaces
    → orange = accent only, never a text background
 ════════════════════════════════════════ */
 
@@ -59,37 +59,35 @@ html.theme-init *::after {
 ════════════════════════════════════════ */
 :root,
 [data-theme="dark"] {
-  --bg:           #1C1C1C;
-  --bg-surface:   #252320;
-  --bg-card:      #2C2926;
-  --card-bg:      rgba(44,41,38,0.85);   /* kept for glass cards */
-  --glass-bg:     rgba(37,35,32,0.70);
-  --glass-dark-bg:rgba(44,41,38,0.85);
-  --border:       #3A3530;
-  --border-hover: rgba(255,140,0,0.35);
-  --text:         #FAF8F0;   /* light on dark ✓ */
-  --text-muted:   #C8C4BC;
-  --text-dim:     #8A8680;
-  --accent:       #FF8C00;
-  --accent-text:  #1C1C1C;   /* dark text ON orange ✓ */
-  --accent-soft:  rgba(255,140,0,0.12);
-  --accent-border:rgba(255,140,0,0.25);
-  --input-bg:     #2C2926;
-  --topbar-bg:    rgba(28,28,28,0.97);
+  --bg:           #222222;
+  --bg-surface:   #2C2C2C;
+  --bg-card:      #333333;
+  --card-bg:      rgba(51,51,51,0.85);   /* kept for glass cards */
+  --glass-bg:     rgba(44,44,44,0.70);
+  --glass-dark-bg:rgba(51,51,51,0.85);
+  --border:       #444444;
+  --border-hover: rgba(255,109,31,0.35);
+  --text:         #FAF3E1;   /* light on dark ✓ */
+  --text-muted:   #D2C9B8;
+  --text-dim:     #9E9688;
+  --accent:       #FF6D1F;
+  --accent-text:  #222222;   /* dark text ON orange ✓ */
+  --accent-soft:  rgba(255,109,31,0.12);
+  --accent-border:rgba(255,109,31,0.25);
+  --input-bg:     #333333;
+  --topbar-bg:    rgba(34,34,34,0.97);
   --overlay-bg:   rgba(0,0,0,0.60);
-  --veil:         rgba(28,28,28,0.80);
+  --veil:         rgba(34,34,34,0.80);
 
-  /* Background image overlay — dark mode
-     Tuned for the 3D character bg: keeps it soft and atmospheric,
-     never competing with UI content */
+  /* Background image overlay — dark mode */
   --bg-overlay:
     linear-gradient(
       to bottom,
-      rgba(15,13,11,0.68) 0%,
-      rgba(15,13,11,0.50) 25%,
-      rgba(15,13,11,0.60) 55%,
-      rgba(15,13,11,0.88) 82%,
-      rgba(15,13,11,1.00) 100%
+      rgba(34,34,34,0.68) 0%,
+      rgba(34,34,34,0.50) 25%,
+      rgba(34,34,34,0.60) 55%,
+      rgba(34,34,34,0.88) 82%,
+      rgba(34,34,34,1.00) 100%
     );
 }
 
@@ -97,35 +95,35 @@ html.theme-init *::after {
    LIGHT MODE
 ════════════════════════════════════════ */
 [data-theme="light"] {
-  --bg:           #FAF8F0;
-  --bg-surface:   #EDE5CC;
+  --bg:           #FAF3E1;
+  --bg-surface:   #F5E7C6;
   --bg-card:      #FFFFFF;
   --card-bg:      rgba(255,255,255,0.90);
   --glass-bg:     rgba(255,255,255,0.72);
   --glass-dark-bg:rgba(255,255,255,0.90);
-  --border:       #E0D8C3;
-  --border-hover: rgba(255,140,0,0.40);
-  --text:         #1C1C1C;   /* dark on light ✓ */
-  --text-muted:   #4A4744;
-  --text-dim:     #7A7570;
-  --accent:       #FF8C00;
+  --border:       #E7DBBD;
+  --border-hover: rgba(255,109,31,0.40);
+  --text:         #222222;   /* dark on light ✓ */
+  --text-muted:   #555555;
+  --text-dim:     #888888;
+  --accent:       #FF6D1F;
   --accent-text:  #FFFFFF;   /* light text ON orange ✓ */
-  --accent-soft:  rgba(255,140,0,0.10);
-  --accent-border:rgba(255,140,0,0.30);
+  --accent-soft:  rgba(255,109,31,0.10);
+  --accent-border:rgba(255,109,31,0.30);
   --input-bg:     #FFFFFF;
-  --topbar-bg:    rgba(250,248,240,0.97);
+  --topbar-bg:    rgba(250,243,225,0.97);
   --overlay-bg:   rgba(0,0,0,0.35);
-  --veil:         rgba(250,248,240,0.88);
+  --veil:         rgba(250,243,225,0.88);
 
   /* Background image overlay — light mode */
   --bg-overlay:
     linear-gradient(
       to bottom,
-      rgba(240,232,212,0.72) 0%,
-      rgba(240,232,212,0.58) 25%,
-      rgba(240,232,212,0.68) 55%,
-      rgba(240,232,212,0.90) 82%,
-      rgba(240,232,212,1.00) 100%
+      rgba(245,231,198,0.72) 0%,
+      rgba(245,231,198,0.58) 25%,
+      rgba(245,231,198,0.68) 55%,
+      rgba(245,231,198,0.90) 82%,
+      rgba(245,231,198,1.00) 100%
     );
 }
 
@@ -176,9 +174,9 @@ html.theme-init *::after {
      so the image is a strong design feature on those pages.
   ──────────────────────────────────────────────────────────── */
   body {
-    background-color: #0F0D0B;
+    background-color: #222222;
     background-image:
-      linear-gradient(rgba(10,8,6,0.90), rgba(10,8,6,0.90)),
+      linear-gradient(rgba(34,34,34,0.90), rgba(34,34,34,0.90)),
       url('/images/bg-mobile.jpg');
     background-size: cover;
     background-position: center 18%;
@@ -195,7 +193,7 @@ html.theme-init *::after {
   @media (min-width: 768px) {
     body {
       background-image:
-        linear-gradient(rgba(10,8,6,0.90), rgba(10,8,6,0.90)),
+        linear-gradient(rgba(34,34,34,0.90), rgba(34,34,34,0.90)),
         url('/images/bg-desktop.jpg');
       background-position: center 10%;
     }
@@ -203,16 +201,16 @@ html.theme-init *::after {
 
   /* Light mode */
   [data-theme="light"] body {
-    background-color: #FAF8F0;
+    background-color: #FAF3E1;
     background-image:
-      linear-gradient(rgba(240,228,200,0.88), rgba(240,228,200,0.88)),
+      linear-gradient(rgba(245,231,198,0.88), rgba(245,231,198,0.88)),
       url('/images/bg-mobile.jpg');
   }
 
   @media (min-width: 768px) {
     [data-theme="light"] body {
       background-image:
-        linear-gradient(rgba(240,228,200,0.88), rgba(240,228,200,0.88)),
+        linear-gradient(rgba(245,231,198,0.88), rgba(245,231,198,0.88)),
         url('/images/bg-desktop.jpg');
       background-position: center 10%;
     }
@@ -223,7 +221,7 @@ html.theme-init *::after {
      lowers the veil so the character shows clearly           */
   body.auth-page {
     background-image:
-      linear-gradient(rgba(10,8,6,0.60), rgba(10,8,6,0.60)),
+      linear-gradient(rgba(34,34,34,0.60), rgba(34,34,34,0.60)),
       url('/images/bg-mobile.jpg');
     background-position: center 16%;
     transition: background-image 0.35s ease, background-position 0.35s ease;
@@ -232,7 +230,7 @@ html.theme-init *::after {
   @media (min-width: 768px) {
     body.auth-page {
       background-image:
-        linear-gradient(rgba(10,8,6,0.54), rgba(10,8,6,0.54)),
+        linear-gradient(rgba(34,34,34,0.54), rgba(34,34,34,0.54)),
         url('/images/bg-desktop.jpg');
       background-position: center 14%;
     }
@@ -240,7 +238,7 @@ html.theme-init *::after {
 
   [data-theme="light"] body.auth-page {
     background-image:
-      linear-gradient(rgba(240,228,200,0.72), rgba(240,228,200,0.72)),
+      linear-gradient(rgba(245,231,198,0.72), rgba(245,231,198,0.72)),
       url('/images/bg-mobile.jpg');
     background-position: center 16%;
   }
@@ -248,7 +246,7 @@ html.theme-init *::after {
   @media (min-width: 768px) {
     [data-theme="light"] body.auth-page {
       background-image:
-        linear-gradient(rgba(240,228,200,0.66), rgba(240,228,200,0.66)),
+        linear-gradient(rgba(245,231,198,0.66), rgba(245,231,198,0.66)),
         url('/images/bg-desktop.jpg');
       background-position: center 14%;
     }
@@ -305,10 +303,10 @@ html.theme-init *::after {
     height: 4px;
     background: repeating-linear-gradient(
       90deg,
-      #FF8C00 0px,  #FF8C00 20px,
-      #1C1C1C 20px, #1C1C1C 40px,
-      #EDE5CC 40px, #EDE5CC 60px,
-      #FF8C00 60px, #FF8C00 80px
+      #FF6D1F 0px,  #FF6D1F 20px,
+      #222222 20px, #222222 40px,
+      #F5E7C6 40px, #F5E7C6 60px,
+      #FF6D1F 60px, #FF6D1F 80px
     );
     flex-shrink: 0;
   }
@@ -319,8 +317,8 @@ html.theme-init *::after {
     background: linear-gradient(
       to bottom,
       transparent 0%,
-      rgba(28,28,28,0.55) 50%,
-      rgba(28,28,28,0.92) 100%
+      rgba(34,34,34,0.55) 50%,
+      rgba(34,34,34,0.92) 100%
     );
     pointer-events: none;
     position: relative;
@@ -331,8 +329,8 @@ html.theme-init *::after {
     background: linear-gradient(
       to bottom,
       transparent 0%,
-      rgba(250,248,240,0.55) 50%,
-      rgba(250,248,240,0.92) 100%
+      rgba(250,243,225,0.55) 50%,
+      rgba(250,243,225,0.92) 100%
     );
   }
 
@@ -383,8 +381,8 @@ html.theme-init *::after {
   .adinkra-bg {
     background-image: repeating-linear-gradient(
       45deg,
-      rgba(255,140,0,0.08) 0px,
-      rgba(255,140,0,0.08) 1px,
+      rgba(255,109,31,0.08) 0px,
+      rgba(255,109,31,0.08) 1px,
       transparent 1px,
       transparent 8px
     );
@@ -393,7 +391,7 @@ html.theme-init *::after {
 
   /* Gradient text — orange accent */
   .gradient-text {
-    background: linear-gradient(135deg, #FF8C00 0%, #E06400 100%);
+    background: linear-gradient(135deg, #FF6D1F 0%, #E04D00 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -402,7 +400,7 @@ html.theme-init *::after {
 
   /* Kept for homepage hero */
   .african-glow {
-    background: linear-gradient(135deg, #FF8C00 0%, #EDE5CC 50%, #E06400 100%);
+    background: linear-gradient(135deg, #FF6D1F 0%, #F5E7C6 50%, #E04D00 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -430,7 +428,7 @@ html.theme-init *::after {
   .btn-primary:hover {
     opacity: 0.88;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255,140,0,0.30);
+    box-shadow: 0 6px 20px rgba(255,109,31,0.30);
   }
 
   .btn-primary:active { transform: scale(0.97); }
@@ -493,8 +491,8 @@ html.theme-init *::after {
     border-bottom: 2px solid transparent;
     border-image: repeating-linear-gradient(
       90deg,
-      #FF8C00 0px,  #FF8C00 6px,
-      #1C1C1C 6px,  #1C1C1C 12px
+      #FF6D1F 0px,  #FF6D1F 6px,
+      #222222 6px,  #222222 12px
     ) 1 round;
   }
 
@@ -503,8 +501,8 @@ html.theme-init *::after {
     border: 2px solid var(--accent);
     border-image: repeating-linear-gradient(
       45deg,
-      #FF8C00, #FF8C00 5px,
-      #1C1C1C 5px, #1C1C1C 10px
+      #FF6D1F, #FF6D1F 5px,
+      #222222 5px, #222222 10px
     ) 1;
   }
 

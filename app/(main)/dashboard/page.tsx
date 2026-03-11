@@ -23,47 +23,47 @@ const SHOWCASE_CARDS = [
 /* ══════════════════════════════════════════════
    COLOUR TOKENS — 4-colour palette
    ──────────────────────────────────────────────
-   #FAF8F0  cream   → light bg
-   #EDE5CC  sand    → light surfaces
-   #FF8C00  orange  → accent
-   #1C1C1C  black   → text (light) / bg (dark)
+   #FAF3E1  cream   → light bg
+   #F5E7C6  sand    → light surfaces
+   #FF6D1F  orange  → accent
+   #222222  black   → text (light) / bg (dark)
 
    READABILITY RULE:
-   → dark text (#1C1C1C) on light surfaces ✓
-   → light text (#FAF8F0) on dark surfaces ✓
+   → dark text (#222222) on light surfaces ✓
+   → light text (#FAF3E1) on dark surfaces ✓
    → orange only for accent, never as text bg
 ══════════════════════════════════════════════ */
 const DARK = {
-  pageBg:     "#1C1C1C",
-  cardBg:     "#2C2926",
-  surface:    "#252320",
-  border:     "#3A3530",
-  text:       "#FAF8F0",       /* light on dark ✓  */
-  textMuted:  "#C8C4BC",       /* still readable   */
-  textDim:    "#8A8680",       /* labels only      */
-  accent:     "#FF8C00",
-  accentText: "#1C1C1C",       /* dark on orange ✓ */
-  accentSoft: "rgba(255,140,0,0.10)",
-  imgBg:      "#252320",
-  inputBg:    "#2C2926",
-  topbarBg:   "rgba(28,28,28,0.97)",
-  dateBg:     "rgba(28,28,28,0.80)",
+  pageBg:     "#222222",
+  cardBg:     "#2C2C2C",
+  surface:    "#333333",
+  border:     "#444444",
+  text:       "#FAF3E1",       /* light on dark ✓  */
+  textMuted:  "#D2C9B8",       /* still readable   */
+  textDim:    "#9E9688",       /* labels only      */
+  accent:     "#FF6D1F",
+  accentText: "#222222",       /* dark on orange ✓ */
+  accentSoft: "rgba(255,109,31,0.10)",
+  imgBg:      "#333333",
+  inputBg:    "#2C2C2C",
+  topbarBg:   "rgba(34,34,34,0.97)",
+  dateBg:     "rgba(34,34,34,0.80)",
 };
 
 const LIGHT = {
-  pageBg:     "#FAF8F0",
+  pageBg:     "#FAF3E1",
   cardBg:     "#FFFFFF",
-  surface:    "#EDE5CC",
-  border:     "#E0D8C3",
-  text:       "#1C1C1C",       /* dark on light ✓  */
-  textMuted:  "#4A4744",       /* still dark       */
-  textDim:    "#7A7570",       /* labels only      */
-  accent:     "#FF8C00",
+  surface:    "#F5E7C6",
+  border:     "#E7DBBD",
+  text:       "#222222",       /* dark on light ✓  */
+  textMuted:  "#555555",       /* still dark       */
+  textDim:    "#9E9688",       /* labels only      */
+  accent:     "#FF6D1F",
   accentText: "#FFFFFF",       /* white on orange ✓ */
-  accentSoft: "rgba(255,140,0,0.10)",
-  imgBg:      "#EDE5CC",
+  accentSoft: "rgba(255,109,31,0.10)",
+  imgBg:      "#F5E7C6",
   inputBg:    "#FFFFFF",
-  topbarBg:   "rgba(250,248,240,0.97)",
+  topbarBg:   "rgba(250,243,225,0.97)",
   dateBg:     "rgba(255,255,255,0.85)",
 };
 
@@ -382,7 +382,7 @@ export default function DashboardPage() {
                     width: `${levelProgressPct}%`,
                     height: "100%",
                     borderRadius: "999px",
-                    background: `linear-gradient(90deg, ${T.accent}, ${theme === "dark" ? "#FFB347" : "#FF9F2A"})`,
+                    background: `linear-gradient(90deg, ${T.accent}, #E04D00)`,
                   }}
                 />
               </div>
