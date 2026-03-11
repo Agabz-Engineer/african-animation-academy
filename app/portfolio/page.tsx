@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Play, 
   Heart, 
   MessageCircle, 
-  Share2,
   Filter,
   Grid3X3,
   List,
@@ -14,7 +13,6 @@ import {
   Eye,
   Clock
 } from "lucide-react";
-import Link from "next/link";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
@@ -170,14 +168,7 @@ export default function PortfolioPage() {
     },
   };
 
-  const cardHoverVariants = {
-    initial: { scale: 1 },
-    hover: { 
-      scale: 1.02,
-      transition: { duration: 0.3, ease: "easeOut" as const }
-    },
-  };
-
+  
   return (
     <div style={{ 
       minHeight: "100vh", 
