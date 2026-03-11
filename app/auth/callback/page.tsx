@@ -51,6 +51,7 @@ export default function AuthCallbackPage() {
       const tokenHash = params.get("token_hash");
       const type = params.get("type");
       if (tokenHash && type && validOtpTypes.includes(type as EmailOtpType)) {
+        if (!supabase) return;
         const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
           type: type as EmailOtpType,
@@ -63,6 +64,7 @@ export default function AuthCallbackPage() {
 
       const code = params.get("code");
       if (code) {
+        if (!supabase) return;
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
           const lowerMessage = error.message.toLowerCase();
@@ -83,6 +85,7 @@ export default function AuthCallbackPage() {
         const start = Date.now();
 
         while (Date.now() - start < timeoutMs) {
+          if (!supabase) return;
           const {
             data: { session },
             error: sessionError,

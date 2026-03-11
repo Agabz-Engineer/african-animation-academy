@@ -349,7 +349,7 @@ export default function CommunityPage() {
       const livePostIds = livePosts.map((post) => post.id);
       let likeRows: DbLike[] = [];
 
-      if (!postError && livePostIds.length > 0) {
+      if (!postError && livePostIds.length > 0 && supabase) {
         const { data: likeData, error: likeError } = await supabase
           .from("community_post_likes")
           .select("post_id,user_id")
@@ -506,6 +506,10 @@ export default function CommunityPage() {
 
     setLikePendingFor(postId);
 
+    if (!supabase) {
+      return;
+    }
+
     if (alreadyLiked) {
       const { error } = await supabase
         .from("community_post_likes")
@@ -528,6 +532,7 @@ export default function CommunityPage() {
       return;
     }
 
+    if (!supabase) return;
     const { error } = await supabase
       .from("community_post_likes")
       .insert({ post_id: postId, user_id: user.id });
@@ -597,6 +602,10 @@ export default function CommunityPage() {
     }
 
     setSubmitPending(true);
+    if (!supabase) {
+      setSubmitPending(false);
+      return;
+    }
     const { data, error } = await supabase
       .from("community_posts")
       .insert({
@@ -685,6 +694,10 @@ export default function CommunityPage() {
     }
 
     setCommentPendingFor(postId);
+    if (!supabase) {
+      setCommentPendingFor(null);
+      return;
+    }
     const { data, error } = await supabase
       .from("community_post_comments")
       .insert({

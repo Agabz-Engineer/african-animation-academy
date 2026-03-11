@@ -83,7 +83,7 @@ const resolveAvatarDisplayUrl = async (
   avatarPath: string | null,
   avatarPublicUrl: string | null
 ) => {
-  if (avatarPath) {
+  if (avatarPath && supabase) {
     const { data: signedData, error: signedError } = await supabase.storage
       .from("avatars")
       .createSignedUrl(avatarPath, 60 * 60);
@@ -143,6 +143,7 @@ export default function SettingsPage() {
     let mounted = true;
 
     const loadUser = async () => {
+      if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!mounted) return;
 
@@ -189,6 +190,7 @@ export default function SettingsPage() {
   };
 
   const handleSaveProfile = async () => {
+    if (!supabase) return;
     await supabase.auth.updateUser({
       data: { full_name: fullName, username, bio, skill_level: skillLevel, goal }
     });
@@ -199,6 +201,7 @@ export default function SettingsPage() {
     setPwError("");
     if (newPw.length < 8) { setPwError("Password must be at least 8 characters."); return; }
     if (newPw !== confirmPw) { setPwError("Passwords do not match."); return; }
+    if (!supabase) return;
     const { error } = await supabase.auth.updateUser({ password: newPw });
     if (error) { setPwError(error.message); return; }
     setNewPw(""); setConfirmPw("");
@@ -219,6 +222,7 @@ export default function SettingsPage() {
 
     setAvatarUploading(true);
     setAvatarLoadError(false);
+    if (!supabase) return;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;

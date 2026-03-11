@@ -71,10 +71,14 @@ export default function CoursesPage() {
       if (t) setTheme(t);
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setSkill(user?.user_metadata?.skill_level || "beginner");
+    if (supabase) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        setSkill(user?.user_metadata?.skill_level || "beginner");
+        setLoading(false);
+      });
+    } else {
       setLoading(false);
-    });
+    }
     return () => obs.disconnect();
   }, []);
 

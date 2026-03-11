@@ -285,6 +285,7 @@ const saveState = (storageKey: string, state: GamificationState) => {
 };
 
 const loadRemoteState = async (userId: string) => {
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("user_gamification_states")
     .select("user_id,state,updated_at")
@@ -296,6 +297,7 @@ const loadRemoteState = async (userId: string) => {
 };
 
 const saveRemoteState = async (userId: string, state: GamificationState) => {
+  if (!supabase) return;
   const { error } = await supabase
     .from("user_gamification_states")
     .upsert(
@@ -415,6 +417,7 @@ export const useGamification = (userId?: string | null) => {
       });
     };
 
+    if (!supabase) return;
     const channel = supabase
       .channel(`gamification-state:${userId}`)
       .on(
@@ -440,7 +443,7 @@ export const useGamification = (userId?: string | null) => {
       .subscribe();
 
     return () => {
-      void supabase.removeChannel(channel);
+      if (supabase) void supabase.removeChannel(channel);
     };
   }, [storageKey, userId]);
 

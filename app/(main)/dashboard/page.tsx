@@ -89,6 +89,10 @@ export default function DashboardPage() {
   const hydrateUser = useCallback(async () => {
     setUserLoading(true);
     setUserError(null);
+    if (!supabase) {
+      setUserError("Authentication service not available");
+      return;
+    }
     try {
       const { data, error } = await supabase.auth.getUser();
       if (error) throw error;
@@ -115,13 +119,15 @@ export default function DashboardPage() {
     });
 
     void hydrateUser();
-    const { data: authSub } = supabase.auth.onAuthStateChange(() => {
+    const authSub = supabase?.auth.onAuthStateChange(() => {
       void hydrateUser();
     });
 
     return () => {
       obs.disconnect();
-      authSub.subscription.unsubscribe();
+      if (authSub?.data?.subscription) {
+        authSub.data.subscription.unsubscribe();
+      }
     };
   }, [hydrateUser]);
 
