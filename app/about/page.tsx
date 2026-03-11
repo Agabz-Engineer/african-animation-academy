@@ -282,7 +282,7 @@ export default function AboutPage() {
             
             <motion.h1 
               variants={premiumText}
-              className="text-5xl md:text-7xl font-bold mb-6"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 px-4"
               style={{ 
                 fontFamily: "Clash Display, sans-serif", 
                 letterSpacing: "-0.02em",
@@ -299,7 +299,7 @@ export default function AboutPage() {
             
             <motion.p 
               variants={premiumText}
-              className="text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed"
+              className="text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed px-4"
               style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}
             >
               We're revolutionizing animation education across Africa by bridging the gap between 
@@ -309,7 +309,7 @@ export default function AboutPage() {
 
           {/* Premium Problem & Solution Cards */}
           <motion.div 
-            className="grid lg:grid-cols-2 gap-12 mb-24"
+            className="grid md:grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 mb-16 md:mb-24"
             variants={premiumContainer}
             initial="hidden"
             animate={aboutInView ? "show" : "hidden"}
@@ -317,7 +317,7 @@ export default function AboutPage() {
             {/* Problem Card */}
             <motion.div 
               variants={premiumCard}
-              className="group relative rounded-3xl p-10 border overflow-hidden hover:shadow-2xl transition-all duration-500"
+              className="group relative rounded-2xl md:rounded-3xl p-6 md:p-10 border overflow-hidden hover:shadow-2xl transition-all duration-500"
               style={{ 
                 background: C.cardBg, 
                 border: `1px solid ${C.cardBorder}`,
@@ -340,7 +340,7 @@ export default function AboutPage() {
                 </motion.div>
                 
                 <motion.h2 variants={premiumText} 
-                  className="text-4xl md:text-5xl font-bold mb-6"
+                  className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6"
                   style={{ 
                     color: "#E8A020", 
                     fontFamily: "Clash Display, sans-serif", 
@@ -352,7 +352,7 @@ export default function AboutPage() {
                 
                 <motion.div variants={premiumText} className="space-y-4">
                   {problemLines.map((line, index) => (
-                    <p key={index} className="text-lg md:text-xl leading-relaxed"
+                    <p key={index} className="text-base md:text-lg lg:text-xl leading-relaxed"
                       style={{ color: C.text, fontFamily: "Satoshi, sans-serif" }}>
                       {line}
                     </p>
@@ -444,7 +444,7 @@ export default function AboutPage() {
             </motion.div>
 
             {/* Premium Team Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {teamMembers.map((member, index) => (
                 <motion.div
                   key={member.name}
@@ -453,7 +453,7 @@ export default function AboutPage() {
                   transition={{ delay: index * 0.1 }}
                 >
                   <div 
-                    className="rounded-3xl p-8 border transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 overflow-hidden"
+                    className="rounded-2xl md:rounded-3xl p-6 md:p-8 border transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 overflow-hidden"
                     style={{
                       background: C.cardBg,
                       border: `1px solid ${C.cardBorder}`,
@@ -471,8 +471,8 @@ export default function AboutPage() {
 
                     <div className="relative z-10">
                       {/* Photo Space */}
-                      <motion.div variants={premiumImage} className="mb-6">
-                        <div className="relative w-24 h-24 mx-auto">
+                      <motion.div variants={premiumImage} className="mb-4 md:mb-6">
+                        <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto">
                           {/* Placeholder for team photo */}
                           <div 
                             className="w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden"
@@ -482,7 +482,7 @@ export default function AboutPage() {
                             }}
                           >
                             {/* Initials as fallback */}
-                            <span className="text-2xl font-bold" style={{ 
+                            <span className="text-xl sm:text-2xl font-bold" style={{ 
                               color: "#E8A020", 
                               fontFamily: "Clash Display, sans-serif" 
                             }}>
@@ -499,7 +499,7 @@ export default function AboutPage() {
 
                       {/* Team Info */}
                       <motion.div variants={premiumText}>
-                        <h3 className="text-xl font-bold mb-2 text-center" 
+                        <h3 className="text-lg sm:text-xl font-bold mb-2 text-center" 
                           style={{ 
                             color: C.text, 
                             fontFamily: "Clash Display, sans-serif" 
@@ -519,7 +519,7 @@ export default function AboutPage() {
                           <Star className="w-4 h-4" style={{ color: "#E8A020" }} />
                         </div>
                         
-                        <p className="text-sm leading-relaxed mb-4 text-center" 
+                        <p className="text-xs sm:text-sm leading-relaxed mb-3 md:mb-4 text-center" 
                           style={{ 
                             color: C.muted, 
                             fontFamily: "Satoshi, sans-serif" 
@@ -529,18 +529,18 @@ export default function AboutPage() {
                         
                         <div className="flex items-center justify-center">
                           <div
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border"
+                            className="inline-flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border"
                             style={{ 
                               background: "rgba(232,160,32,0.08)", 
                               borderColor: "rgba(232,160,32,0.2)",
                               color: "#E8A020", 
                               fontFamily: "General Sans, sans-serif",
-                              fontSize: "0.75rem",
+                              fontSize: "0.625rem sm:text-xs",
                               fontWeight: 600
                             }}
                           >
-                            <Heart className="w-3 h-3" />
-                            {member.focus}
+                            <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            <span className="truncate">{member.focus}</span>
                           </div>
                         </div>
                       </motion.div>
@@ -553,19 +553,19 @@ export default function AboutPage() {
             {/* Call to Action */}
             <motion.div 
               variants={premiumText}
-              className="text-center mt-20"
+              className="text-center mt-16 md:mt-20 px-4"
             >
-              <div className="inline-flex items-center gap-4 px-8 py-4 rounded-2xl border"
+              <div className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-4 px-6 py-3 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl border max-w-md mx-auto"
                 style={{
                   background: C.ghostBg,
                   borderColor: C.cardBorder,
                   backdropFilter: "blur(12px)"
                 }}
               >
-                <span className="text-lg font-semibold" style={{ color: C.text, fontFamily: "General Sans, sans-serif" }}>
+                <span className="text-base sm:text-lg font-semibold text-center" style={{ color: C.text, fontFamily: "General Sans, sans-serif" }}>
                   Join our mission to transform African animation
                 </span>
-                <ArrowRight className="w-5 h-5" style={{ color: "#E8A020" }} />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: "#E8A020" }} />
               </div>
             </motion.div>
           </motion.div>
