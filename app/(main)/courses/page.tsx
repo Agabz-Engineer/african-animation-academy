@@ -8,12 +8,14 @@ import { supabase } from "@/lib/supabase";
 const COURSES = [
   { title: "Introduction to Animation", instructor: "Kwame Mensah",     level: "Beginner",     duration: "4h 30m", lessons: 12, price: "GH₵50", rating: 4.8, desc: "Master the core principles of designing compelling characters for animation." },
   { title: "Bouncing Ball Animation",    instructor: "Amara Diallo",     level: "Beginner",     duration: "2h 30m", lessons: 8,  price: "GH₵40", rating: 4.9, desc: "Learn the fundamental principles of animation with the classic bouncing ball exercise." },
-  { title: "2D Animation Basics",        instructor: "Kofi Asante",     level: "Beginner",     duration: "3h 45m", lessons: 10, price: "GH₵50", rating: 4.7, desc: "Turn ideas into visual sequences that studios can produce." },
-  { title: "3D Animation Fundamentals", instructor: "Ngozi Okafor",     level: "Intermediate", duration: "6h 15m", lessons: 18, price: "GH₵150", rating: 4.9, desc: "Create professional motion graphics for ads, intros and explainer videos." },
-  { title: "Advanced 3D Modeling",       instructor: "Fatima Al-Hassan", level: "Intermediate", duration: "8h 20m", lessons: 24, price: "GH₵200", rating: 4.8, desc: "Industry-standard Blender and Maya skills every studio expects." },
-  { title: "Character Animation",        instructor: "Seun Adeyemi",     level: "Intermediate", duration: "5h 00m", lessons: 15, price: "GH₵180", rating: 4.7, desc: "The essential skill for character animation — bring dialogue to life." },
-  { title: "Visual Effects & Compositing",instructor: "Ama Owusu",        level: "Advanced",     duration: "7h 10m", lessons: 20, price: "GH₵250", rating: 4.8, desc: "Finishing and post-production techniques used in professional studios." },
-  { title: "Portfolio Development",       instructor: "Kwame Mensah",     level: "Advanced",     duration: "2h 50m", lessons: 8,  price: "GH₵100", rating: 4.9, desc: "Present your work so studios notice you and want to hire you." },
+  { title: "Bicycle Animation",          instructor: "Kofi Asante",     level: "Beginner",     duration: "3h 00m", lessons: 9,  price: "GH₵45", rating: 4.8, desc: "Master complex motion paths with the bicycle animation exercise." },
+  { title: "2D Animation Basics",        instructor: "Ngozi Okafor",     level: "Beginner",     duration: "3h 45m", lessons: 10, price: "GH₵50", rating: 4.7, desc: "Turn ideas into visual sequences that studios can produce." },
+  { title: "Toon Boom Animation",        instructor: "Fatima Al-Hassan", level: "Intermediate", duration: "6h 15m", lessons: 18, price: "GH₵160", rating: 4.9, desc: "Professional 2D animation using industry-standard Toon Boom Harmony software." },
+  { title: "3D Animation Fundamentals", instructor: "Seun Adeyemi",     level: "Intermediate", duration: "6h 15m", lessons: 18, price: "GH₵150", rating: 4.9, desc: "Create professional motion graphics for ads, intros and explainer videos." },
+  { title: "Advanced 3D Modeling",       instructor: "Ama Owusu",        level: "Intermediate", duration: "8h 20m", lessons: 24, price: "GH₵200", rating: 4.8, desc: "Industry-standard Blender and Maya skills every studio expects." },
+  { title: "Character Animation",        instructor: "Kwame Mensah",     level: "Intermediate", duration: "5h 00m", lessons: 15, price: "GH₵180", rating: 4.7, desc: "The essential skill for character animation — bring dialogue to life." },
+  { title: "Visual Effects & Compositing",instructor: "Amara Diallo",     level: "Advanced",     duration: "7h 10m", lessons: 20, price: "GH₵250", rating: 4.8, desc: "Finishing and post-production techniques used in professional studios." },
+  { title: "Portfolio Development",       instructor: "Kofi Asante",     level: "Advanced",     duration: "2h 50m", lessons: 8,  price: "GH₵100", rating: 4.9, desc: "Present your work so studios notice you and want to hire you." },
 ];
 
 const ACCESSIBLE: Record<string, string[]> = {
