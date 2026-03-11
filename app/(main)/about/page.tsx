@@ -1,13 +1,7 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import { motion, useInView } from "framer-motion";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Star,
-} from "lucide-react";
-import Link from "next/link";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
@@ -20,7 +14,6 @@ const DARK_UI = {
   ghostBorder: "rgba(61,46,16,0.8)",
   cardBg: "rgba(13, 9, 5, 0.60)",
   cardBorder: "rgba(61, 46, 16, 0.40)",
-  navBg: "rgba(34,24,8,0.55)",
 };
 
 const LIGHT_UI = {
@@ -33,7 +26,6 @@ const LIGHT_UI = {
   ghostBorder: "rgba(188, 165, 125, 0.58)",
   cardBg: "rgba(255, 255, 255, 0.80)",
   cardBorder: "rgba(188, 165, 125, 0.42)",
-  navBg: "rgba(255, 255, 255, 0.78)",
 };
 
 const rollContainer = {
@@ -146,30 +138,6 @@ export default function AboutPage() {
 
   return (
     <div style={{ minHeight: "100vh", transition: "color 0.3s ease, background-color 0.3s ease" }}>
-      {/* Navigation */}
-      <div style={{ 
-        padding: "1rem 2rem", 
-        borderBottom: `1px solid ${C.line}`,
-        backgroundColor: theme === "dark" ? "rgba(13, 9, 5, 0.8)" : "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(8px)"
-      }}>
-        <Link 
-          href="/login" 
-          style={{ 
-            color: C.text, 
-            textDecoration: "none",
-            fontFamily: "General Sans, sans-serif",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem"
-          }}
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Login
-        </Link>
-      </div>
-
       <motion.section
         id="about"
         ref={aboutRef}
