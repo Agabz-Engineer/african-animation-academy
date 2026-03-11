@@ -300,6 +300,13 @@ export default function CommunityPage() {
       const localHandles = new Set<string>();
       localPosts.forEach((post) => localHandles.add(post.userHandle || ""));
       localComments.forEach((comment) => localHandles.add(comment.userHandle || ""));
+      
+      if (!supabase) {
+        setPosts(localPosts);
+        setCommentsByPost(groupCommentsByPost(localComments));
+        return;
+      }
+
       const [{ data: userData }, { data: postData, error: postError }, { data: commentData, error: commentError }] =
         await Promise.all([
         supabase.auth.getUser(),

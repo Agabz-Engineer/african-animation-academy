@@ -40,11 +40,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        window.location.href = "/dashboard";
-      }
-    });
+    if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          window.location.href = "/dashboard";
+        }
+      });
+    }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -52,6 +54,12 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     setRememberSessionPreference(rememberMe);
+
+    if (!supabase) {
+      setError("Authentication service not available");
+      setLoading(false);
+      return;
+    }
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 

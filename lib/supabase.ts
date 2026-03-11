@@ -47,14 +47,16 @@ export const setRememberSessionPreference = (remember: boolean) => {
 };
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Missing Supabase environment variables. Check your .env.local file.");
+  console.warn("Missing Supabase environment variables. Some features may not work.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    flowType: "implicit",
-    detectSessionInUrl: true,
-    persistSession: true,
-    storage: authStorage,
-  },
-});
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        flowType: "implicit",
+        detectSessionInUrl: true,
+        persistSession: true,
+        storage: authStorage,
+      },
+    })
+  : null;

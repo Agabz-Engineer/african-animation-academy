@@ -128,7 +128,7 @@ const resolveAvatarDisplayUrl = async (
   avatarPath: string | null,
   avatarPublicUrl: string | null
 ) => {
-  if (avatarPath) {
+  if (avatarPath && supabase) {
     const { data: signedData, error: signedError } = await supabase.storage
       .from("avatars")
       .createSignedUrl(avatarPath, 60 * 60);
@@ -192,6 +192,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setAuthError(null);
 
     try {
+      if (!supabase) {
+        setAuthStatus("unauthenticated");
+        return;
+      }
       const { data, error } = await supabase.auth.getUser();
       
       if (error) {
@@ -275,13 +279,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     void runHydration();
-    const { data: authSub } = supabase.auth.onAuthStateChange(() => {
+    const authSub = supabase?.auth.onAuthStateChange(() => {
       void hydrateUser(true);
     });
 
     return () => {
       cancelled = true;
-      authSub.subscription.unsubscribe();
+      if (authSub?.data?.subscription) {
+        authSub.data.subscription.unsubscribe();
+      }
     };
   }, [hydrateUser]);
 
@@ -331,7 +337,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   const handleSignOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
     router.replace("/login");
   }, [router]);
 

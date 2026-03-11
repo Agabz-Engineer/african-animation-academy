@@ -118,6 +118,12 @@ export default function SignupPage() {
       return;
     }
 
+    if (!supabase) {
+      setError("Authentication service not available");
+      setLoading(false);
+      return;
+    }
+
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
