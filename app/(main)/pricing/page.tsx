@@ -56,7 +56,7 @@ const PLANS: Plan[] = [
     id: "pro",
     name: "Pro",
     subtitle: "For committed creators building serious momentum.",
-    monthlyPrice: 24,
+    monthlyPrice: 300,
     recommended: true,
     ctaLabel: "Go Pro",
     href: "/signup",
@@ -74,7 +74,7 @@ const PLANS: Plan[] = [
     id: "team",
     name: "Team / Studio",
     subtitle: "For studios training teams and scaling production quality.",
-    monthlyPrice: 89,
+    monthlyPrice: 1200,
     ctaLabel: "Contact sales",
     href: "mailto:info@africafx.com?subject=Team%20or%20Studio%20Plan",
     features: [
@@ -309,7 +309,7 @@ export default function PricingPage() {
                   </>
                 ) : (
                   <>
-                    <span className="currency" style={{ color: T.text }}>$</span>
+                    <span className="currency" style={{ color: T.text }}>GH₵</span>
                     <span className="amount" style={{ color: T.text }}>{plan.amount}</span>
                     <span className="period" style={{ color: T.dim }}>/ {plan.periodLabel}</span>
                   </>
@@ -318,7 +318,7 @@ export default function PricingPage() {
 
               {isPaid && billing === "annual" && (
                 <p className="annual-note" style={{ color: T.success }}>
-                  ${plan.monthlyEquivalent}/mo billed yearly · save ${plan.saveAmount}
+                  GH₵{plan.monthlyEquivalent}/mo billed yearly · save GH₵{plan.saveAmount}
                 </p>
               )}
 
