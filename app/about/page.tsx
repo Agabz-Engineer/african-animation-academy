@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import { motion, useInView } from "framer-motion";
 import {
   ChevronLeft,
-  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -216,10 +215,10 @@ export default function AboutPage() {
               style={{ background: C.ghostBg, border: `1px solid ${C.ghostBorder}`, backdropFilter: "blur(8px)" }}
             >
               <div className="absolute left-6 top-4 text-5xl md:text-6xl" style={{ color: "#E8A020", opacity: 0.35, fontFamily: "Clash Display, sans-serif" }}>
-                "
+                &ldquo;
               </div>
               <div className="absolute right-6 bottom-2 text-5xl md:text-6xl" style={{ color: "#E8A020", opacity: 0.35, fontFamily: "Clash Display, sans-serif" }}>
-                "
+                &rdquo;
               </div>
               <motion.div
                 variants={rollContainer}
