@@ -129,7 +129,7 @@ export default function PortfolioPage() {
   const theme = useThemeMode();
   const C = theme === "dark" ? DARK_UI : LIGHT_UI;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [hoveredProject, setHoveredProject] = useState<number | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
