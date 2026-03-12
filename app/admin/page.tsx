@@ -288,8 +288,8 @@ export default function AdminDashboard() {
       {/* Stats Grid */}
       <div style={{ 
         display: "grid", 
-        gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
-        gap: "1.5rem", 
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
+        gap: "1rem", 
         marginBottom: "2rem" 
       }}>
         {statCards.map((stat, index) => (
@@ -299,7 +299,7 @@ export default function AdminDashboard() {
               backgroundColor: UI.card,
               border: `1px solid ${UI.border}`,
               borderRadius: "12px",
-              padding: "1.5rem",
+              padding: "1rem",
               transition: "all 0.2s ease",
             }}
           >
@@ -349,8 +349,8 @@ export default function AdminDashboard() {
       {/* Quick Actions & Recent Activity */}
       <div style={{ 
         display: "grid", 
-        gridTemplateColumns: "1fr 1fr", 
-        gap: "2rem",
+        gridTemplateColumns: "1fr", 
+        gap: "1.5rem",
         marginBottom: "2rem"
       }}>
         {/* Quick Actions */}
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
         }}>
           <h2 style={{ 
             color: UI.text, 
@@ -430,7 +430,7 @@ export default function AdminDashboard() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
         }}>
           <h2 style={{ 
             color: UI.text, 
@@ -508,7 +508,7 @@ export default function AdminDashboard() {
         backgroundColor: UI.card,
         border: `1px solid ${UI.border}`,
         borderRadius: "12px",
-        padding: "1.5rem",
+        padding: "1rem",
       }}>
         <h2 style={{ 
           color: UI.text, 
@@ -520,14 +520,14 @@ export default function AdminDashboard() {
         </h2>
         <div style={{ 
           display: "grid", 
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
-          gap: "2rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", 
+          gap: "1.5rem",
           textAlign: "center"
         }}>
           <div>
             <div style={{
-              width: "120px",
-              height: "120px",
+              width: "100px",
+              height: "100px",
               margin: "0 auto 1rem",
               borderRadius: "50%",
               background: `conic-gradient(${UI.accent} 0% ${stats.activeUsers / stats.totalUsers * 100}%, ${UI.border} ${stats.activeUsers / stats.totalUsers * 100}% 100%)`,
@@ -537,15 +537,15 @@ export default function AdminDashboard() {
               position: "relative",
             }}>
               <div style={{
-                width: "80px",
-                height: "80px",
+                width: "60px",
+                height: "60px",
                 borderRadius: "50%",
                 backgroundColor: UI.card,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}>
-                <span style={{ color: UI.text, fontSize: "1.5rem", fontWeight: 700 }}>
+                <span style={{ color: UI.text, fontSize: "1.25rem", fontWeight: 700 }}>
                   {Math.round(stats.activeUsers / stats.totalUsers * 100)}%
                 </span>
               </div>

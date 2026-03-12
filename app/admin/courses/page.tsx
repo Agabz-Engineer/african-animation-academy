@@ -301,7 +301,7 @@ export default function CourseManagement() {
         backgroundColor: UI.card,
         border: `1px solid ${UI.border}`,
         borderRadius: "12px",
-        padding: "1.5rem",
+        padding: "1rem",
         marginBottom: "2rem",
         display: "flex",
         gap: "1rem",
@@ -387,7 +387,7 @@ export default function CourseManagement() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: UI.info, marginBottom: "0.5rem" }}>
@@ -399,7 +399,7 @@ export default function CourseManagement() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: UI.success, marginBottom: "0.5rem" }}>
@@ -411,7 +411,7 @@ export default function CourseManagement() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: UI.warning, marginBottom: "0.5rem" }}>
@@ -423,7 +423,7 @@ export default function CourseManagement() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: UI.accent, marginBottom: "0.5rem" }}>
@@ -436,7 +436,7 @@ export default function CourseManagement() {
       {/* Courses Grid */}
       <div style={{ 
         display: "grid", 
-        gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", 
+        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", 
         gap: "1.5rem" 
       }}>
         {filteredCourses.map((course) => (

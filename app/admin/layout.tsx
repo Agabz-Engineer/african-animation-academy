@@ -144,7 +144,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             inset: 0,
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             zIndex: 40,
-            display: "none"
           }}
           onClick={() => setSidebarOpen(false)}
         />
@@ -154,7 +153,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside style={{
         width: sidebarOpen ? "100%" : "280px",
         backgroundColor: UI.sidebar,
-        borderRight: `1px solid ${UI.border}`,
+        borderRight: sidebarOpen ? "none" : `1px solid ${UI.border}`,
         position: sidebarOpen ? "fixed" : "relative",
         top: 0,
         bottom: 0,
@@ -208,7 +207,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button
             onClick={() => setSidebarOpen(false)}
             style={{
-              display: "none",
+              display: sidebarOpen ? "block" : "none",
               background: "none",
               border: "none",
               color: UI.textMuted,
@@ -358,7 +357,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header style={{
           backgroundColor: UI.card,
           borderBottom: `1px solid ${UI.border}`,
-          padding: "1rem 2rem",
+          padding: sidebarOpen ? "1rem" : "1rem 2rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -367,7 +366,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <button
               onClick={() => setSidebarOpen(true)}
               style={{
-                display: "none",
+                display: sidebarOpen ? "none" : "block",
                 background: "none",
                 border: "none",
                 color: UI.text,
@@ -378,14 +377,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Menu style={{ width: "20px", height: "20px" }} />
             </button>
             <div style={{
-              display: "flex",
+              display: sidebarOpen ? "none" : "flex",
               alignItems: "center",
               gap: "0.5rem",
               backgroundColor: UI.bg,
               padding: "0.5rem 1rem",
               borderRadius: "8px",
               border: `1px solid ${UI.border}`,
-              minWidth: "300px",
+              minWidth: "200px",
+              maxWidth: "300px",
+              flex: 1,
             }}>
               <Search style={{ width: "16px", height: "16px", color: UI.textMuted }} />
               <input
@@ -427,7 +428,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page Content */}
-        <div style={{ flex: 1, padding: "2rem", overflowY: "auto" }}>
+        <div style={{ 
+          flex: 1, 
+          padding: sidebarOpen ? "1rem" : "2rem", 
+          overflowY: "auto" 
+        }}>
           {children}
         </div>
       </main>
@@ -445,10 +450,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           
           aside[data-open="true"] {
             transform: translateX(0);
-          }
-          
-          button[style*="display: none"] {
-            display: block !important;
           }
         }
       `}</style>

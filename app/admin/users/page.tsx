@@ -295,8 +295,8 @@ export default function UserManagement() {
       {/* Header */}
       <div style={{ 
         display: "flex", 
-        justifyContent: "space-between", 
-        alignItems: "center", 
+        flexDirection: "column", 
+        gap: "1rem",
         marginBottom: "2rem" 
       }}>
         <div>
@@ -316,7 +316,7 @@ export default function UserManagement() {
             Manage and monitor all platform users
           </p>
         </div>
-        <div style={{ display: "flex", gap: "1rem" }}>
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
           <button
             onClick={() => handleBulkAction('export')}
             disabled={selectedUsers.length === 0}
@@ -366,7 +366,7 @@ export default function UserManagement() {
         backgroundColor: UI.card,
         border: `1px solid ${UI.border}`,
         borderRadius: "12px",
-        padding: "1.5rem",
+        padding: "1rem",
         marginBottom: "2rem",
         display: "flex",
         gap: "1rem",
@@ -382,7 +382,7 @@ export default function UserManagement() {
           borderRadius: "8px",
           border: `1px solid ${UI.border}`,
           flex: 1,
-          minWidth: "300px",
+          minWidth: "200px",
         }}>
           <Search style={{ width: "16px", height: "16px", color: UI.textMuted }} />
           <input
@@ -472,7 +472,7 @@ export default function UserManagement() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: UI.info, marginBottom: "0.5rem" }}>
@@ -484,7 +484,7 @@ export default function UserManagement() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: UI.success, marginBottom: "0.5rem" }}>
@@ -496,7 +496,7 @@ export default function UserManagement() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: UI.warning, marginBottom: "0.5rem" }}>
@@ -508,7 +508,7 @@ export default function UserManagement() {
           backgroundColor: UI.card,
           border: `1px solid ${UI.border}`,
           borderRadius: "12px",
-          padding: "1.5rem",
+          padding: "1rem",
           textAlign: "center",
         }}>
           <div style={{ fontSize: "2rem", fontWeight: 700, color: UI.danger, marginBottom: "0.5rem" }}>
