@@ -53,10 +53,10 @@ interface User {
   email: string;
   full_name: string | null;
   role: string;
-  skill_level: string | null;
+  skill_level?: string | null;
   created_at: string;
-  last_sign_in: string | null;
-  subscription_tier: string | null;
+  last_sign_in?: string | null;
+  subscription_tier?: string | null;
   status: 'active' | 'inactive' | 'banned';
 }
 
@@ -81,28 +81,33 @@ export default function UserManagement() {
     try {
       if (!supabase) throw new Error('Supabase not initialized');
       
-      const { data, error } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          auth_users(email, last_sign_in_at)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
+
+      // Get auth users data separately
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) throw authError;
 
       // Transform data to match User interface
-      const transformedUsers: User[] = (data || []).map((profile: any) => ({
-        id: profile.id,
-        email: profile.auth_users?.email || 'unknown',
-        full_name: profile.full_name,
-        role: profile.role || 'user',
-        skill_level: profile.skill_level,
-        created_at: profile.created_at,
-        last_sign_in: profile.auth_users?.last_sign_in_at,
-        subscription_tier: profile.subscription_tier,
-        status: profile.status || 'active',
-      }));
+      const transformedUsers: User[] = (profiles || []).map((profile: any) => {
+        const authUser = authUsers.users.find(user => user.id === profile.id);
+        return {
+          id: profile.id,
+          email: authUser?.email || 'unknown',
+          full_name: profile.full_name,
+          role: profile.role || 'user',
+          status: profile.status || 'active',
+          created_at: profile.created_at,
+          last_sign_in: authUser?.last_sign_in_at,
+          skill_level: profile.skill_level || null,
+          subscription_tier: profile.subscription_tier || null,
+        };
+      });
 
       setUsers(transformedUsers);
     } catch (error) {

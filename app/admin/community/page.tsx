@@ -92,7 +92,7 @@ export default function CommunityManagement() {
         .from('community_posts')
         .select(`
           *,
-          profiles (full_name, avatar_url),
+          profiles!inner (full_name, avatar_url),
           community_reports (count)
         `)
         .order('created_at', { ascending: false });

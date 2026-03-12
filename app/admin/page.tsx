@@ -97,6 +97,12 @@ export default function AdminDashboard() {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
+      // Fetch active users count
+      const { count: activeUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
       // Fetch new users today
       const today = new Date().toISOString().split('T')[0];
       const { count: newUsersToday } = await supabase
@@ -109,20 +115,45 @@ export default function AdminDashboard() {
         .from('courses')
         .select('*', { count: 'exact', head: true });
 
+      // Fetch published courses count
+      const { count: publishedCourses } = await supabase
+        .from('courses')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'published');
+
       // Fetch posts count
       const { count: totalPosts } = await supabase
         .from('community_posts')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch pending posts
+      // Fetch pending posts (if status field exists)
       const { count: pendingPosts } = await supabase
         .from('community_posts')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
-      // Mock revenue data (replace with actual payment data)
-      const totalRevenue = 45600; // GH₵45,600
-      const monthlyRevenue = 12800; // GH₵12,800
+      // Fetch total enrollments
+      const { count: totalEnrollments } = await supabase
+        .from('course_enrollments')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch total revenue from payments
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('status', 'completed');
+
+      const totalRevenue = payments?.reduce((sum, payment) => sum + parseFloat(payment.amount), 0) || 0;
+
+      // Fetch monthly revenue
+      const thisMonth = new Date().toISOString().slice(0, 7);
+      const { data: monthlyPayments } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('status', 'completed')
+        .gte('created_at', thisMonth);
+
+      const monthlyRevenue = monthlyPayments?.reduce((sum, payment) => sum + parseFloat(payment.amount), 0) || 0;
 
       setStats({
         totalUsers: totalUsers || 0,
@@ -130,7 +161,7 @@ export default function AdminDashboard() {
         totalPosts: totalPosts || 0,
         totalRevenue,
         newUsersToday: newUsersToday || 0,
-        activeUsers: Math.floor((totalUsers || 0) * 0.7), // 70% active
+        activeUsers: activeUsers || 0,
         pendingPosts: pendingPosts || 0,
         monthlyRevenue,
       });
