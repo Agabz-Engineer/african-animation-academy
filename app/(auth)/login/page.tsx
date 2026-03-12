@@ -8,21 +8,25 @@ import { REMEMBER_ME_KEY, setRememberSessionPreference, supabase } from "@/lib/s
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
-  surface: "#222222",
-  border: "#444444",
-  text: "#FAF3E1",
-  muted: "#D2C9B8",
-  dim: "#9E9688",
-  divider: "rgba(68,68,68,0.4)",
+  surface: "#0F0F0F",
+  border: "#2A2A2A",
+  text: "#FFFFFF",
+  muted: "#A0A0A0",
+  dim: "#666666",
+  divider: "rgba(255,109,31,0.2)",
+  accent: "#FF6D1F",
+  accentHover: "#E04D00",
 };
 
 const LIGHT_UI = {
-  surface: "rgba(250,243,225,0.86)",
-  border: "#E7DBBD",
-  text: "#222222",
-  muted: "#555555",
-  dim: "#888888",
-  divider: "rgba(231,219,189,0.55)",
+  surface: "#FFFFFF",
+  border: "#E5E7EB",
+  text: "#1F2937",
+  muted: "#6B7280",
+  dim: "#9CA3AF",
+  divider: "rgba(255,109,31,0.1)",
+  accent: "#FF6D1F",
+  accentHover: "#E04D00",
 };
 
 export default function LoginPage() {

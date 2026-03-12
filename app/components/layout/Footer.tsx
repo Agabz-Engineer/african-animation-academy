@@ -70,6 +70,11 @@ export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const year = new Date().getFullYear();
+  
+  // Check if user is admin (simple check for admin access)
+  const isAdmin = typeof window !== 'undefined' && 
+    (window.location.pathname.includes('/admin') || 
+     localStorage.getItem('userRole') === 'admin');
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,7 +297,7 @@ export default function Footer() {
             <div
               className="hidden md:block h-3 w-24 rounded-full overflow-hidden"
               style={{
-                background: "repeating-linear-gradient(90deg, #FF6D1F 0px, #FF6D1F 8px, #E04D00 8px, #E04D00 16px, #F5E7C6 16px, #F5E7C6 24px, #A03000 24px, #A03000 32px)",
+                background: "repeating-linear-gradient(45deg, #FF6D1F 0px, #FF6D1F 1px, transparent 1px, transparent 20px), repeating-linear-gradient(-45deg, #FF6D1F 0px, #FF6D1F 1px, transparent 1px, transparent 20px)",
               }}
             />
             <p className="text-xs italic" style={{ color: "#9E9688" }}>
@@ -300,6 +305,29 @@ export default function Footer() {
                 Made with <Heart className="w-3 h-3" style={{ color: "#E04D00" }} /> in Africa
               </span>
             </p>
+            {/* Hidden Admin Access Link - Only visible to admins */}
+            {isAdmin && (
+              <div 
+                style={{
+                  fontSize: "10px",
+                  color: "#666666",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease"
+                }}
+                onClick={() => window.location.href = "/admin"}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "#FF6D1F";
+                  e.currentTarget.style.textDecoration = "underline";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "#666666";
+                  e.currentTarget.style.textDecoration = "none";
+                }}
+              >
+                Admin
+              </div>
+            )}
           </div>
         </div>
       </div>
