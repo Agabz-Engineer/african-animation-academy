@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Play, 
@@ -11,9 +11,18 @@ import {
   List,
   ChevronRight,
   Eye,
-  Clock
+  Clock,
+  Menu,
+  X,
+  Home,
+  BookOpen,
+  Users,
+  DollarSign,
+  Calendar,
+  Image as ImageIcon
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
+import Link from "next/link";
 
 const DARK_UI = {
   text: "#FAF3E1",
@@ -123,12 +132,32 @@ const animationProjects = [
 
 const categories = ["All", "2D Animation", "3D Animation", "Character Design", "Motion Graphics", "Motion Design"];
 
+const PORTFOLIO_NAV = [
+  { label: "Dashboard", href: "/dashboard", icon: Home },
+  { label: "Courses", href: "/courses", icon: BookOpen },
+  { label: "Events", href: "/events", icon: Calendar },
+  { label: "Portfolio", href: "/portfolio", icon: ImageIcon },
+  { label: "Community", href: "/community", icon: Users },
+  { label: "Pricing", href: "/pricing", icon: DollarSign },
+];
+
 export default function PortfolioPage() {
   const theme = useThemeMode();
   const C = theme === "dark" ? DARK_UI : LIGHT_UI;
-  
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredProject, setHoveredProject] = useState<number | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -197,6 +226,28 @@ export default function PortfolioPage() {
             flexWrap: "wrap",
             gap: "1rem"
           }}>
+            {/* Mobile Menu Button */}
+            {isMobile && (
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.5rem 1rem",
+                  borderRadius: "8px",
+                  backgroundColor: C.filterBg,
+                  color: C.text,
+                  border: `1px solid ${C.filterBorder}`,
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                }}
+              >
+                <Menu size={20} />
+                <span style={{ marginLeft: "0.5rem" }}>Menu</span>
+              </button>
+            )}
             <div>
               <h1 style={{ 
                 fontFamily: "Clash Display, sans-serif", 
@@ -296,6 +347,111 @@ export default function PortfolioPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Mobile Navigation Menu */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              zIndex: 1000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div style={{
+              backgroundColor: C.cardBg,
+              border: `1px solid ${C.cardBorder}`,
+              borderRadius: "12px",
+              padding: "2rem",
+              maxWidth: "400px",
+              width: "90%",
+              maxHeight: "80vh",
+              overflowY: "auto",
+            }}>
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.5rem",
+              }}>
+                <h3 style={{
+                  color: C.text,
+                  fontSize: "1.25rem",
+                  fontWeight: 600,
+                  margin: 0,
+                }}>
+                  Navigation
+                </h3>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: C.text,
+                    cursor: "pointer",
+                    padding: "0.5rem",
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}>
+                {PORTFOLIO_NAV.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    style={{
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                      padding: "0.75rem 1rem",
+                      borderRadius: "8px",
+                      color: item.href === "/portfolio" ? "#FF6D1F" : C.text,
+                      backgroundColor: item.href === "/portfolio" ? "rgba(255, 109, 31, 0.1)" : "transparent",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (item.href !== "/portfolio") {
+                        e.currentTarget.style.backgroundColor = "rgba(255, 109, 31, 0.1)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (item.href !== "/portfolio") {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }
+                    }}
+                  >
+                    <item.icon size={20} />
+                    <span style={{
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                    }}>
+                      {item.label}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Filter Dropdown */}
       <AnimatePresence>
