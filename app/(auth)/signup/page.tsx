@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Easing } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap, Film, Clapperboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -39,9 +39,9 @@ const GOALS = [
 ];
 
 const stepVariants = {
-  enter: { opacity: 0, x: 40 },
-  center: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -40 },
+  enter: { opacity: 0, x: 40, scale: 0.95 },
+  center: { opacity: 1, x: 0, scale: 1 },
+  exit: { opacity: 0, x: -40, scale: 0.95 },
 };
 
 const TOTAL_STEPS = 4;
@@ -153,9 +153,9 @@ export default function SignupPage() {
         <div style={{ position: "absolute", top: "20%", left: "20%", width: "300px", height: "300px", background: "rgba(255,109,31,0.08)", borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none" }} />
 
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
           style={{ textAlign: "center", position: "relative", zIndex: 1 }}
         >
           {/* AFX Logo */}

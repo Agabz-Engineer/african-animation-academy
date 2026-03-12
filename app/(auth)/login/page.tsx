@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, Easing } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { REMEMBER_ME_KEY, setRememberSessionPreference, supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -99,7 +99,7 @@ export default function LoginPage() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
           style={{ textAlign: "center", position: "relative", zIndex: 1 }}
         >
           {/* AFX Logo */}
@@ -170,7 +170,7 @@ export default function LoginPage() {
           style={{ width: "100%", maxWidth: "440px" }}
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
         >
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
