@@ -83,13 +83,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
 
         // Check if user has admin role
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
 
-        if (profile?.role !== 'admin') {
+        // Debug logging
+        console.log('Admin check - User ID:', user.id);
+        console.log('Admin check - Profile:', profile);
+        console.log('Admin check - Profile error:', profileError);
+
+        if (profileError || !profile) {
+          console.log('Profile not found, creating one...');
+          // Create profile if it doesn't exist
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email,
+              full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+              role: 'admin' // Set as admin for first setup
+            });
+          
+          if (insertError) {
+            console.error('Error creating profile:', insertError);
+            window.location.href = "/dashboard";
+            return;
+          }
+        } else if (profile.role !== 'admin') {
+          console.log('User is not admin, redirecting...');
           window.location.href = "/dashboard";
           return;
         }
