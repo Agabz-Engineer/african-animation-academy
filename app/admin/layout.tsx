@@ -82,13 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           return;
         }
 
-        // TEMPORARY: Allow access for testing - REMOVE THIS IN PRODUCTION
-        console.log('Admin access granted (temporary bypass)');
-        console.log('User ID:', user.id);
-        console.log('User email:', user.email);
-        
-        // Check if user has admin role (commented out for testing)
-        /*
+        // Check if user has admin role
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
@@ -122,7 +116,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           window.location.href = "/dashboard";
           return;
         }
-        */
 
         setUser(user);
       } catch (error) {
