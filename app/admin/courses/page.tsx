@@ -22,7 +22,7 @@ import {
   Upload
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { publishCourse, draftCourse, archiveCourse, deleteCourse, getAdminCourses } from "@/app/admin/actions";
+import { publishCourse, draftCourse, archiveCourse, deleteCourse, getAdminCourses, saveCourse } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -132,18 +132,7 @@ export default function CourseManagement() {
 
   const handleSaveCourse = async (courseData: Partial<Course>) => {
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
-      if (isEditing && selectedCourse) {
-        await supabase
-          .from('courses')
-          .update(courseData)
-          .eq('id', selectedCourse.id);
-      } else {
-        await supabase
-          .from('courses')
-          .insert([courseData]);
-      }
+      await saveCourse(courseData, isEditing, isEditing && selectedCourse ? selectedCourse.id : undefined);
       
       await fetchCourses();
       setShowCourseModal(false);
@@ -151,6 +140,7 @@ export default function CourseManagement() {
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving course:', error);
+      alert('Failed to save course. Check console for details.');
     }
   };
 

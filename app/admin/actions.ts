@@ -184,6 +184,25 @@ export async function deleteCourse(courseId: string) {
   return { success: true };
 }
 
+export async function saveCourse(courseData: any, isEditing: boolean, courseId?: string) {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+  
+  if (isEditing && courseId) {
+    const { error } = await supabaseAdmin
+      .from('courses')
+      .update(courseData)
+      .eq('id', courseId);
+    if (error) throw error;
+  } else {
+    const { error } = await supabaseAdmin
+      .from('courses')
+      .insert([courseData]);
+    if (error) throw error;
+  }
+  
+  return { success: true };
+}
+
 
 // ==========================================
 // Community Management Actions
