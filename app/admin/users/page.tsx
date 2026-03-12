@@ -21,7 +21,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { banUser, unbanUser, deleteUser } from "@/app/admin/actions";
+import { banUser, unbanUser, deleteUser, getAdminUsers } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -80,23 +80,11 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (profilesError) throw profilesError;
-
-      // Get auth users data separately
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) throw authError;
+      const { profiles, authUsers } = await getAdminUsers();
 
       // Transform data to match User interface
       const transformedUsers: User[] = (profiles || []).map((profile: any) => {
-        const authUser = authUsers.users.find(user => user.id === profile.id);
+        const authUser = authUsers.find(user => user.id === profile.id);
         return {
           id: profile.id,
           email: authUser?.email || 'unknown',

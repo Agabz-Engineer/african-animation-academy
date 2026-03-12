@@ -20,6 +20,7 @@ import {
   Calendar
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getAdminDashboardData } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -90,81 +91,8 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
-      // Fetch users count
-      const { count: totalUsers } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch active users count
-      const { count: activeUsers } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
-
-      // Fetch new users today
-      const today = new Date().toISOString().split('T')[0];
-      const { count: newUsersToday } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', today);
-
-      // Fetch courses count
-      const { count: totalCourses } = await supabase
-        .from('courses')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch published courses count
-      const { count: publishedCourses } = await supabase
-        .from('courses')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'published');
-
-      // Fetch posts count
-      const { count: totalPosts } = await supabase
-        .from('community_posts')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch pending posts (if status field exists)
-      const { count: pendingPosts } = await supabase
-        .from('community_posts')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-
-      // Fetch total enrollments
-      const { count: totalEnrollments } = await supabase
-        .from('course_enrollments')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch total revenue from payments
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('status', 'completed');
-
-      const totalRevenue = payments?.reduce((sum, payment) => sum + parseFloat(payment.amount), 0) || 0;
-
-      // Fetch monthly revenue
-      const thisMonth = new Date().toISOString().slice(0, 7);
-      const { data: monthlyPayments } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('status', 'completed')
-        .gte('created_at', thisMonth);
-
-      const monthlyRevenue = monthlyPayments?.reduce((sum, payment) => sum + parseFloat(payment.amount), 0) || 0;
-
-      setStats({
-        totalUsers: totalUsers || 0,
-        totalCourses: totalCourses || 0,
-        totalPosts: totalPosts || 0,
-        totalRevenue,
-        newUsersToday: newUsersToday || 0,
-        activeUsers: activeUsers || 0,
-        pendingPosts: pendingPosts || 0,
-        monthlyRevenue,
-      });
+      const dashboardStats = await getAdminDashboardData();
+      setStats(dashboardStats);
 
       // Mock recent activity
       setRecentActivity([

@@ -22,7 +22,7 @@ import {
   Upload
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { publishCourse, draftCourse, archiveCourse, deleteCourse } from "@/app/admin/actions";
+import { publishCourse, draftCourse, archiveCourse, deleteCourse, getAdminCourses } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -86,16 +86,8 @@ export default function CourseManagement() {
 
   const fetchCourses = async () => {
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setCourses(data || []);
+      const data = await getAdminCourses();
+      setCourses(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
     } finally {

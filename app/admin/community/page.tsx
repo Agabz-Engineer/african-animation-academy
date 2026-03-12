@@ -30,7 +30,8 @@ import {
   deletePost, 
   bulkApprovePosts, 
   bulkRejectPosts, 
-  bulkDeletePosts 
+  bulkDeletePosts,
+  getAdminCommunityPosts
 } from "@/app/admin/actions";
 
 const DARK_UI = {
@@ -95,23 +96,12 @@ export default function CommunityManagement() {
 
   const fetchPosts = async () => {
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
-      const { data, error } = await supabase
-        .from('community_posts')
-        .select(`
-          *,
-          profiles!inner (full_name, avatar_url),
-          community_reports (count)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await getAdminCommunityPosts();
 
       // Transform data to include reports count
       const transformedPosts = (data || []).map((post: any) => ({
         ...post,
-        reports_count: post.community_reports?.length || 0,
+        reports_count: post.community_reports?.[0]?.count || 0,
       }));
 
       setPosts(transformedPosts);
