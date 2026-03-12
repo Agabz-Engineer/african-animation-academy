@@ -21,6 +21,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { banUser, unbanUser, deleteUser } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -128,35 +129,29 @@ export default function UserManagement() {
 
   const handleUserAction = async (action: string, userId: string) => {
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
+      let result;
       switch (action) {
         case 'ban':
-          await supabase
-            .from('profiles')
-            .update({ status: 'banned' })
-            .eq('id', userId);
+          result = await banUser(userId);
           break;
         case 'unban':
-          await supabase
-            .from('profiles')
-            .update({ status: 'active' })
-            .eq('id', userId);
+          result = await unbanUser(userId);
           break;
         case 'delete':
-          await supabase.auth.admin.deleteUser(userId);
-          await supabase
-            .from('profiles')
-            .delete()
-            .eq('id', userId);
+          result = await deleteUser(userId);
           break;
         case 'make_admin':
+          // Assuming you still want this done via client or add action later,
+          // For now we'll leave it as a client call since it's just modifying profile,
+          // but ideal is to move all. Let's create proper error handling just in case.
+          if (!supabase) throw new Error('Supabase not initialized');
           await supabase
             .from('profiles')
             .update({ role: 'admin' })
             .eq('id', userId);
           break;
         case 'remove_admin':
+          if (!supabase) throw new Error('Supabase not initialized');
           await supabase
             .from('profiles')
             .update({ role: 'user' })
@@ -167,6 +162,7 @@ export default function UserManagement() {
       await fetchUsers();
     } catch (error) {
       console.error('Error performing user action:', error);
+      alert('Failed to perform user action. Please check console for details.');
     }
   };
 

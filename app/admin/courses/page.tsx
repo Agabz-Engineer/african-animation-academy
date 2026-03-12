@@ -22,6 +22,7 @@ import {
   Upload
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { publishCourse, draftCourse, archiveCourse, deleteCourse } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -114,38 +115,26 @@ export default function CourseManagement() {
 
   const handleCourseAction = async (action: string, courseId: string) => {
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
+      let result;
       switch (action) {
         case 'publish':
-          await supabase
-            .from('courses')
-            .update({ status: 'published' })
-            .eq('id', courseId);
+          result = await publishCourse(courseId);
           break;
         case 'draft':
-          await supabase
-            .from('courses')
-            .update({ status: 'draft' })
-            .eq('id', courseId);
+          result = await draftCourse(courseId);
           break;
         case 'archive':
-          await supabase
-            .from('courses')
-            .update({ status: 'archived' })
-            .eq('id', courseId);
+          result = await archiveCourse(courseId);
           break;
         case 'delete':
-          await supabase
-            .from('courses')
-            .delete()
-            .eq('id', courseId);
+          result = await deleteCourse(courseId);
           break;
       }
       
       await fetchCourses();
     } catch (error) {
       console.error('Error performing course action:', error);
+      alert('Failed to perform course action. Please check console for details.');
     }
   };
 

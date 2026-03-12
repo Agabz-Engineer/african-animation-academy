@@ -23,6 +23,15 @@ import {
   RefreshCw
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { 
+  approvePost, 
+  rejectPost, 
+  flagPost, 
+  deletePost, 
+  bulkApprovePosts, 
+  bulkRejectPosts, 
+  bulkDeletePosts 
+} from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -123,38 +132,26 @@ export default function CommunityManagement() {
 
   const handlePostAction = async (action: string, postId: string) => {
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
+      let result;
       switch (action) {
         case 'approve':
-          await supabase
-            .from('community_posts')
-            .update({ status: 'approved' })
-            .eq('id', postId);
+          result = await approvePost(postId);
           break;
         case 'reject':
-          await supabase
-            .from('community_posts')
-            .update({ status: 'rejected' })
-            .eq('id', postId);
+          result = await rejectPost(postId);
           break;
         case 'flag':
-          await supabase
-            .from('community_posts')
-            .update({ status: 'flagged' })
-            .eq('id', postId);
+          result = await flagPost(postId);
           break;
         case 'delete':
-          await supabase
-            .from('community_posts')
-            .delete()
-            .eq('id', postId);
+          result = await deletePost(postId);
           break;
       }
       
       await fetchPosts();
     } catch (error) {
       console.error('Error performing post action:', error);
+      alert('Failed to perform post action. Please check console for details.');
     }
   };
 
@@ -162,26 +159,15 @@ export default function CommunityManagement() {
     if (selectedPosts.length === 0) return;
 
     try {
-      if (!supabase) throw new Error('Supabase not initialized');
-      
       switch (action) {
         case 'approve_all':
-          await supabase
-            .from('community_posts')
-            .update({ status: 'approved' })
-            .in('id', selectedPosts);
+          await bulkApprovePosts(selectedPosts);
           break;
         case 'reject_all':
-          await supabase
-            .from('community_posts')
-            .update({ status: 'rejected' })
-            .in('id', selectedPosts);
+          await bulkRejectPosts(selectedPosts);
           break;
         case 'delete_all':
-          await supabase
-            .from('community_posts')
-            .delete()
-            .in('id', selectedPosts);
+          await bulkDeletePosts(selectedPosts);
           break;
       }
       
@@ -189,6 +175,7 @@ export default function CommunityManagement() {
       await fetchPosts();
     } catch (error) {
       console.error('Error performing bulk action:', error);
+      alert('Failed to perform bulk action. Please check console for details.');
     }
   };
 
