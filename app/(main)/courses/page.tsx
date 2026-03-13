@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Clock, BookOpen, Star, Camera, X, Lock, Play } from "lucide-react";
+import { Search, Clock, Camera, X, Lock, Play } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Course = {
@@ -10,15 +10,13 @@ type Course = {
   instructor: string;
   level: string;
   duration: string;
-  lessons: number;
-  rating: number;
   desc: string;
   videoUrl?: string;
   enrollUrl?: string;
 };
 
 const COURSES: Course[] = [
-  { title: "Introduction to Animation", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", lessons: 12, rating: 4.8, desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10" },
+  { title: "Quick Poses for Strong Silhouettes", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10" },
 ];
 
 const ACCESSIBLE: Record<string, string[]> = {
@@ -245,16 +243,8 @@ export default function CoursesPage() {
               {/* Meta */}
               <div className="hide-mobile" style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Star style={{ width: "12px", height: "12px", color: T.accent }} />
-                  <span style={{ fontSize: "0.775rem", fontFamily: "'General Sans',sans-serif", fontWeight: 600, color: T.text }}>{course.rating}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <Clock style={{ width: "12px", height: "12px", color: T.textDim }} />
                   <span style={{ fontSize: "0.775rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>{course.duration}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <BookOpen style={{ width: "12px", height: "12px", color: T.textDim }} />
-                  <span style={{ fontSize: "0.775rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>{course.lessons} lessons</span>
                 </div>
               </div>
 
