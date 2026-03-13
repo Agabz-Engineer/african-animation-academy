@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { getProAmount, toMinorUnits, type BillingCycle } from "@/lib/pricing";
+import {
+  TERM_MONTHS,
+  getProMonthlyRate,
+  toMinorUnits,
+  type BillingTermMonths,
+} from "@/lib/pricing";
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.PAYSTACK_CALLBACK_BASE_URL;
@@ -13,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const billingCycle = (body?.billingCycle as BillingCycle) || "monthly";
+    const termRaw = Number(body?.termMonths ?? 1);
     const userId = body?.userId as string | undefined;
     const email = body?.email as string | undefined;
 
@@ -21,13 +26,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not authenticated." }, { status: 401 });
     }
 
-    if (!["monthly", "annual"].includes(billingCycle)) {
-      return NextResponse.json({ error: "Unsupported billing cycle." }, { status: 400 });
+    if (!TERM_MONTHS.includes(termRaw as BillingTermMonths)) {
+      return NextResponse.json({ error: "Unsupported term length." }, { status: 400 });
     }
 
-    const amountGhs = getProAmount(billingCycle);
+    const termMonths = termRaw as BillingTermMonths;
+    const amountGhs = getProMonthlyRate(termMonths);
     const amount = toMinorUnits(amountGhs);
     const callbackUrl = SITE_URL ? `${SITE_URL.replace(/\/$/, "")}/pricing?status=success` : undefined;
+
+    const planCodeMap: Record<BillingTermMonths, string | undefined> = {
+      1: undefined,
+      3: process.env.PAYSTACK_PLAN_PRO_3M,
+      4: process.env.PAYSTACK_PLAN_PRO_4M,
+      9: process.env.PAYSTACK_PLAN_PRO_9M,
+    };
+    const planCode = planCodeMap[termMonths];
+    const requiresPlan = termMonths > 1;
+
+    if (requiresPlan && !planCode) {
+      return NextResponse.json(
+        { error: "Paystack plan code not configured for this term." },
+        { status: 500 }
+      );
+    }
 
     const payload: Record<string, unknown> = {
       email,
@@ -36,10 +58,17 @@ export async function POST(request: Request) {
       metadata: {
         user_id: userId,
         plan: "pro",
-        billing_cycle: billingCycle,
+        billing_cycle: "monthly",
+        term_months: termMonths,
+        payment_type: requiresPlan ? "subscription" : "topup",
       },
-      channels: ["card", "mobile_money", "bank_transfer", "bank", "ussd"],
+      channels: requiresPlan
+        ? ["card"]
+        : ["card", "mobile_money", "bank_transfer", "bank", "ussd"],
     };
+    if (planCode) {
+      payload.plan = planCode;
+    }
     if (callbackUrl) {
       payload.callback_url = callbackUrl;
     }

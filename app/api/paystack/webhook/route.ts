@@ -35,7 +35,9 @@ export async function POST(request: Request) {
     const data = event.data;
     const metadata = data?.metadata || {};
     const userId = metadata.user_id as string | undefined;
-    const billingCycle = (metadata.billing_cycle as "monthly" | "annual") || "monthly";
+    const termMonthsRaw = Number(metadata.term_months ?? 1);
+    const termMonths = [1, 3, 4, 9].includes(termMonthsRaw) ? termMonthsRaw : 1;
+    const billingCycle = "monthly";
 
     if (!userId) {
       return NextResponse.json({ received: true });
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
 
     const amount = Number(data?.amount || 0) / 100;
     const paidAt = data?.paid_at ? new Date(data.paid_at) : new Date();
-    const expiresAt = billingCycle === "annual" ? addDays(paidAt, 365) : addDays(paidAt, 30);
+    const expiresAt = addDays(paidAt, 30);
 
     const { data: existingPayment } = await supabaseAdmin
       .from("payments")
@@ -63,6 +65,7 @@ export async function POST(request: Request) {
         provider_payment_id: data?.id ? String(data.id) : null,
         provider_reference: data?.reference || null,
         provider_customer_id: data?.customer?.customer_code || null,
+        term_months: termMonths,
         created_at: paidAt.toISOString(),
         completed_at: paidAt.toISOString(),
       });
@@ -84,6 +87,7 @@ export async function POST(request: Request) {
           status: "active",
           price: amount,
           billing_cycle: billingCycle,
+          term_months: termMonths,
           started_at: paidAt.toISOString(),
           ends_at: expiresAt.toISOString(),
           provider: "paystack",
@@ -98,6 +102,7 @@ export async function POST(request: Request) {
         status: "active",
         price: amount,
         billing_cycle: billingCycle,
+        term_months: termMonths,
         started_at: paidAt.toISOString(),
         ends_at: expiresAt.toISOString(),
         provider: "paystack",

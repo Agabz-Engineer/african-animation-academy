@@ -13,9 +13,15 @@ import {
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
 import { supabase } from "@/lib/supabase";
-import { PRICING, getAnnualPrice } from "@/lib/pricing";
+import {
+  PRICING,
+  TERM_MONTHS,
+  getProMonthlyRate,
+  getProTermSavings,
+  getTermDiscount,
+  type BillingTermMonths,
+} from "@/lib/pricing";
 
-type BillingCycle = "monthly" | "annual";
 type PlanId = "free" | "pro";
 type CellValue = boolean | string;
 
@@ -86,15 +92,15 @@ const FAQS = [
     a: "Yes. You can cancel your plan from account settings at any time. Your paid access stays active until the end of your current billing period.",
   },
   {
-    q: "How does annual billing work?",
-    a: `Annual plans are billed once per year at a discounted rate. You save ${PRICING.annualDiscount}% compared with paying month-to-month.`,
+    q: "How do the 3, 4, or 9 month plans work?",
+    a: "They charge monthly by card for the term you select. When the term ends, you can renew or switch to a different term.",
   },
   {
     q: "Do you offer refunds?",
     a: "Yes. Paid plans are covered by a 14-day money-back guarantee from the date of first purchase.",
   },
   {
-    q: "Can I upgrade from Free to Pro or Team later?",
+    q: "Can I upgrade from Free to Pro later?",
     a: "Absolutely. Upgrades are instant and your progress remains intact.",
   },
   {
@@ -102,8 +108,8 @@ const FAQS = [
     a: "Yes. Checkout uses SSL encryption and secure payment providers. We do not expose card data in the app.",
   },
   {
-    q: "Do Mobile Money or bank transfers renew automatically?",
-    a: "Not yet. Mobile Money and bank transfers are one-time payments, so you renew monthly or yearly. Card payments can be upgraded to auto-renew later.",
+    q: "Can I use Mobile Money or bank transfer?",
+    a: "Yes for 1-month top-ups. Multi-month plans are card only because subscriptions need card authorization.",
   },
 ];
 
@@ -154,7 +160,7 @@ export default function PricingPage() {
   const theme = useThemeMode();
   const T = theme === "dark" ? DARK : LIGHT;
 
-  const [billing, setBilling] = useState<BillingCycle>("monthly");
+  const [termMonths, setTermMonths] = useState<BillingTermMonths>(1);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
@@ -165,22 +171,24 @@ export default function PricingPage() {
           ...plan,
           amount: 0,
           periodLabel: "forever",
-          saveAmount: 0,
-          monthlyEquivalent: 0,
+          termMonths: 1,
+          termSavings: 0,
+          discount: 0,
         };
       }
 
-      const annual = getAnnualPrice(plan.monthlyPrice);
-      const monthlyEquivalent = Math.round((annual / 12) * 100) / 100;
+      const discount = getTermDiscount(termMonths);
+      const termSavings = getProTermSavings(termMonths);
       return {
         ...plan,
-        amount: billing === "monthly" ? plan.monthlyPrice : annual,
-        periodLabel: billing === "monthly" ? "month" : "year",
-        saveAmount: plan.monthlyPrice * 12 - annual,
-        monthlyEquivalent,
+        amount: getProMonthlyRate(termMonths),
+        periodLabel: "month",
+        termMonths,
+        termSavings,
+        discount,
       };
     });
-  }, [billing]);
+  }, [termMonths]);
 
   const handleCheckout = async () => {
     if (!supabase) {
@@ -203,7 +211,7 @@ export default function PricingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId: "pro",
-          billingCycle: billing,
+          termMonths,
           userId: user.id,
           email: user.email,
         }),
@@ -244,8 +252,8 @@ export default function PricingPage() {
         </h1>
 
         <p style={{ color: T.muted }}>
-          Choose monthly or annual billing, unlock the tools you need, and move from learning
-          to industry-ready output.
+          Pick a term length, unlock the tools you need, and move from learning to industry-ready
+          output.
         </p>
 
         <div className="billing-row">
@@ -253,37 +261,31 @@ export default function PricingPage() {
             className="billing-toggle"
             style={{ border: `1px solid ${T.border}`, background: T.chip }}
             role="tablist"
-            aria-label="Billing cycle"
+            aria-label="Billing term"
           >
-            <button
-              type="button"
-              onClick={() => setBilling("monthly")}
-              className={billing === "monthly" ? "active" : ""}
-              style={{
-                background: billing === "monthly" ? T.accent : "transparent",
-                color: billing === "monthly" ? (theme === "dark" ? "#222222" : "#FFFFFF") : T.muted,
-              }}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              onClick={() => setBilling("annual")}
-              className={billing === "annual" ? "active" : ""}
-              style={{
-                background: billing === "annual" ? T.accent : "transparent",
-                color: billing === "annual" ? (theme === "dark" ? "#222222" : "#FFFFFF") : T.muted,
-              }}
-            >
-              Annual
-            </button>
+            {TERM_MONTHS.map((term) => (
+              <button
+                key={term}
+                type="button"
+                onClick={() => setTermMonths(term)}
+                className={termMonths === term ? "active" : ""}
+                style={{
+                  background: termMonths === term ? T.accent : "transparent",
+                  color: termMonths === term ? (theme === "dark" ? "#222222" : "#FFFFFF") : T.muted,
+                }}
+              >
+                {term === 1 ? "1 month" : `${term} months`}
+              </button>
+            ))}
           </div>
 
           <span
             className="save-chip"
             style={{ border: `1px solid ${T.accent}66`, background: T.accentSoft, color: T.accent }}
           >
-            Save {PRICING.annualDiscount}% on annual
+            {termMonths === 1
+              ? "MoMo + bank top-up"
+              : `Save ${getTermDiscount(termMonths)}% on ${termMonths} months`}
           </span>
         </div>
 
@@ -345,10 +347,17 @@ export default function PricingPage() {
                   </>
                 )}
               </div>
+              {isPaid && plan.termMonths > 1 && (
+                <p className="term-note" style={{ color: T.success }}>
+                  Save {plan.discount}% - GH?{plan.termSavings} over {plan.termMonths} months
+                </p>
+              )}
 
-              {isPaid && billing === "annual" && (
-                <p className="annual-note" style={{ color: T.success }}>
-                  GH?{plan.monthlyEquivalent}/mo billed yearly · save GH?{plan.saveAmount}
+              {isPaid && (
+                <p className="payment-note" style={{ color: T.muted }}>
+                  {plan.termMonths === 1
+                    ? "MoMo + bank top-up. Renew monthly."
+                    : `Card only. Auto-renews monthly for ${plan.termMonths} months.`}
                 </p>
               )}
 
@@ -603,9 +612,14 @@ export default function PricingPage() {
         .period {
           font: 600 0.78rem "General Sans", sans-serif;
         }
-        .annual-note {
+        .term-note {
           margin-top: 0.3rem;
           font: 700 0.73rem "General Sans", sans-serif;
+        }
+        .payment-note {
+          margin-top: 0.35rem;
+          font: 600 0.72rem "General Sans", sans-serif;
+          line-height: 1.4;
         }
         .cta {
           margin-top: 0.65rem;
