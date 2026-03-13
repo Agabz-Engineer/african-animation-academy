@@ -31,7 +31,7 @@ const listAllAuthUsers = async (): Promise<User[]> => {
 };
 
 const safeCount = async (
-  query: Promise<{ count: number | null; error: { message?: string } | null }>,
+  query: PromiseLike<{ count: number | null; error: { message?: string } | null }>,
   label: string
 ): Promise<number | null> => {
   const { count, error } = await query;
@@ -43,7 +43,7 @@ const safeCount = async (
 };
 
 const safeSelect = async <T>(
-  query: Promise<{ data: T[] | null; error: { message?: string } | null }>,
+  query: PromiseLike<{ data: T[] | null; error: { message?: string } | null }>,
   label: string
 ): Promise<T[]> => {
   const { data, error } = await query;
