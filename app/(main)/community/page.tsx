@@ -213,7 +213,7 @@ const parseTags = (value: string) =>
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-const normalizePost = (row: any): CommunityPost => ({
+const normalizePost = (row: any, followedIds: Set<string>): CommunityPost => ({
   id: row.id,
   userId: row.user_id,
   userName: row.user_name || "Animator",
@@ -223,7 +223,7 @@ const normalizePost = (row: any): CommunityPost => ({
   likesCount: Math.max(0, row.likes_count || 0),
   commentsCount: Math.max(0, row.comments_count || 0),
   createdAt: row.created_at,
-  isFollowing: false,
+  isFollowing: followedIds.has(row.user_id),
   profiles: row.profiles
 });
 
@@ -290,6 +290,7 @@ export default function CommunityPage() {
   const [likePendingFor, setLikePendingFor] = useState<string | null>(null);
   const [openCommentFor, setOpenCommentFor] = useState<string | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
   const [commentPendingFor, setCommentPendingFor] = useState<string | null>(null);
   const [commentErrorByPost, setCommentErrorByPost] = useState<Record<string, string>>({});
   const [commentInfoByPost, setCommentInfoByPost] = useState<Record<string, string>>({});
@@ -327,7 +328,7 @@ export default function CommunityPage() {
         supabase.auth.getUser(),
         supabase
           .from("community_posts")
-          .select("*, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
+          .select("id, user_id, user_name, user_handle, content, tags, likes_count, comments_count, created_at, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
           .order("created_at", { ascending: false })
           .limit(40),
         supabase
@@ -340,6 +341,7 @@ export default function CommunityPage() {
       if (!mounted) return;
 
       const authUser = userData.user;
+      const followedIds = new Set<string>();
       if (authUser) {
         const meta = authUser.user_metadata || {};
         const name =
@@ -355,11 +357,23 @@ export default function CommunityPage() {
           .slice(0, 20);
         setUser({ id: authUser.id, name, handle: handle || "creative" });
         localHandles.add(handle || "creative");
+
+        // Fetch followed IDs for filter
+        const { data: followData } = await supabase
+          .from("user_follows")
+          .select("following_id")
+          .eq("follower_id", authUser.id);
+        
+        if (followData) {
+          const ids = new Set(followData.map(f => f.following_id));
+          setFollowedIds(ids);
+          ids.forEach(id => followedIds.add(id));
+        }
       } else {
         setUser(null);
       }
 
-      const livePosts = Array.isArray(postData) ? (postData as DbPost[]).map(normalizePost) : [];
+      const livePosts = Array.isArray(postData) ? (postData as DbPost[]).map(p => normalizePost(p, followedIds)) : [];
       const liveComments = Array.isArray(commentData) ? (commentData as DbComment[]).map(normalizeComment) : [];
       const livePostIds = livePosts.map((post) => post.id);
       let likeRows: DbLike[] = [];
@@ -604,7 +618,8 @@ export default function CommunityPage() {
         localOnly: true,
       };
       setPosts((prev) => {
-        const next = mergePosts([localPost], prev);
+        // Local post is always "following" by definition (own post)
+        const next = mergePosts([{ ...localPost, isFollowing: true }], prev);
         writeLocalPosts(next.filter((post) => post.localOnly));
         return next;
       });
@@ -647,7 +662,7 @@ export default function CommunityPage() {
       return;
     }
 
-    setPosts((prev) => mergePosts([normalizePost(data as DbPost)], prev));
+    setPosts((prev) => mergePosts([normalizePost(data as any, followedIds)], prev));
     setFilter("Latest");
     setPostText("");
     setSubmitInfo("Posted to live community.");

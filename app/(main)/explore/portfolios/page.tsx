@@ -69,7 +69,7 @@ const LIGHT = {
   input: "#FFFFFF",
 };
 
-const CATEGORIES = ["All", "2D Animation", "3D Animation", "Character Design", "Motion Graphics", "VFX"];
+const CATEGORIES = ["All", "Following", "2D Animation", "3D Animation", "Character Design", "Motion Graphics", "VFX"];
 
 // ─── Components ──────────────────────────────────────────
 function ProjectCard({ project, theme, viewMode }: { project: PortfolioProject, theme: any, viewMode: "grid" | "list" }) {
@@ -212,26 +212,61 @@ export default function ExplorePortfoliosPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 12;
 
-  useEffect(() => {
-    async function fetchProjects() {
-      if (!supabase) {
-        setLoading(false);
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from("portfolio_projects")
-        .select("*, profiles!portfolio_projects_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
-        .order("created_at", { ascending: false });
-        
-      if (!error && data) {
-        setProjects(data as any);
-      }
+  const fetchProjects = async (pageNum = 1) => {
+    if (!supabase) {
       setLoading(false);
+      return;
     }
     
-    fetchProjects();
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      // Fetch followed IDs if user is logged in
+      if (pageNum === 1) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: followData } = await supabase
+            .from("user_follows")
+            .select("following_id")
+            .eq("follower_id", session.user.id);
+          
+          if (followData) {
+            setFollowedIds(new Set(followData.map(f => f.following_id)));
+          }
+        }
+      }
+
+      const { data, error } = await supabase
+        .from("portfolio_projects")
+        .select("id, user_id, user_name, user_handle, title, description, category, thumbnail_url, media_url, tags, created_at, profiles!portfolio_projects_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
+        .order("created_at", { ascending: false })
+        .range((pageNum - 1) * PAGE_SIZE, pageNum * PAGE_SIZE - 1);
+        
+      if (!error && data) {
+        if (pageNum === 1) {
+          setProjects(data as any);
+        } else {
+          setProjects(prev => [...prev, ...(data as any)]);
+        }
+        setHasMore(data.length === PAGE_SIZE);
+      }
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects(1);
   }, []);
 
   const filteredProjects = useMemo(() => {
@@ -239,10 +274,17 @@ export default function ExplorePortfoliosPage() {
       const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase()) || 
                            p.user_name.toLowerCase().includes(search.toLowerCase()) ||
                            p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
-      const matchesCategory = category === "All" || p.category === category;
+      
+      let matchesCategory = true;
+      if (category === "Following") {
+        matchesCategory = followedIds.has(p.user_id);
+      } else if (category !== "All") {
+        matchesCategory = p.category === category;
+      }
+      
       return matchesSearch && matchesCategory;
     });
-  }, [projects, search, category]);
+  }, [projects, search, category, followedIds]);
 
   return (
     <div style={{ 
@@ -401,6 +443,34 @@ export default function ExplorePortfoliosPage() {
           <UsersIcon style={{ width: "48px", height: "48px", color: theme.dim, marginBottom: "1.25rem", opacity: 0.5 }} />
           <h2 style={{ fontSize: "1.5rem", fontFamily: "'Clash Display', sans-serif", margin: "0 0 0.5rem" }}>No portfolios found</h2>
           <p style={{ color: theme.dim, margin: 0 }}>Try adjusting your search or category filters.</p>
+        </div>
+      )}
+
+      {/* Load More */}
+      {hasMore && !loading && filteredProjects.length > 0 && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "3rem" }}>
+          <button
+            onClick={() => {
+              const nextPage = page + 1;
+              setPage(nextPage);
+              fetchProjects(nextPage);
+            }}
+            disabled={loadingMore}
+            style={{
+              padding: "0.8rem 2rem",
+              borderRadius: "12px",
+              backgroundColor: "transparent",
+              border: `1px solid ${theme.border}`,
+              color: theme.text,
+              fontSize: "0.9rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              opacity: loadingMore ? 0.6 : 1
+            }}
+          >
+            {loadingMore ? "Loading..." : "Load More Portfolios"}
+          </button>
         </div>
       )}
     </div>
