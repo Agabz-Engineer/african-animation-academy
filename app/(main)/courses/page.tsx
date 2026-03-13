@@ -80,11 +80,12 @@ export default function CoursesPage() {
       if (t) setTheme(t);
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    if (supabase) {
-      supabase.auth.getUser().then(async ({ data: { user } }) => {
+    const client = supabase;
+    if (client) {
+      client.auth.getUser().then(async ({ data: { user } }) => {
         setSkill(user?.user_metadata?.skill_level || "beginner");
         if (user?.id) {
-          const { data } = await supabase
+          const { data } = await client
             .from("profiles")
             .select("subscription_tier")
             .eq("id", user.id)
