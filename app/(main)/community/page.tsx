@@ -56,11 +56,17 @@ type DbPost = {
   likes_count: number | null;
   comments_count: number | null;
   created_at: string;
-  profiles?: {
-    followers_count: number;
-    total_platform_likes: number;
-    avatar_url: string | null;
-  };
+  profiles?:
+    | {
+        followers_count: number;
+        total_platform_likes: number;
+        avatar_url: string | null;
+      }
+    | {
+        followers_count: number;
+        total_platform_likes: number;
+        avatar_url: string | null;
+      }[];
 };
 
 type CommunityComment = {
@@ -175,7 +181,7 @@ const normalizePost = (row: any, followedIds: Set<string>): CommunityPost => ({
   commentsCount: Math.max(0, row.comments_count || 0),
   createdAt: row.created_at,
   isFollowing: followedIds.has(row.user_id),
-  profiles: row.profiles
+  profiles: Array.isArray(row.profiles) ? row.profiles[0] ?? null : row.profiles
 });
 
 const normalizeComment = (row: DbComment): CommunityComment => ({
@@ -464,7 +470,7 @@ export default function CommunityPage() {
                         likesCount: post.likesCount,
                         commentsCount: post.commentsCount,
                         isFollowing: post.isFollowing,
-                        profiles: row.profiles ?? post.profiles,
+                        profiles: normalized.profiles ?? post.profiles,
                       }
                     : post
                 )
