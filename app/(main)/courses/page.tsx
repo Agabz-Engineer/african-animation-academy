@@ -18,7 +18,7 @@ type Course = {
 };
 
 const COURSES: Course[] = [
-  { title: "Introduction to Animation", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", lessons: 12, rating: 4.8, desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://drive.google.com/uc?export=download&id=1Sfgqgq86j3Th1sRReM9CrdIA7DC8A2dV", enrollUrl: "https://drive.google.com/uc?export=download&id=1Sfgqgq86j3Th1sRReM9CrdIA7DC8A2dV" },
+  { title: "Introduction to Animation", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", lessons: 12, rating: 4.8, desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10" },
 ];
 
 const ACCESSIBLE: Record<string, string[]> = {
