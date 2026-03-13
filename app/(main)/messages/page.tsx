@@ -80,6 +80,57 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
+
+  // Real-time listener for new messages
+  useEffect(() => {
+    if (!supabase || !user) return;
+
+    const channel = supabase
+      .channel('chat_updates')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'direct_messages' },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          
+          if (newMsg.sender_id === user.id || newMsg.receiver_id === user.id) {
+            const activeChat = selectedChatRef.current;
+            
+            // If the message belongs to the currently active chat
+            if (activeChat && (
+              (newMsg.sender_id === activeChat.other_user_id) || 
+              (newMsg.receiver_id === activeChat.other_user_id)
+            )) {
+                setMessages((prev) => {
+                  if (!prev.find(m => m.id === newMsg.id)) {
+                    return [...prev, newMsg];
+                  }
+                  return prev;
+                });
+                
+                // Mark as read immediately if chat is openly active
+                if (newMsg.receiver_id === user.id) {
+                   supabase?.from("direct_messages")
+                     .update({ read: true })
+                     .eq("id", newMsg.id)
+                     .then();
+                }
+            }
+            // Always refresh sidebar conversation list
+            fetchConversations(user.id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase?.removeChannel(channel);
+    };
+  }, [user]);
+
+  useEffect(() => {
     if (!supabase) return;
     const client = supabase;
     let active = true;
@@ -116,9 +167,6 @@ export default function MessagesPage() {
     };
   }, []);
 
-  useEffect(() => {
-    selectedChatRef.current = selectedChat;
-  }, [selectedChat]);
 
   async function fetchConversations(userId: string) {
     if (!supabase) return;
