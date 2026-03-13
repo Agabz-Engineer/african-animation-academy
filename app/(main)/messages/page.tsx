@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
@@ -20,7 +20,7 @@ type Message = {
   receiver_id: string;
   content: string;
   created_at: string;
-  read: boolean;
+  is_read: boolean;
 };
 
 type Conversation = {
@@ -73,6 +73,7 @@ export default function MessagesPage() {
   const [user, setUser] = useState<any>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
+  const selectedChatRef = useRef<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -95,6 +96,10 @@ export default function MessagesPage() {
     }
     getSession();
   }, []);
+
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
 
   async function fetchConversations(userId: string) {
     if (!supabase) return;
@@ -123,9 +128,9 @@ export default function MessagesPage() {
             other_user_avatar: otherUser?.avatar_url,
             last_message: m.content,
             last_message_at: m.created_at,
-            unread_count: m.receiver_id === userId && !m.read ? 1 : 0
+            unread_count: m.receiver_id === userId && !m.is_read ? 1 : 0
           });
-        } else if (m.receiver_id === userId && !m.read) {
+        } else if (m.receiver_id === userId && !m.is_read) {
           const c = convosMap.get(otherId)!;
           c.unread_count++;
         }
@@ -152,10 +157,10 @@ export default function MessagesPage() {
 
       await supabase
         .from("direct_messages")
-        .update({ read: true })
+        .update({ is_read: true })
         .eq("sender_id", otherId)
         .eq("receiver_id", user.id)
-        .eq("read", false);
+        .eq("is_read", false);
 
       setConversations(prev => prev.map(c => 
         c.other_user_id === otherId ? { ...c, unread_count: 0 } : c
@@ -199,6 +204,91 @@ export default function MessagesPage() {
       setSending(false);
     }
   }
+
+  useEffect(() => {
+    if (!user || !supabase) return;
+    const client = supabase;
+
+    const upsertConversation = async (msg: Message, isActiveChat: boolean) => {
+      const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+      const isIncoming = msg.receiver_id === user.id;
+      let needsProfile = false;
+
+      setConversations(prev => {
+        const idx = prev.findIndex(c => c.other_user_id === otherId);
+        const unreadInc = isIncoming && !isActiveChat ? 1 : 0;
+        if (idx === -1) {
+          needsProfile = true;
+          return prev;
+        }
+        const updated = [...prev];
+        const c = updated[idx];
+        updated[idx] = {
+          ...c,
+          last_message: msg.content,
+          last_message_at: msg.created_at,
+          unread_count: isActiveChat ? 0 : c.unread_count + unreadInc
+        };
+        const [moved] = updated.splice(idx, 1);
+        return [moved, ...updated];
+      });
+
+      if (needsProfile) {
+        const { data: profile } = await client
+          .from("profiles")
+          .select("full_name, user_name, avatar_url")
+          .eq("id", otherId)
+          .single();
+        setConversations(prev => {
+          if (prev.some(c => c.other_user_id === otherId)) return prev;
+          return [{
+            other_user_id: otherId,
+            other_user_name: profile?.full_name || "Unknown",
+            other_user_handle: profile?.user_name || "unknown",
+            other_user_avatar: profile?.avatar_url || null,
+            last_message: msg.content,
+            last_message_at: msg.created_at,
+            unread_count: isIncoming ? 1 : 0
+          }, ...prev];
+        });
+      }
+    };
+
+    const handleInsert = async (payload: any) => {
+      const msg = payload.new as Message;
+      if (msg.sender_id !== user.id && msg.receiver_id !== user.id) return;
+
+      const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+      const activeChat = selectedChatRef.current?.other_user_id === otherId;
+
+      if (activeChat) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          const next = [...prev, msg];
+          next.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          return next;
+        });
+        if (msg.receiver_id === user.id) {
+          void client
+            .from("direct_messages")
+            .update({ is_read: true })
+            .eq("id", msg.id);
+        }
+      }
+
+      await upsertConversation(msg, activeChat);
+    };
+
+    const channel = client
+      .channel(`direct-messages-${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages", filter: `sender_id=eq.${user.id}` }, handleInsert)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${user.id}` }, handleInsert)
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   if (!user && !loading) {
     return (
