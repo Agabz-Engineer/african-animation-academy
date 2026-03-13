@@ -49,17 +49,33 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // Redirect to the update password page on success
+    // Always use the production URL so Supabase whitelist matches correctly.
+    // Fall back to current origin for local dev if NEXT_PUBLIC_SITE_URL is not set.
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (typeof window !== "undefined" ? window.location.origin : "");
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
+      redirectTo: `${siteUrl}/update-password`,
     });
 
     if (error) {
-      setError(error.message);
+      // Provide a clear message for the common Supabase rate-limit error
+      const msg = error.message.toLowerCase();
+      if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("over the limit")) {
+        setError(
+          "Too many reset requests. Supabase allows a limited number of emails per hour. Please wait a few minutes and try again."
+        );
+      } else if (msg.includes("not found") || msg.includes("user not found")) {
+        // Security best practice: don't reveal if the email exists
+        setSuccess(true);
+      } else {
+        setError(error.message);
+      }
     } else {
       setSuccess(true);
     }
-    
+
     setLoading(false);
   };
 
