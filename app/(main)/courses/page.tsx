@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -13,11 +13,14 @@ type Course = {
   desc: string;
   videoUrl?: string;
   enrollUrl?: string;
+  access?: "free" | "pro";
 };
 
 const COURSES: Course[] = [
-  { title: "Quick Poses for Strong Silhouettes", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10" },
-  { title: "Expressive Walk Cycles: The Gathering Place Study", instructor: "TBA", level: "Beginner", duration: "TBD", desc: "Study rhythm, weight, and personality in walk cycles using a lively gathering‑place scene.", videoUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", enrollUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0" },
+  { title: "Quick Poses for Strong Silhouettes", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", access: "free" },
+  { title: "Expressive Walk Cycles: The Gathering Place Study", instructor: "TBA", level: "Beginner", duration: "TBD", desc: "Study rhythm, weight, and personality in walk cycles using a lively gathering‑place scene.", videoUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", enrollUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", access: "free" },
+  { title: "Bouncing Ball with Tail — Moho Tutorial", instructor: "TBA", level: "Intermediate", duration: "TBD", desc: "Practice follow-through and overlap by animating a bouncing ball with a tail in Moho.", videoUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", enrollUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", access: "pro" },
+  { title: "oon Boom Fundamentals", instructor: "TBA", level: "Intermediate", duration: "TBD", desc: "Core tools, timelines, and workflows to start animating confidently in Toon Boom.", videoUrl: "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb", enrollUrl: "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb", access: "pro" },
 ];
 
 const ACCESSIBLE: Record<string, string[]> = {
@@ -68,6 +71,7 @@ export default function CoursesPage() {
   const [theme, setTheme]       = useState<"dark"|"light">(getInitialTheme);
   const [search, setSearch]     = useState("");
   const [skillLevel, setSkill]  = useState("beginner");
+  const [subscriptionTier, setSubscriptionTier] = useState<"free" | "pro" | "team">("free");
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
@@ -77,8 +81,18 @@ export default function CoursesPage() {
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     if (supabase) {
-      supabase.auth.getUser().then(({ data: { user } }) => {
+      supabase.auth.getUser().then(async ({ data: { user } }) => {
         setSkill(user?.user_metadata?.skill_level || "beginner");
+        if (user?.id) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("subscription_tier")
+            .eq("id", user.id)
+            .single();
+          if (data?.subscription_tier === "pro" || data?.subscription_tier === "team") {
+            setSubscriptionTier(data.subscription_tier);
+          }
+        }
         setLoading(false);
       });
     } else {
@@ -98,7 +112,18 @@ export default function CoursesPage() {
     c.title.toLowerCase().includes(search.toLowerCase()) ||
     c.instructor.toLowerCase().includes(search.toLowerCase())
   );
-  const isLocked   = (level: string) => !accessible.includes(level);
+  const hasPro     = subscriptionTier === "pro" || subscriptionTier === "team";
+  const isLocked   = (course: Course) => {
+    const levelLocked = !accessible.includes(course.level);
+    const proLocked = (course.access ?? "free") === "pro" && !hasPro;
+    return levelLocked || proLocked;
+  };
+  const lockNotes  = (course: Course) => {
+    const notes: string[] = [];
+    if ((course.access ?? "free") === "pro" && !hasPro) notes.push("Pro members only");
+    if (!accessible.includes(course.level)) notes.push(`Complete ${skillLevel} first`);
+    return notes;
+  };
 
   const levelColor = (l: string) =>
     l === "Beginner"     ? "#4CAF50" :
@@ -156,7 +181,7 @@ export default function CoursesPage() {
             )}
           </div>
           <span style={{ fontSize: "0.775rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginLeft: "auto" }}>
-            {filtered.filter(c => !isLocked(c.level)).length} available · {filtered.filter(c => isLocked(c.level)).length} locked
+            {filtered.filter(c => !isLocked(c)).length} available · {filtered.filter(c => isLocked(c)).length} locked
           </span>
         </div>
       </div>
@@ -164,7 +189,7 @@ export default function CoursesPage() {
       {/* Course list */}
       <div style={{ padding: "0 2.5rem 3rem" }}>
         {filtered.map((course, i) => {
-          const locked = isLocked(course.level);
+          const locked = isLocked(course);
           const hasPreview = Boolean(course.videoUrl);
           const canPreview = hasPreview && !locked;
           const thumbnail = (
@@ -224,11 +249,11 @@ export default function CoursesPage() {
                   <span style={{ fontSize: "0.6rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: levelColor(course.level), backgroundColor: `${levelColor(course.level)}18`, padding: "2px 7px", borderRadius: "5px" }}>
                     {course.level}
                   </span>
-                  {locked && (
-                    <span style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", padding: "2px 7px", borderRadius: "5px", backgroundColor: T.surface }}>
-                      Complete {skillLevel} first
+                  {locked && lockNotes(course).map((note) => (
+                    <span key={note} style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", padding: "2px 7px", borderRadius: "5px", backgroundColor: T.surface }}>
+                      {note}
                     </span>
-                  )}
+                  ))}
                 </div>
                 <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text, marginBottom: "0.2rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {course.title}
@@ -252,7 +277,7 @@ export default function CoursesPage() {
               {/* Price + button */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem", flexShrink: 0 }}>
                 <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.75rem", color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  Included in subscription
+                  {(course.access ?? "free") === "pro" ? "Pro members only" : "Included in subscription"}
                 </span>
                 {locked ? (
                   <button
