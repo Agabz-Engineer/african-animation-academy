@@ -846,7 +846,7 @@ export default function CommunityPage() {
           }}
         >
           <Link
-            href="/portfolio"
+            href="/explore/portfolios"
             style={{
               textDecoration: "none",
               border: `1px solid ${T.border}`,

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
   Heart,
@@ -11,8 +11,15 @@ import {
   ChevronRight,
   Eye,
   Clock,
+  Plus,
+  Upload,
+  Hash,
+  X,
+  Link as LinkIcon,
+  Check
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
+import { supabase } from "@/lib/supabase";
 
 // ─── Colour tokens ────────────────────────────────────────
 const DARK_UI = {
@@ -29,6 +36,7 @@ const DARK_UI = {
   pillActiveTxt: "#222222",
   pillInactive: "rgba(44,44,44,0.8)",
   pillInactiveTxt: "#D2C9B8",
+  dim: "#9E9688",
 };
 
 const LIGHT_UI = {
@@ -45,6 +53,7 @@ const LIGHT_UI = {
   pillActiveTxt: "#ffffff",
   pillInactive: "rgba(245,231,198,0.9)",
   pillInactiveTxt: "#555555",
+  dim: "#9E9688",
 };
 
 // ─── Static animation variants (defined ONCE, not per render) ─
@@ -66,46 +75,20 @@ const itemVariants = {
 };
 
 // ─── Data ─────────────────────────────────────────────────
-const ANIMATION_PROJECTS = [
-  {
-    id: 1, title: "African Sunset Journey", category: "2D Animation",
-    duration: "2:30", views: 1234, likes: 89, comments: 12, featured: true,
-    description: "A vibrant 2D animation celebrating African landscapes and culture",
-    tags: ["2D", "Cultural", "Landscape"],
-  },
-  {
-    id: 2, title: "Character Design: Adanna", category: "Character Design",
-    duration: "1:45", views: 892, likes: 67, comments: 8, featured: true,
-    description: "Original character design inspired by West African aesthetics",
-    tags: ["Character", "Design", "Cultural"],
-  },
-  {
-    id: 3, title: "City Rhythm", category: "Motion Graphics",
-    duration: "0:30", views: 2341, likes: 156, comments: 23, featured: false,
-    description: "Dynamic motion graphics capturing the pulse of African city life",
-    tags: ["Motion Graphics", "Urban", "Abstract"],
-  },
-  {
-    id: 4, title: "Wildlife Documentary Intro", category: "3D Animation",
-    duration: "1:15", views: 3456, likes: 234, comments: 45, featured: true,
-    description: "3D animated introduction for African wildlife documentary",
-    tags: ["3D", "Wildlife", "Documentary"],
-  },
-  {
-    id: 5, title: "Traditional Patterns", category: "Motion Design",
-    duration: "0:45", views: 1567, likes: 98, comments: 15, featured: false,
-    description: "Animated traditional African patterns with a modern twist",
-    tags: ["Patterns", "Traditional", "Modern"],
-  },
-  {
-    id: 6, title: "Dance of the Spirits", category: "2D Animation",
-    duration: "3:20", views: 4567, likes: 312, comments: 67, featured: true,
-    description: "Spiritual dance animation inspired by African folklore",
-    tags: ["2D", "Dance", "Folklore"],
-  },
-];
+type Project = {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  tags: string[];
+  thumbnail_url: string | null;
+  media_url: string | null;
+  community_post_id?: string;
+  created_at: string;
+  featured?: boolean;
+};
 
-const CATEGORIES = ["All", "2D Animation", "3D Animation", "Character Design", "Motion Graphics", "Motion Design"];
+const CATEGORIES = ["All", "2D Animation", "3D Animation", "Character Design", "Motion Graphics", "VFX"];
 
 // ─── Thumbnail placeholder ─────────────────────────────────
 function Thumbnail({ size = 48 }: { size?: number }) {
@@ -123,7 +106,7 @@ function Thumbnail({ size = 48 }: { size?: number }) {
 }
 
 // ─── Grid Card ─────────────────────────────────────────────
-function GridCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: typeof DARK_UI }) {
+function GridCard({ project, C }: { project: Project; C: any }) {
   return (
     <motion.div
       variants={itemVariants}
@@ -138,8 +121,12 @@ function GridCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: ty
       }}
     >
       {/* Thumbnail */}
-      <div style={{ position: "relative", paddingBottom: "56.25%" }}>
-        <Thumbnail size={36} />
+      <div style={{ position: "relative", paddingBottom: "56.25%", overflow: "hidden" }}>
+        {project.thumbnail_url ? (
+          <img src={project.thumbnail_url} alt={project.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <Thumbnail size={36} />
+        )}
       </div>
 
       {/* Body */}
@@ -159,12 +146,12 @@ function GridCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: ty
           </span>
           <span style={{ fontSize: "0.72rem", color: C.muted, display: "flex", alignItems: "center", gap: "3px" }}>
             <Clock size={11} />
-            {project.duration}
+            {new Date(project.created_at).toLocaleDateString()}
           </span>
         </div>
 
         <div style={{ display: "flex", gap: "0.375rem", flexWrap: "wrap", marginBottom: "0.625rem" }}>
-          {project.tags.slice(0, 2).map(tag => (
+          {project.tags?.slice(0, 2).map((tag: string) => (
             <span key={tag} style={{
               padding: "0.125rem 0.375rem",
               backgroundColor: C.hoverBg,
@@ -177,22 +164,11 @@ function GridCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: ty
           ))}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <span style={{ fontSize: "0.68rem", color: C.muted, display: "flex", alignItems: "center", gap: "3px" }}>
-              <Eye size={11} />{project.views.toLocaleString()}
-            </span>
-            <span style={{ fontSize: "0.68rem", color: C.muted, display: "flex", alignItems: "center", gap: "3px" }}>
-              <Heart size={11} />{project.likes}
-            </span>
-            <span style={{ fontSize: "0.68rem", color: C.muted, display: "flex", alignItems: "center", gap: "3px" }}>
-              <MessageCircle size={11} />{project.comments}
-            </span>
-          </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
           <button style={{
             padding: "0.3rem 0.625rem",
             backgroundColor: "#FF6D1F",
-            color: "#222",
+            color: "#fff",
             border: "none",
             borderRadius: "6px",
             fontSize: "0.68rem",
@@ -210,7 +186,7 @@ function GridCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: ty
 }
 
 // ─── List Card ─────────────────────────────────────────────
-function ListCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: typeof DARK_UI }) {
+function ListCard({ project, C }: { project: Project; C: any }) {
   return (
     <motion.div
       variants={itemVariants}
@@ -228,7 +204,11 @@ function ListCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: ty
     >
       {/* Thumbnail */}
       <div style={{ position: "relative", width: "160px", height: "90px", flexShrink: 0, borderRadius: "8px", overflow: "hidden" }}>
-        <Thumbnail size={24} />
+        {project.thumbnail_url ? (
+          <img src={project.thumbnail_url} alt={project.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <Thumbnail size={24} />
+        )}
       </div>
 
       {/* Content */}
@@ -244,7 +224,7 @@ function ListCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: ty
           <button style={{
             padding: "0.3rem 0.625rem",
             backgroundColor: "#FF6D1F",
-            color: "#222",
+            color: "#fff",
             border: "none",
             borderRadius: "6px",
             fontSize: "0.68rem",
@@ -267,15 +247,10 @@ function ListCard({ project, C }: { project: typeof ANIMATION_PROJECTS[0]; C: ty
             {project.category}
           </span>
           <span style={{ fontSize: "0.7rem", color: C.muted, display: "flex", alignItems: "center", gap: "3px" }}>
-            <Clock size={11} />{project.duration}
+            <Clock size={11} />
+            {new Date(project.created_at).toLocaleDateString()}
           </span>
-          <span style={{ fontSize: "0.7rem", color: C.muted, display: "flex", alignItems: "center", gap: "3px" }}>
-            <Eye size={11} />{project.views.toLocaleString()}
-          </span>
-          <span style={{ fontSize: "0.7rem", color: C.muted, display: "flex", alignItems: "center", gap: "3px" }}>
-            <Heart size={11} />{project.likes}
-          </span>
-          {project.tags.map(tag => (
+          {project.tags?.map((tag: string) => (
             <span key={tag} style={{
               padding: "0.125rem 0.375rem",
               backgroundColor: C.hoverBg,
@@ -298,45 +273,151 @@ export default function PortfolioPage() {
   const C = theme === "dark" ? DARK_UI : LIGHT_UI;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  
+  // Form State
+  const [newProject, setNewProject] = useState({
+    title: "",
+    category: "2D Animation",
+    description: "",
+    tags: "",
+    thumbnail_url: "",
+    media_url: ""
+  });
+  const [communityPosts, setCommunityPosts] = useState<any[]>([]);
+  const [isTaggingMode, setIsTaggingMode] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    async function init() {
+      if (!supabase) return;
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      
+      if (user && supabase) {
+        // Fetch projects
+        const { data: projData } = await supabase
+          .from("portfolio_projects")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+        
+        if (projData) setProjects(projData);
+        
+        // Fetch community posts for tagging
+        const { data: postData } = await supabase
+          .from("community_posts")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+          
+        if (postData) setCommunityPosts(postData);
+      }
+      setLoading(false);
+    }
+    init();
+  }, []);
+
+  const handleAddProject = async () => {
+    if (!user || !newProject.title || !supabase) return;
+    setSubmitting(true);
+    
+    const projectToSave = {
+      user_id: user.id,
+      user_name: user.user_metadata.full_name || user.email?.split("@")[0] || "Anonymous",
+      user_handle: user.user_metadata.handle || user.email?.split("@")[0] || "user",
+      title: newProject.title,
+      category: newProject.category,
+      description: newProject.description,
+      tags: newProject.tags.split(",").map(t => t.trim()).filter(t => t),
+      thumbnail_url: newProject.thumbnail_url || null,
+      media_url: newProject.media_url || null
+    };
+
+    const { data, error } = await supabase
+      .from("portfolio_projects")
+      .insert([projectToSave])
+      .select();
+
+    if (!error && data) {
+      setProjects([data[0], ...projects]);
+      setIsModalOpen(false);
+      setNewProject({ title: "", category: "2D Animation", description: "", tags: "", thumbnail_url: "", media_url: "" });
+    }
+    setSubmitting(false);
+  };
+
+  const tagPost = (post: any) => {
+    setNewProject({
+      ...newProject,
+      title: post.content.split("\n")[0].substring(0, 50),
+      description: post.content,
+      tags: post.tags.join(", ")
+    });
+    setIsTaggingMode(false);
+  };
 
   const filteredProjects = useMemo(
     () => selectedCategory === "All"
-      ? ANIMATION_PROJECTS
-      : ANIMATION_PROJECTS.filter(p => p.category === selectedCategory),
-    [selectedCategory]
-  );
-
-  const featuredProjects = useMemo(
-    () => ANIMATION_PROJECTS.filter(p => p.featured),
-    []
+      ? projects
+      : projects.filter(p => p.category === selectedCategory),
+    [selectedCategory, projects]
   );
 
   return (
-    <div style={{ padding: "1.75rem 2rem", color: C.text, width: "100%" }}>
-
+    <div style={{ padding: "1.75rem 2rem", color: C.text, width: "100%", minHeight: "100vh" }}>
+      
       {/* ── Header ─────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        style={{ marginBottom: "1.5rem" }}
-      >
-        <h1 style={{
-          fontFamily: "'Clash Display', sans-serif",
-          fontSize: "clamp(1.6rem, 4vw, 2.5rem)",
-          fontWeight: 700,
-          margin: "0 0 0.375rem",
-          background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
-        }}>
-          Here are some of your works
-        </h1>
-        <p style={{ color: C.muted, margin: 0, fontFamily: "'General Sans', sans-serif", fontSize: "0.9rem" }}>
-          Showcase your creative journey through animation
-        </p>
-      </motion.div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+        <motion.div
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <h1 style={{
+            fontFamily: "'Clash Display', sans-serif",
+            fontSize: "clamp(1.6rem, 4vw, 2.5rem)",
+            fontWeight: 700,
+            margin: "0 0 0.375rem",
+            background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}>
+            Here are some of your works
+          </h1>
+          <p style={{ color: C.muted, margin: 0, fontFamily: "'General Sans', sans-serif", fontSize: "0.9rem" }}>
+            Showcase your creative journey through animation
+          </p>
+        </motion.div>
+
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          style={{
+            backgroundColor: "#FF6D1F",
+            color: "#fff",
+            border: "none",
+            borderRadius: "12px",
+            padding: "0.75rem 1.25rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            fontSize: "0.85rem",
+            fontWeight: 700,
+            cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(255,109,31,0.25)",
+            fontFamily: "'General Sans', sans-serif"
+          }}
+        >
+          <Plus style={{ width: "18px", height: "18px" }} />
+          Add Work
+        </button>
+      </div>
 
       {/* ── Controls Row ────────────────────────────────── */}
       <div style={{
@@ -346,7 +427,6 @@ export default function PortfolioPage() {
         alignItems: "center",
         marginBottom: "2rem",
       }}>
-        {/* Category Pills */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem", flex: 1 }}>
           {CATEGORIES.map(cat => (
             <button
@@ -370,7 +450,6 @@ export default function PortfolioPage() {
           ))}
         </div>
 
-        {/* Grid / List Toggle */}
         <div style={{
           display: "flex",
           border: `1px solid ${C.filterBorder}`,
@@ -381,7 +460,6 @@ export default function PortfolioPage() {
         }}>
           <button
             onClick={() => setViewMode("grid")}
-            title="Grid view"
             style={{
               padding: "0.4rem 0.7rem",
               border: "none",
@@ -390,17 +468,13 @@ export default function PortfolioPage() {
               borderRadius: "6px 0 0 6px",
               cursor: "pointer",
               display: "flex", alignItems: "center", gap: "0.375rem",
-              fontFamily: "'General Sans', sans-serif",
               fontSize: "0.8rem", fontWeight: 600,
-              transition: "background-color 0.18s",
             }}
           >
-            <Grid3X3 size={15} />
-            Grid
+            <Grid3X3 size={15} /> Grid
           </button>
           <button
             onClick={() => setViewMode("list")}
-            title="List view"
             style={{
               padding: "0.4rem 0.7rem",
               border: "none",
@@ -409,98 +483,206 @@ export default function PortfolioPage() {
               borderRadius: "0 6px 6px 0",
               cursor: "pointer",
               display: "flex", alignItems: "center", gap: "0.375rem",
-              fontFamily: "'General Sans', sans-serif",
               fontSize: "0.8rem", fontWeight: 600,
-              transition: "background-color 0.18s",
             }}
           >
-            <List size={15} />
-            List
+            <List size={15} /> List
           </button>
         </div>
       </div>
 
-      {/* ── Featured Works (only when "All" selected) ──── */}
-      {selectedCategory === "All" && (
-        <section style={{ marginBottom: "2.5rem" }}>
-          <h2 style={{
-            fontFamily: "'Clash Display', sans-serif",
-            fontSize: "1.25rem", fontWeight: 700,
-            marginBottom: "1.25rem", color: C.text,
-          }}>
-            Featured Works
-          </h2>
-
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            style={viewMode === "grid" ? {
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: "1rem",
-            } : {
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.875rem",
-            }}
-          >
-            {featuredProjects.map(project =>
-              viewMode === "grid"
-                ? <GridCard key={project.id} project={project} C={C} />
-                : <ListCard key={project.id} project={project} C={C} />
-            )}
-          </motion.div>
-        </section>
+      {loading ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "1rem" }}>
+          {[1, 2, 3].map(i => <div key={i} style={{ height: "200px", borderRadius: "12px", backgroundColor: C.cardBg, opacity: 0.5 }} />)}
+        </div>
+      ) : filteredProjects.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "5rem 2rem", border: `1px dashed ${C.filterBorder}`, borderRadius: "20px" }}>
+          <Upload style={{ width: "48px", height: "48px", color: C.dim, marginBottom: "1rem", opacity: 0.5 }} />
+          <h2 style={{ fontSize: "1.25rem", fontFamily: "'Clash Display', sans-serif" }}>Your portfolio is empty</h2>
+          <p style={{ color: C.muted, fontSize: "0.9rem" }}>Start by adding your first project!</p>
+        </div>
+      ) : (
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          style={viewMode === "grid" ? {
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+            gap: "1.5rem",
+          } : {
+            display: "flex",
+            flexDirection: "column",
+            gap: "1rem",
+          }}
+        >
+          {filteredProjects.map(project => (
+            viewMode === "grid"
+              ? <GridCard key={project.id} project={project as any} C={C} />
+              : <ListCard key={project.id} project={project as any} C={C} />
+          ))}
+        </motion.div>
       )}
 
-      {/* ── All / Filtered Projects ─────────────────────── */}
-      <section>
-        <h2 style={{
-          fontFamily: "'Clash Display', sans-serif",
-          fontSize: "1.25rem", fontWeight: 700,
-          marginBottom: "1.25rem", color: C.text,
-        }}>
-          {selectedCategory === "All" ? "All Projects" : selectedCategory}
-          <span style={{ marginLeft: "0.5rem", fontSize: "0.8rem", color: C.muted, fontWeight: 400 }}>
-            ({filteredProjects.length})
-          </span>
-        </h2>
+      {/* ── Add Project Modal ─────────────────────────────── */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", backgroundColor: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              style={{
+                width: "100%",
+                maxWidth: "600px",
+                backgroundColor: C.cardBg,
+                border: `1px solid ${C.cardBorder}`,
+                borderRadius: "24px",
+                padding: "2rem",
+                position: "relative",
+                maxHeight: "90vh",
+                overflowY: "auto"
+              }}
+            >
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                style={{ position: "absolute", top: "1.5rem", right: "1.5rem", background: "none", border: "none", cursor: "pointer", color: C.text }}
+              >
+                <X size={24} />
+              </button>
 
-        {filteredProjects.length === 0 ? (
-          <div style={{
-            textAlign: "center", padding: "3rem 1rem",
-            border: `1px dashed ${C.filterBorder}`,
-            borderRadius: "12px",
-            color: C.muted,
-            fontFamily: "'General Sans', sans-serif",
-          }}>
-            No projects found in <strong>{selectedCategory}</strong>
+              <h2 style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontSize: "1.75rem", fontWeight: 700, marginBottom: "0.5rem" }}>
+                Add New Project
+              </h2>
+              <p style={{ color: C.muted, fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+                Share your latest masterpiece with the community.
+              </p>
+
+              {/* Tag from Community Banner */}
+              <div 
+                onClick={() => setIsTaggingMode(!isTaggingMode)}
+                style={{
+                  padding: "1rem",
+                  borderRadius: "16px",
+                  backgroundColor: C.hoverBg,
+                  border: `1px solid ${C.pillActive}44`,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1.5rem"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <Hash style={{ color: C.pillActive }} />
+                  <div>
+                    <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700 }}>Tag from Community Feed</p>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: C.muted }}>Quickly import details from a post you already made.</p>
+                  </div>
+                </div>
+                <ChevronRight size={16} />
+              </div>
+
+              {isTaggingMode ? (
+                <div style={{ marginBottom: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <p style={{ fontSize: "0.8rem", fontWeight: 700, color: C.muted }}>Select a post to import:</p>
+                  {communityPosts.length === 0 ? (
+                    <p style={{ fontSize: "0.8rem", color: C.dim, textAlign: "center", padding: "1rem" }}>No community posts found.</p>
+                  ) : (
+                    communityPosts.slice(0, 5).map(post => (
+                      <div 
+                        key={post.id}
+                        onClick={() => tagPost(post)}
+                        style={{ padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, cursor: "pointer", fontSize: "0.8rem", color: C.text }}
+                      >
+                        {post.content.substring(0, 80)}...
+                      </div>
+                    ))
+                  )}
+                  <button onClick={() => setIsTaggingMode(false)} style={{ background: "none", border: "none", color: C.pillActive, fontSize: "0.8rem", cursor: "pointer" }}>Cancel</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>Title</label>
+                    <input 
+                      value={newProject.title}
+                      onChange={e => setNewProject({...newProject, title: e.target.value})}
+                      placeholder="My Animation Project"
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text }}
+                    />
+                  </div>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>Category</label>
+                      <select 
+                        value={newProject.category}
+                        onChange={e => setNewProject({...newProject, category: e.target.value})}
+                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text }}
+                      >
+                        {CATEGORIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>Tags (comma separated)</label>
+                      <input 
+                        value={newProject.tags}
+                        onChange={e => setNewProject({...newProject, tags: e.target.value})}
+                        placeholder="2d, character, wip"
+                        style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>Description</label>
+                    <textarea 
+                      value={newProject.description}
+                      onChange={e => setNewProject({...newProject, description: e.target.value})}
+                      rows={3}
+                      placeholder="Tell us about your work..."
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text, resize: "none" }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>Project URL (optional)</label>
+                    <input 
+                      value={newProject.media_url}
+                      onChange={e => setNewProject({...newProject, media_url: e.target.value})}
+                      placeholder="vimeo.com/..."
+                      style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text }}
+                    />
+                  </div>
+
+                  <button 
+                    disabled={submitting || !newProject.title}
+                    onClick={handleAddProject}
+                    style={{
+                      marginTop: "0.5rem",
+                      backgroundColor: submitting ? C.dim : "#FF6D1F",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "12px",
+                      padding: "1rem",
+                      fontWeight: 700,
+                      cursor: submitting ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.5rem"
+                    }}
+                  >
+                    {submitting ? "Adding..." : "Publish to Portfolio"}
+                    {!submitting && <Check style={{ width: "18px", height: "18px" }} />}
+                  </button>
+                </div>
+              )}
+            </motion.div>
           </div>
-        ) : (
-          <motion.div
-            key={`${selectedCategory}-${viewMode}`}
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            style={viewMode === "grid" ? {
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
-              gap: "1rem",
-            } : {
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.875rem",
-            }}
-          >
-            {filteredProjects.map(project =>
-              viewMode === "grid"
-                ? <GridCard key={project.id} project={project} C={C} />
-                : <ListCard key={project.id} project={project} C={C} />
-            )}
-          </motion.div>
         )}
-      </section>
+      </AnimatePresence>
     </div>
   );
 }
