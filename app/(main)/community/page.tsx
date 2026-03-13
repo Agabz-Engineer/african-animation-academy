@@ -836,9 +836,94 @@ export default function CommunityPage() {
           </div>
         </section>
 
+        {/* ── Discovery Hub ────────────────────────────────────── */}
+        <section 
+          style={{ 
+            display: "grid", 
+            gridTemplateColumns: "1fr 1fr", 
+            gap: "1rem", 
+            marginBottom: "1.5rem" 
+          }}
+        >
+          <Link
+            href="/portfolio"
+            style={{
+              textDecoration: "none",
+              border: `1px solid ${T.border}`,
+              borderRadius: "18px",
+              background: `linear-gradient(135deg, ${T.accent}15 0%, transparent 100%), ${T.panel}`,
+              padding: "1.2rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-3px)";
+              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.12)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "none";
+              e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.08)";
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <div style={{ padding: "0.5rem", borderRadius: "10px", backgroundColor: T.accentSoft }}>
+                <Users style={{ width: "18px", height: "18px", color: T.accent }} />
+              </div>
+              <span style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700, fontSize: "1.05rem" }}>Explore Portfolios</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "0.82rem", color: T.muted, fontFamily: "'Satoshi', sans-serif", lineHeight: 1.5 }}>
+              Browse works from creators across the continent and get inspired.
+            </p>
+          </Link>
+
+          <button
+            onClick={() => {
+              const composer = document.querySelector("#community-composer");
+              if (composer) {
+                composer.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+            }}
+            style={{
+              textAlign: "left",
+              cursor: "pointer",
+              border: `1px solid ${T.border}`,
+              borderRadius: "18px",
+              background: `linear-gradient(135deg, ${T.accent}15 0%, transparent 100%), ${T.panel}`,
+              padding: "1.2rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-3px)";
+              e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.12)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "none";
+              e.currentTarget.style.boxShadow = "0 8px 30px rgba(0,0,0,0.08)";
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <div style={{ padding: "0.5rem", borderRadius: "10px", backgroundColor: T.accentSoft }}>
+                <PenSquare style={{ width: "18px", height: "18px", color: T.accent }} />
+              </div>
+              <span style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700, fontSize: "1.05rem" }}>Share Update</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "0.82rem", color: T.muted, fontFamily: "'Satoshi', sans-serif", lineHeight: 1.5 }}>
+              Post your latest WIP, ask for help, or share a milestone.
+            </p>
+          </button>
+        </section>
+
         <div className="community-grid">
           <section style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
             <div
+              id="community-composer"
               style={{
                 border: `1px solid ${T.border}`,
                 borderRadius: "16px",
@@ -848,11 +933,14 @@ export default function CommunityPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.68rem" }}>
-                <div>
-                  <p style={{ color: T.text, fontSize: "0.92rem", fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700 }}>Start a conversation</p>
-                  <p style={{ color: T.muted, fontSize: "0.78rem", fontFamily: "'Satoshi', sans-serif" }}>
-                    {user ? `Posting as @${user.handle}` : "Sign in to publish to the feed"}
-                  </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#4CAF50", boxShadow: "0 0 8px #4CAF50" }} />
+                  <div>
+                    <p style={{ color: T.text, fontSize: "0.92rem", fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700 }}>Live Update</p>
+                    <p style={{ color: T.muted, fontSize: "0.78rem", fontFamily: "'Satoshi', sans-serif" }}>
+                      {user ? `Posting as @${user.handle}` : "Sign in to publish to the feed"}
+                    </p>
+                  </div>
                 </div>
                 {!user && (
                   <Link
