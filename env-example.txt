@@ -1,5 +1,10 @@
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Add any other environment variables here
+# Paystack Configuration
+PAYSTACK_SECRET_KEY=your_paystack_secret_key
+PAYSTACK_PUBLIC_KEY=your_paystack_public_key
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+PAYSTACK_CALLBACK_BASE_URL=https://your-domain.com

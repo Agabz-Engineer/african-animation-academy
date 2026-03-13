@@ -1,5 +1,5 @@
 -- Payment and revenue tracking tables
--- Run this in Supabase SQL Editor.
+-- Run via Supabase migrations.
 
 -- Subscriptions table
 create table if not exists public.subscriptions (

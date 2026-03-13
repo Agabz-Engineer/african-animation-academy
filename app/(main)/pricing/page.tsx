@@ -12,9 +12,11 @@ import {
   X,
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
+import { supabase } from "@/lib/supabase";
+import { PRICING, getAnnualPrice } from "@/lib/pricing";
 
 type BillingCycle = "monthly" | "annual";
-type PlanId = "free" | "pro" | "team";
+type PlanId = "free" | "pro";
 type CellValue = boolean | string;
 
 type Plan = {
@@ -32,10 +34,7 @@ type ComparisonRow = {
   feature: string;
   free: CellValue;
   pro: CellValue;
-  team: CellValue;
 };
-
-const ANNUAL_DISCOUNT = 20;
 
 const PLANS: Plan[] = [
   {
@@ -56,10 +55,10 @@ const PLANS: Plan[] = [
     id: "pro",
     name: "Pro",
     subtitle: "For committed creators building serious momentum.",
-    monthlyPrice: 300,
+    monthlyPrice: PRICING.proMonthly,
     recommended: true,
     ctaLabel: "Go Pro",
-    href: "/signup",
+    href: "/pricing",
     features: [
       "Full access to Beginner, Intermediate, and Advanced courses",
       "Unlimited gallery submissions",
@@ -70,32 +69,15 @@ const PLANS: Plan[] = [
       "Priority support",
     ],
   },
-  {
-    id: "team",
-    name: "Team / Studio",
-    subtitle: "For studios training teams and scaling production quality.",
-    monthlyPrice: 1200,
-    ctaLabel: "Contact sales",
-    href: "mailto:info@africafx.com?subject=Team%20or%20Studio%20Plan",
-    features: [
-      "Everything in Pro for every team member",
-      "10 creator seats included (expandable)",
-      "Shared studio workspace",
-      "Team analytics and progress dashboards",
-      "Centralized billing and invoice downloads",
-      "Dedicated onboarding + account manager",
-    ],
-  },
 ];
 
 const COMPARISON_ROWS: ComparisonRow[] = [
-  { feature: "Course access", free: "Previews only", pro: "All levels", team: "All levels" },
-  { feature: "Gallery submissions", free: "3 / month", pro: "Unlimited", team: "Unlimited" },
-  { feature: "Forum participation", free: "Read-only", pro: "Post + threads", team: "Team channels" },
-  { feature: "Challenge rewards", free: "No prizes", pro: "Prize + leaderboard", team: "Team leaderboard" },
-  { feature: "Resources + certificates", free: false, pro: true, team: true },
-  { feature: "Support level", free: "Standard", pro: "Priority", team: "Priority + manager" },
-  { feature: "Seats included", free: "1", pro: "1", team: "10+" },
+  { feature: "Course access", free: "Previews only", pro: "All levels" },
+  { feature: "Gallery submissions", free: "3 / month", pro: "Unlimited" },
+  { feature: "Forum participation", free: "Read-only", pro: "Post + threads" },
+  { feature: "Challenge rewards", free: "No prizes", pro: "Prize + leaderboard" },
+  { feature: "Resources + certificates", free: false, pro: true },
+  { feature: "Support level", free: "Standard", pro: "Priority" },
 ];
 
 const FAQS = [
@@ -105,7 +87,7 @@ const FAQS = [
   },
   {
     q: "How does annual billing work?",
-    a: "Annual plans are billed once per year at a discounted rate. You save 20% compared with paying month-to-month.",
+    a: `Annual plans are billed once per year at a discounted rate. You save ${PRICING.annualDiscount}% compared with paying month-to-month.`,
   },
   {
     q: "Do you offer refunds?",
@@ -113,11 +95,15 @@ const FAQS = [
   },
   {
     q: "Can I upgrade from Free to Pro or Team later?",
-    a: "Absolutely. Upgrades are instant and your progress remains intact. Team plans can also be expanded with more seats.",
+    a: "Absolutely. Upgrades are instant and your progress remains intact.",
   },
   {
     q: "Are payments secure?",
     a: "Yes. Checkout uses SSL encryption and secure payment providers. We do not expose card data in the app.",
+  },
+  {
+    q: "Do Mobile Money or bank transfers renew automatically?",
+    a: "Not yet. Mobile Money and bank transfers are one-time payments, so you renew monthly or yearly. Card payments can be upgraded to auto-renew later.",
   },
 ];
 
@@ -147,9 +133,6 @@ const LIGHT = {
   success: "#2F9D47",
 };
 
-const getAnnualPrice = (monthly: number) =>
-  Math.round(monthly * 12 * (1 - ANNUAL_DISCOUNT / 100));
-
 const renderCell = (
   value: CellValue,
   colors: { text: string; dim: string; accent: string }
@@ -172,6 +155,8 @@ export default function PricingPage() {
   const T = theme === "dark" ? DARK : LIGHT;
 
   const [billing, setBilling] = useState<BillingCycle>("monthly");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
 
   const planPricing = useMemo(() => {
     return PLANS.map((plan) => {
@@ -196,6 +181,51 @@ export default function PricingPage() {
       };
     });
   }, [billing]);
+
+  const handleCheckout = async () => {
+    if (!supabase) {
+      setCheckoutError("Payments are not configured yet.");
+      return;
+    }
+
+    setCheckoutError("");
+    setCheckoutLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id || !user?.email) {
+        window.location.href = "/login?next=%2Fpricing";
+        return;
+      }
+
+      const response = await fetch("/api/paystack/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planId: "pro",
+          billingCycle: billing,
+          userId: user.id,
+          email: user.email,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Unable to start checkout.");
+      }
+
+      if (payload?.authorization_url) {
+        window.location.href = payload.authorization_url;
+        return;
+      }
+
+      throw new Error("Checkout link missing.");
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : "Checkout failed.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <div className="pricing-wrap">
@@ -253,7 +283,7 @@ export default function PricingPage() {
             className="save-chip"
             style={{ border: `1px solid ${T.accent}66`, background: T.accentSoft, color: T.accent }}
           >
-            Save {ANNUAL_DISCOUNT}% on annual
+            Save {PRICING.annualDiscount}% on annual
           </span>
         </div>
 
@@ -268,7 +298,7 @@ export default function PricingPage() {
           </div>
           <div className="trust-pill" style={{ border: `1px solid ${T.border}`, background: T.chip, color: T.muted }}>
             <CreditCard style={{ width: "14px", height: "14px", color: T.accent }} />
-            Secure card payments
+            Secure card, MoMo, bank payments
           </div>
         </div>
       </section>
@@ -309,7 +339,7 @@ export default function PricingPage() {
                   </>
                 ) : (
                   <>
-                    <span className="currency" style={{ color: T.text }}>GH₵</span>
+                    <span className="currency" style={{ color: T.text }}>GH?</span>
                     <span className="amount" style={{ color: T.text }}>{plan.amount}</span>
                     <span className="period" style={{ color: T.dim }}>/ {plan.periodLabel}</span>
                   </>
@@ -318,18 +348,20 @@ export default function PricingPage() {
 
               {isPaid && billing === "annual" && (
                 <p className="annual-note" style={{ color: T.success }}>
-                  GH₵{plan.monthlyEquivalent}/mo billed yearly · save GH₵{plan.saveAmount}
+                  GH?{plan.monthlyEquivalent}/mo billed yearly · save GH?{plan.saveAmount}
                 </p>
               )}
 
-              {plan.href.startsWith("mailto:") ? (
-                <a
-                  href={plan.href}
+              {plan.id === "pro" ? (
+                <button
+                  type="button"
+                  onClick={handleCheckout}
+                  disabled={checkoutLoading}
                   className="cta"
-                  style={{ border: `1px solid ${plan.recommended ? T.accent : T.border}`, background: ctaBg, color: ctaText }}
+                  style={{ border: `1px solid ${plan.recommended ? T.accent : T.border}`, background: ctaBg, color: ctaText, opacity: checkoutLoading ? 0.7 : 1 }}
                 >
-                  {plan.ctaLabel}
-                </a>
+                  {checkoutLoading ? "Starting checkout..." : plan.ctaLabel}
+                </button>
               ) : (
                 <Link
                   href={plan.href}
@@ -353,6 +385,23 @@ export default function PricingPage() {
         })}
       </section>
 
+      {checkoutError && (
+        <div
+          style={{
+            marginBottom: "1rem",
+            borderRadius: "12px",
+            border: `1px solid ${T.accent}55`,
+            background: T.accentSoft,
+            padding: "0.75rem 0.9rem",
+            color: T.text,
+            fontFamily: "General Sans, sans-serif",
+            fontSize: "0.85rem",
+          }}
+        >
+          {checkoutError}
+        </div>
+      )}
+
       <section className="comparison" style={{ border: `1px solid ${T.border}`, background: T.panel }}>
         <h3 style={{ color: T.text }}>Core Feature Comparison</h3>
         <p style={{ color: T.muted }}>
@@ -366,7 +415,6 @@ export default function PricingPage() {
                 <th style={{ color: T.dim, textAlign: "left" }}>Feature</th>
                 <th style={{ color: T.dim }}>Free</th>
                 <th style={{ color: T.dim }}>Pro</th>
-                <th style={{ color: T.dim }}>Team / Studio</th>
               </tr>
             </thead>
             <tbody>
@@ -375,7 +423,6 @@ export default function PricingPage() {
                   <td style={{ color: T.text, textAlign: "left" }}>{row.feature}</td>
                   <td>{renderCell(row.free, { text: T.text, dim: T.dim, accent: T.accent })}</td>
                   <td>{renderCell(row.pro, { text: T.text, dim: T.dim, accent: T.accent })}</td>
-                  <td>{renderCell(row.team, { text: T.text, dim: T.dim, accent: T.accent })}</td>
                 </tr>
               ))}
             </tbody>
@@ -392,7 +439,7 @@ export default function PricingPage() {
               <div className="comparison-mobile-head" style={{ borderBottom: `1px solid ${T.border}` }}>
                 <h4 style={{ color: T.text }}>{plan.name}</h4>
                 <span style={{ color: T.accent }}>
-                  {plan.amount === 0 ? "Free" : `$${plan.amount}/${plan.periodLabel}`}
+                  {plan.amount === 0 ? "Free" : `GH?${plan.amount}/${plan.periodLabel}`}
                 </span>
               </div>
 
@@ -510,7 +557,7 @@ export default function PricingPage() {
         }
         .plan-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 0.65rem;
           margin-bottom: 0.9rem;
         }
