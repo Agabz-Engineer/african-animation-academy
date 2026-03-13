@@ -1,0 +1,318 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useThemeMode } from "@/lib/useThemeMode";
+
+const DARK_UI = {
+  surface: "#0F0F0F",
+  border: "#2A2A2A",
+  text: "#FFFFFF",
+  muted: "#A0A0A0",
+  dim: "#666666",
+  divider: "rgba(255,109,31,0.2)",
+  accent: "#FF6D1F",
+  accentHover: "#E04D00",
+};
+
+const LIGHT_UI = {
+  surface: "#FFFFFF",
+  border: "#E5E7EB",
+  text: "#1F2937",
+  muted: "#6B7280",
+  dim: "#9CA3AF",
+  divider: "rgba(255,109,31,0.1)",
+  accent: "#FF6D1F",
+  accentHover: "#E04D00",
+};
+
+export default function UpdatePasswordPage() {
+  const router = useRouter();
+  const theme = useThemeMode();
+  const C = theme === "dark" ? DARK_UI : LIGHT_UI;
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  // Check if we have a valid session before allowing password update
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // The user should have an active session created by the recovery link
+      // If none, the link may be expired or invalid
+      if (!session) {
+        // You might want to display an error or redirect, 
+        // but for implicit flow, the token might still be processing.
+        // The callback route usually handles implicit tokens in the hash.
+        console.log("No active session found. Password update might fail if not authenticated via recovery link.");
+      }
+    };
+    
+    checkSession();
+  }, []);
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setLoading(false);
+      return;
+    }
+
+    if (!supabase) {
+      setError("Authentication service not available");
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: password
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      setSuccess(true);
+      setLoading(false);
+      
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", position: "relative", overflow: "hidden", transition: "color 0.3s ease" }}>
+      {/* ── Left Panel ── */}
+      <div
+        style={{ position: "relative", zIndex: 1 }}
+        className="hidden lg:flex lg:w-1/2 items-center justify-center px-12"
+      >
+        <div style={{
+          position: "absolute", top: "25%", left: "25%",
+          width: "320px", height: "320px",
+          background: "rgba(255,109,31,0.08)",
+          borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none"
+        }} />
+        <div style={{
+          position: "absolute", bottom: "25%", right: "20%",
+          width: "200px", height: "200px",
+          background: "rgba(224,77,0,0.07)",
+          borderRadius: "50%", filter: "blur(60px)", pointerEvents: "none"
+        }} />
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+          style={{ textAlign: "center", position: "relative", zIndex: 1 }}
+        >
+          {/* AFX Logo */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "3rem" }}>
+            <div style={{
+              width: "48px", height: "40px",
+              backgroundColor: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: "12px",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#FF6D1F" }}>A</span>
+              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1.15rem", color: "#E04D00" }}>F</span>
+              <span style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "1rem", color: "#F5E7C6" }}>X</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.875rem", color: C.text }}>
+                African Animation
+              </span>
+              <span style={{
+                fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.875rem",
+                background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
+                WebkitBackgroundClip: "text", backgroundClip: "text",
+                WebkitTextFillColor: "transparent"
+              }}>
+                Academy
+              </span>
+            </div>
+          </div>
+
+          <h2 style={{
+            fontFamily: "'General Sans', sans-serif", fontWeight: 700,
+            fontSize: "2.5rem", lineHeight: 1.15, color: C.text, marginBottom: "1.25rem"
+          }}>
+            Secure your<br />
+            <span style={{
+              background: "linear-gradient(135deg, #E8A020, #C1440E)",
+              WebkitBackgroundClip: "text", backgroundClip: "text",
+              WebkitTextFillColor: "transparent"
+            }}>
+              account again
+            </span>
+          </h2>
+
+          <p style={{ color: C.muted, fontSize: "1rem", lineHeight: 1.7, maxWidth: "300px", margin: "0 auto 2.5rem" }}>
+            Create a strong new password that you haven't used before.
+          </p>
+        </motion.div>
+      </div>
+
+      {/* Vertical divider */}
+      <div className="hidden lg:block" style={{
+        position: "relative", zIndex: 1,
+        width: "1px", backgroundColor: C.divider,
+        alignSelf: "stretch"
+      }} />
+
+      {/* ── Right Panel — Form ── */}
+      <div
+        style={{ position: "relative", zIndex: 1 }}
+        className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12"
+      >
+        <motion.div
+          style={{ width: "100%", maxWidth: "440px" }}
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+        >
+          {/* Mobile logo */}
+          <div className="flex items-center gap-3 mb-10 lg:hidden">
+            <div style={{
+              width: "40px", height: "34px", backgroundColor: C.surface,
+              border: `1px solid ${C.border}`, borderRadius: "10px",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#FF6D1F", fontSize: "0.85rem" }}>A</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#E04D00", fontSize: "0.95rem" }}>F</span>
+              <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: "#F5E7C6", fontSize: "0.85rem" }}>X</span>
+            </div>
+            <span style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, color: C.text, fontSize: "1rem" }}>
+              Africa Fx
+            </span>
+          </div>
+
+          <h1 style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700, fontSize: "2rem", color: C.text, marginBottom: "0.5rem" }}>
+            Create New Password
+          </h1>
+          <p style={{ color: C.muted, marginBottom: "2rem", fontFamily: "'General Sans', sans-serif" }}>
+            Please enter your new password below.
+          </p>
+
+          {error && (
+            <div style={{
+              background: "rgba(255,87,34,0.10)", border: "1px solid rgba(255,87,34,0.30)",
+              color: "#FF5722", borderRadius: "12px", padding: "0.75rem 1rem",
+              marginBottom: "1.5rem", fontSize: "0.875rem"
+            }}>
+              {error}
+            </div>
+          )}
+
+          {success ? (
+            <div style={{
+              background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)",
+              color: "#22C55E", borderRadius: "12px", padding: "1.5rem",
+              marginBottom: "1.5rem", textAlign: "center"
+            }}>
+              <div style={{ width: "48px", height: "48px", backgroundColor: "rgba(34,197,94,0.2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1rem" }}>
+                <CheckCircle2 style={{ color: "#22C55E", width: "24px", height: "24px" }} />
+              </div>
+              <h3 style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 600, fontSize: "1.1rem", marginBottom: "0.5rem", color: C.text }}>Password Updated</h3>
+              <p style={{ fontSize: "0.875rem", marginBottom: "1.5rem" }}>
+                Your password has been successfully changed.
+              </p>
+              <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", alignItems: "center", color: C.muted, fontSize: "0.875rem" }}>
+                <div style={{ width: "16px", height: "16px", border: "2px solid rgba(255,109,31,0.3)", borderTopColor: "#FF6D1F", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                Redirecting to dashboard...
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              {/* Password */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: C.muted, marginBottom: "0.5rem", fontFamily: "'General Sans', sans-serif" }}>
+                  New password
+                </label>
+                <div style={{ position: "relative" }}>
+                  <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: C.dim }} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    required
+                    minLength={6}
+                    className="input-field"
+                    style={{ paddingLeft: "2.75rem", paddingRight: "2.75rem" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.dim }}
+                  >
+                    {showPassword
+                      ? <EyeOff style={{ width: "16px", height: "16px" }} />
+                      : <Eye style={{ width: "16px", height: "16px" }} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, color: C.muted, marginBottom: "0.5rem", fontFamily: "'General Sans', sans-serif" }}>
+                  Confirm new password
+                </label>
+                <div style={{ position: "relative" }}>
+                  <Lock style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: C.dim }} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    required
+                    minLength={6}
+                    className="input-field"
+                    style={{ paddingLeft: "2.75rem", paddingRight: "2.75rem" }}
+                  />
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading || !password || !confirmPassword}
+                className="btn-primary"
+                style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem", marginTop: "0.5rem" }}
+              >
+                {loading
+                  ? <div style={{ width: "20px", height: "20px", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                  : <> Update password <ArrowRight style={{ width: "16px", height: "16px" }} /></>
+                }
+              </button>
+            </form>
+          )}
+
+        </motion.div>
+      </div>
+    </div>
+  );
+}
