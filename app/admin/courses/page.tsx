@@ -21,7 +21,6 @@ import {
   Download,
   Upload
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { publishCourse, draftCourse, archiveCourse, deleteCourse, getAdminCourses, saveCourse } from "@/app/admin/actions";
 
 const DARK_UI = {
@@ -686,9 +685,6 @@ function CourseForm({
     video_path: course?.video_path || '',
     status: course?.status || 'draft',
   });
-  const [videoUploading, setVideoUploading] = useState(false);
-  const [videoUploadError, setVideoUploadError] = useState("");
-  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -698,59 +694,6 @@ function CourseForm({
     });
   };
 
-  const currentVideoName = formData.video_path
-    ? formData.video_path.split("/").pop()
-    : "";
-
-  const handleVideoUpload = async (file: File) => {
-    if (!supabase) {
-      setVideoUploadError("Supabase is not configured.");
-      return;
-    }
-
-    setVideoUploadError("");
-    setVideoUploading(true);
-    setVideoPreviewUrl(null);
-
-    const ext = file.name.split(".").pop()?.toLowerCase() || "mp4";
-    const safeName = file.name.replace(/[^a-z0-9._-]/gi, "_").slice(0, 80);
-    const id =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const path = `courses/${id}-${safeName}`;
-
-    const { error } = await supabase.storage.from("course-videos").upload(path, file, {
-      cacheControl: "3600",
-      upsert: true,
-      contentType: file.type || (ext === "mov" ? "video/quicktime" : `video/${ext}`),
-    });
-
-    setVideoUploading(false);
-
-    if (error) {
-      setVideoUploadError(error.message || "Video upload failed.");
-      return;
-    }
-
-    setFormData((prev) => ({ ...prev, video_path: path }));
-  };
-
-  const handleVideoPreview = async () => {
-    if (!supabase || !formData.video_path) return;
-    setVideoUploadError("");
-
-    const { data, error } = await supabase.storage
-      .from("course-videos")
-      .createSignedUrl(formData.video_path, 60 * 30);
-
-    if (error) {
-      setVideoUploadError(error.message || "Unable to create preview link.");
-      return;
-    }
-
-    setVideoPreviewUrl(data?.signedUrl || null);
-  };
 
   return (
     <form onSubmit={handleSubmit}>
@@ -1029,76 +972,27 @@ function CourseForm({
             fontWeight: 500, 
             marginBottom: "0.5rem" 
           }}>
-            Course Video (Upload)
+            Video URL
           </label>
           <input
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) {
-                handleVideoUpload(file);
-                event.currentTarget.value = "";
-              }
-            }}
-            disabled={videoUploading}
+            type="url"
+            value={formData.video_path}
+            onChange={(e) => setFormData({ ...formData, video_path: e.target.value })}
+            placeholder="https://video-host.com/your-course-video"
             style={{
               width: "100%",
-              padding: "0.65rem",
+              padding: "0.75rem",
               borderRadius: "8px",
-              border: `1px dashed ${UI.border}`,
+              border: `1px solid ${UI.border}`,
               backgroundColor: UI.bg,
               color: UI.text,
-              fontSize: "0.85rem",
+              fontSize: "0.875rem",
               fontFamily: "Inter, sans-serif",
             }}
           />
           <p style={{ margin: "0.45rem 0 0", color: UI.textMuted, fontSize: "0.75rem" }}>
-            Uploads the original file to preserve video and audio quality. Large files may take longer to upload.
+            Paste a video link from your hosting provider so learners can watch it there.
           </p>
-          {videoUploading && (
-            <p style={{ margin: "0.45rem 0 0", color: UI.accent, fontSize: "0.75rem" }}>
-              Uploading video...
-            </p>
-          )}
-          {videoUploadError && (
-            <p style={{ margin: "0.45rem 0 0", color: UI.danger, fontSize: "0.75rem" }}>
-              {videoUploadError}
-            </p>
-          )}
-          {formData.video_path && !videoUploading && (
-            <div style={{ marginTop: "0.6rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-              <span style={{ color: UI.textMuted, fontSize: "0.78rem" }}>
-                Uploaded: {currentVideoName || "Video file"}
-              </span>
-              <button
-                type="button"
-                onClick={handleVideoPreview}
-                style={{
-                  backgroundColor: UI.bg,
-                  border: `1px solid ${UI.border}`,
-                  color: UI.text,
-                  padding: "0.35rem 0.75rem",
-                  borderRadius: "999px",
-                  cursor: "pointer",
-                  fontSize: "0.75rem",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                Generate preview
-              </button>
-              {videoPreviewUrl && (
-                <a
-                  href={videoPreviewUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: UI.accent, fontSize: "0.75rem", textDecoration: "none" }}
-                >
-                  Open preview
-                </a>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
