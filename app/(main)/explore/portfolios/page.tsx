@@ -332,10 +332,19 @@ export default function ExplorePortfoliosPage() {
           </AnimatePresence>
         </motion.div>
       ) : (
-        <div style={{ textAlign: "center", padding: "5rem 2rem", border: `2px dashed ${theme.border}`, borderRadius: "20px" }}>
-          <UsersIcon style={{ width: "48px", height: "48px", color: theme.dim, marginBottom: "1rem", opacity: 0.5 }} />
-          <h2 style={{ fontSize: "1.5rem", fontFamily: "'Clash Display', sans-serif" }}>No portfolios found</h2>
-          <p style={{ color: theme.dim }}>Try adjusting your search or category filters.</p>
+        <div style={{ 
+          textAlign: "center", 
+          padding: "5rem 2rem", 
+          border: `2px dashed ${theme.border}`, 
+          borderRadius: "20px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <UsersIcon style={{ width: "48px", height: "48px", color: theme.dim, marginBottom: "1.25rem", opacity: 0.5 }} />
+          <h2 style={{ fontSize: "1.5rem", fontFamily: "'Clash Display', sans-serif", margin: "0 0 0.5rem" }}>No portfolios found</h2>
+          <p style={{ color: theme.dim, margin: 0 }}>Try adjusting your search or category filters.</p>
         </div>
       )}
     </div>

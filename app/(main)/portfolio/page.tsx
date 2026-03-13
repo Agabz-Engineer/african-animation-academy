@@ -496,10 +496,19 @@ export default function PortfolioPage() {
           {[1, 2, 3].map(i => <div key={i} style={{ height: "200px", borderRadius: "12px", backgroundColor: C.cardBg, opacity: 0.5 }} />)}
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "5rem 2rem", border: `1px dashed ${C.filterBorder}`, borderRadius: "20px" }}>
-          <Upload style={{ width: "48px", height: "48px", color: C.dim, marginBottom: "1rem", opacity: 0.5 }} />
-          <h2 style={{ fontSize: "1.25rem", fontFamily: "'Clash Display', sans-serif" }}>Your portfolio is empty</h2>
-          <p style={{ color: C.muted, fontSize: "0.9rem" }}>Start by adding your first project!</p>
+        <div style={{ 
+          textAlign: "center", 
+          padding: "5rem 2rem", 
+          border: `1px dashed ${C.filterBorder}`, 
+          borderRadius: "20px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <Upload style={{ width: "48px", height: "48px", color: C.dim, marginBottom: "1.25rem", opacity: 0.5 }} />
+          <h2 style={{ fontSize: "1.25rem", fontFamily: "'Clash Display', sans-serif", margin: "0 0 0.5rem" }}>Your portfolio is empty</h2>
+          <p style={{ color: C.muted, fontSize: "0.9rem", margin: 0 }}>Start by adding your first project!</p>
         </div>
       ) : (
         <motion.div
