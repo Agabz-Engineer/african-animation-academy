@@ -52,12 +52,18 @@ export default function ForgotPasswordPage() {
     // Always use the production URL so Supabase whitelist matches correctly.
     // Fall back to current origin for local dev if NEXT_PUBLIC_SITE_URL is not set.
     const siteUrl =
+      (typeof window !== "undefined" ? window.location.origin : "") ||
       process.env.NEXT_PUBLIC_SITE_URL ||
-      (typeof window !== "undefined" ? window.location.origin : "");
+      "";
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/update-password`,
-    });
+    const redirectTo = siteUrl
+      ? `${siteUrl}/auth/callback?next=/update-password`
+      : undefined;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo ? { redirectTo } : undefined
+    );
 
     if (error) {
       // Provide a clear message for the common Supabase rate-limit error
@@ -69,6 +75,11 @@ export default function ForgotPasswordPage() {
       } else if (msg.includes("not found") || msg.includes("user not found")) {
         // Security best practice: don't reveal if the email exists
         setSuccess(true);
+      } else if (msg.includes("redirect") || msg.includes("url") || msg.includes("allowed")) {
+        const hintSite = siteUrl || "your site URL";
+        setError(
+          `Reset link failed because the redirect URL isn't allowed. In Supabase Auth settings, add: ${hintSite}/auth/callback and ${hintSite}/update-password`
+        );
       } else {
         setError(error.message);
       }
