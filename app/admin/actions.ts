@@ -334,6 +334,44 @@ export async function getAdminCommunityPosts() {
   return data || [];
 }
 
+export async function getAdminPayments() {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const [{ data: payments, error }, authUsers] = await Promise.all([
+    supabaseAdmin
+      .from("payments")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200),
+    listAllAuthUsers(),
+  ]);
+
+  if (error) throw error;
+
+  const userMap = new Map(
+    authUsers.map((user) => [
+      user.id,
+      {
+        email: user.email || "unknown",
+        name:
+          (user.user_metadata?.full_name as string | undefined) ||
+          (user.user_metadata?.name as string | undefined) ||
+          user.email ||
+          "Unknown",
+      },
+    ])
+  );
+
+  return (payments || []).map((payment: any) => {
+    const userInfo = userMap.get(payment.user_id);
+    return {
+      ...payment,
+      user_email: userInfo?.email || "unknown",
+      user_name: userInfo?.name || null,
+    };
+  });
+}
+
 // ==========================================
 // User Management Actions
 // ==========================================

@@ -228,29 +228,34 @@ const normalizeComment = (row: DbComment): CommunityComment => ({
   createdAt: row.created_at,
 });
 
-const isSetupError = (error: { message?: string; code?: string } | null) =>
+const isPermissionError = (error: { message?: string; code?: string } | null) =>
+  Boolean(
+    error &&
+      (error.code === "42501" ||
+        `${error.message || ""}`.toLowerCase().includes("permission denied"))
+  );
+
+const isMissingTableError = (
+  error: { message?: string; code?: string } | null,
+  tableName: string
+) =>
   Boolean(
     error &&
       (error.code === "42P01" ||
-        `${error.message || ""}`.toLowerCase().includes("community_posts") ||
-        `${error.message || ""}`.toLowerCase().includes("does not exist"))
+        (`${error.message || ""}`.toLowerCase().includes("does not exist") &&
+          `${error.message || ""}`.toLowerCase().includes(tableName)) ||
+        (`${error.message || ""}`.toLowerCase().includes("could not find the table") &&
+          `${error.message || ""}`.toLowerCase().includes(tableName)))
   );
+
+const isSetupError = (error: { message?: string; code?: string } | null) =>
+  isMissingTableError(error, "community_posts");
 
 const isCommentSetupError = (error: { message?: string; code?: string } | null) =>
-  Boolean(
-    error &&
-      (error.code === "42P01" ||
-        `${error.message || ""}`.toLowerCase().includes("community_post_comments") ||
-        `${error.message || ""}`.toLowerCase().includes("does not exist"))
-  );
+  isMissingTableError(error, "community_post_comments");
 
 const isLikeSetupError = (error: { message?: string; code?: string } | null) =>
-  Boolean(
-    error &&
-      (error.code === "42P01" ||
-        `${error.message || ""}`.toLowerCase().includes("community_post_likes") ||
-        `${error.message || ""}`.toLowerCase().includes("does not exist"))
-  );
+  isMissingTableError(error, "community_post_likes");
 
 export default function CommunityPage() {
   const theme = useThemeMode();
@@ -270,6 +275,7 @@ export default function CommunityPage() {
   const [submitInfo, setSubmitInfo] = useState("");
   const [commentsByPost, setCommentsByPost] = useState<Record<string, CommunityComment[]>>({});
   const [commentsSetupNeeded, setCommentsSetupNeeded] = useState(false);
+  const [commentsAuthNeeded, setCommentsAuthNeeded] = useState(false);
   const [likesSetupNeeded, setLikesSetupNeeded] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
   const [likePendingFor, setLikePendingFor] = useState<string | null>(null);
@@ -357,9 +363,7 @@ export default function CommunityPage() {
           .limit(5000);
 
         if (likeError) {
-          if (isLikeSetupError(likeError)) {
-            setLikesSetupNeeded(true);
-          }
+          setLikesSetupNeeded(isLikeSetupError(likeError));
         } else {
           setLikesSetupNeeded(false);
           likeRows = Array.isArray(likeData) ? (likeData as DbLike[]) : [];
@@ -387,11 +391,12 @@ export default function CommunityPage() {
 
       if (postError) {
         const missingSetup = isSetupError(postError);
+        const needsAuth = isPermissionError(postError);
         setSetupNeeded(missingSetup);
         setPosts(mergePosts(localPosts));
         if (missingSetup) {
           setSubmitInfo("Live posting is not configured yet. Posts will save locally on this device.");
-        } else if (postError.code === "42501") {
+        } else if (needsAuth) {
           setSubmitInfo("Sign in to load live community posts.");
         } else {
           setSubmitInfo("");
@@ -408,10 +413,13 @@ export default function CommunityPage() {
 
       if (commentError) {
         const missingCommentsSetup = isCommentSetupError(commentError);
+        const needsAuth = isPermissionError(commentError) && !authUser;
         setCommentsSetupNeeded(missingCommentsSetup);
+        setCommentsAuthNeeded(needsAuth);
         setCommentsByPost(groupCommentsByPost(localComments));
       } else {
         setCommentsSetupNeeded(false);
+        setCommentsAuthNeeded(false);
         setCommentsByPost(groupCommentsByPost(mergeComments(localComments, liveComments)));
       }
 
@@ -1194,6 +1202,8 @@ export default function CommunityPage() {
                                   commentInfoByPost[post.id] ||
                                   (commentsSetupNeeded
                                     ? "Comments currently save locally on this device."
+                                    : commentsAuthNeeded
+                                    ? "Sign in to view comments and reply."
                                     : "Reply and help move the discussion forward.")}
                               </p>
                             </div>

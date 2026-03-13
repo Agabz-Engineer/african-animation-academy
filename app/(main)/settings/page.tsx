@@ -65,8 +65,16 @@ const GOALS = [
   "Improve my existing skills",
   "Just exploring animation",
 ];
+const LANGUAGES = [
+  { id: "en-GB", label: "English (UK)" },
+  { id: "en-US", label: "English (US)" },
+  { id: "fr", label: "French" },
+  { id: "sw", label: "Swahili" },
+  { id: "ha", label: "Hausa" },
+];
 
 type NotifKey = "newLessons" | "communityReplies" | "events" | "weeklyReport";
+type LanguageId = (typeof LANGUAGES)[number]["id"];
 
 const getInitialTheme = (): "dark" | "light" => {
   if (typeof window === "undefined") return "dark";
@@ -74,6 +82,17 @@ const getInitialTheme = (): "dark" | "light" => {
   if (saved === "dark" || saved === "light") return saved;
   const attr = document.documentElement.getAttribute("data-theme");
   return attr === "light" ? "light" : "dark";
+};
+
+const getInitialLanguage = (): LanguageId => {
+  if (typeof window === "undefined") return "en-GB";
+  const saved = localStorage.getItem("africafx-language");
+  if (saved && LANGUAGES.some((lang) => lang.id === saved)) {
+    return saved as LanguageId;
+  }
+  const browser = (navigator.language || "en-GB").toLowerCase();
+  const match = LANGUAGES.find((lang) => lang.id.toLowerCase() === browser);
+  return match?.id || "en-GB";
 };
 
 const addCacheBuster = (url: string) =>
@@ -106,6 +125,7 @@ export default function SettingsPage() {
   const [tab, setTab]       = useState("profile");
   const [saved, setSaved]   = useState(false);
   const [loading, setLoading] = useState(true);
+  const [language, setLanguage] = useState<LanguageId>(getInitialLanguage);
 
   /* Profile fields */
   const [fullName,    setFullName]    = useState("");
@@ -175,6 +195,12 @@ export default function SettingsPage() {
       obs.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("africafx-language", language);
+    document.documentElement.setAttribute("lang", language);
+  }, [language]);
 
   const T = theme === "dark" ? DARK : LIGHT;
 
@@ -597,14 +623,37 @@ export default function SettingsPage() {
             })}
           </div>
 
-          {/* Language — coming soon */}
-          <div style={{ backgroundColor: T.surface, border: `1px solid ${T.border}`, borderRadius: "12px", padding: "1rem 1.125rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ backgroundColor: T.surface, border: `1px solid ${T.border}`, borderRadius: "12px", padding: "1rem 1.125rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
             <div>
               <p style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.85rem", color: T.text }}>Language</p>
-              <p style={{ fontSize: "0.78rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginTop: "2px" }}>English (UK) — more languages coming soon</p>
+              <p style={{ fontSize: "0.78rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginTop: "2px" }}>Choose the language for menus and labels.</p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.72rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>
-              English <ChevronRight style={{ width: "13px", height: "13px" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <select
+                value={language}
+                onChange={(event) => {
+                  setLanguage(event.target.value as LanguageId);
+                  showSavedToast();
+                }}
+                style={{
+                  backgroundColor: T.inputBg,
+                  border: `1px solid ${T.inputBorder}`,
+                  borderRadius: "10px",
+                  padding: "0.5rem 0.75rem",
+                  color: T.text,
+                  fontFamily: "'General Sans',sans-serif",
+                  fontSize: "0.78rem",
+                  outline: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {LANGUAGES.map((lang) => (
+                  <option key={lang.id} value={lang.id}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronRight style={{ width: "13px", height: "13px", color: T.textDim }} />
             </div>
           </div>
         </div>
