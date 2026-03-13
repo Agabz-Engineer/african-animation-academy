@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   CalendarDays,
   Flame,
@@ -38,7 +39,6 @@ type CommunityPost = {
   commentsCount: number;
   createdAt: string;
   isFollowing: boolean;
-  localOnly?: boolean;
   profiles?: {
     followers_count: number;
     total_platform_likes: number;
@@ -56,6 +56,11 @@ type DbPost = {
   likes_count: number | null;
   comments_count: number | null;
   created_at: string;
+  profiles?: {
+    followers_count: number;
+    total_platform_likes: number;
+    avatar_url: string | null;
+  };
 };
 
 type CommunityComment = {
@@ -66,7 +71,6 @@ type CommunityComment = {
   userHandle: string;
   content: string;
   createdAt: string;
-  localOnly?: boolean;
 };
 
 type DbComment = {
@@ -85,45 +89,6 @@ type DbLike = {
 };
 
 type UserSummary = { id: string; name: string; handle: string };
-
-const LOCAL_POSTS_KEY = "africafx-community-local-posts";
-const LOCAL_COMMENTS_KEY = "africafx-community-local-comments";
-
-const readLocalPosts = (): CommunityPost[] => {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(LOCAL_POSTS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => item && typeof item.id === "string");
-  } catch {
-    return [];
-  }
-};
-
-const writeLocalPosts = (posts: CommunityPost[]) => {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(LOCAL_POSTS_KEY, JSON.stringify(posts.slice(0, 40)));
-};
-
-const readLocalComments = (): CommunityComment[] => {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(LOCAL_COMMENTS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => item && typeof item.id === "string" && typeof item.postId === "string");
-  } catch {
-    return [];
-  }
-};
-
-const writeLocalComments = (comments: CommunityComment[]) => {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(LOCAL_COMMENTS_KEY, JSON.stringify(comments.slice(0, 300)));
-};
 
 const groupCommentsByPost = (comments: CommunityComment[]) => {
   return comments.reduce<Record<string, CommunityComment[]>>((acc, comment) => {
@@ -146,17 +111,6 @@ const mergePosts = (...sources: CommunityPost[][]): CommunityPost[] => {
   return merged.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 };
 
-const mergeComments = (...sources: CommunityComment[][]): CommunityComment[] => {
-  const seen = new Set<string>();
-  const merged: CommunityComment[] = [];
-  sources.flat().forEach((comment) => {
-    if (!seen.has(comment.id)) {
-      seen.add(comment.id);
-      merged.push(comment);
-    }
-  });
-  return merged.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt));
-};
 
 const DARK = {
   pageBg: "#222222",
@@ -209,9 +163,6 @@ const parseTags = (value: string) =>
     .map((item) => item.trim().replace(/^#/, "").toLowerCase())
     .filter(Boolean)
     .slice(0, 4);
-
-const isUuid = (value: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 const normalizePost = (row: any, followedIds: Set<string>): CommunityPost => ({
   id: row.id,
@@ -307,31 +258,45 @@ export default function CommunityPage() {
       ? `${pendingQuestPreview[0].title} (${pendingQuestPreview[0].remaining} left)`
       : "All daily tasks complete. Keep posting and supporting others.";
 
+  const userIdRef = useRef<string | null>(null);
+  const likedRef = useRef<Set<string>>(new Set());
+  const commentsByPostRef = useRef<Record<string, CommunityComment[]>>({});
+  const followedIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null;
+    likedRef.current = liked;
+    commentsByPostRef.current = commentsByPost;
+    followedIdsRef.current = followedIds;
+  }, [user, liked, commentsByPost, followedIds]);
+
   useEffect(() => {
     let mounted = true;
+    let channel: RealtimeChannel | null = null;
+    const client = supabase;
 
     const load = async () => {
-      const localPosts = readLocalPosts();
-      const localComments = readLocalComments();
-      const localHandles = new Set<string>();
-      localPosts.forEach((post) => localHandles.add(post.userHandle || ""));
-      localComments.forEach((comment) => localHandles.add(comment.userHandle || ""));
-      
-      if (!supabase) {
-        setPosts(localPosts);
-        setCommentsByPost(groupCommentsByPost(localComments));
+      if (!client) {
+        if (!mounted) return;
+        setPosts([]);
+        setCommentsByPost({});
+        setSubmitInfo("Live community is unavailable. Configure Supabase to load posts.");
+        setLoading(false);
         return;
       }
 
-      const [{ data: userData }, { data: postData, error: postError }, { data: commentData, error: commentError }] =
-        await Promise.all([
-        supabase.auth.getUser(),
-        supabase
+      const [
+        { data: userData },
+        { data: postData, error: postError },
+        { data: commentData, error: commentError },
+      ] = await Promise.all([
+        client.auth.getUser(),
+        client
           .from("community_posts")
           .select("id, user_id, user_name, user_handle, content, tags, likes_count, comments_count, created_at, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
           .order("created_at", { ascending: false })
           .limit(40),
-        supabase
+        client
           .from("community_post_comments")
           .select("id,post_id,user_id,user_name,user_handle,content,created_at")
           .order("created_at", { ascending: true })
@@ -356,19 +321,19 @@ export default function CommunityPage() {
           .replace(/^_+|_+$/g, "")
           .slice(0, 20);
         setUser({ id: authUser.id, name, handle: handle || "creative" });
-        localHandles.add(handle || "creative");
 
-        // Fetch followed IDs for filter
-        const { data: followData } = await supabase
+        const { data: followData } = await client
           .from("user_follows")
           .select("following_id")
           .eq("follower_id", authUser.id);
-        
+
         if (followData) {
-          const ids = new Set(followData.map(f => f.following_id));
+          const ids = new Set(followData.map((f) => f.following_id));
+          ids.add(authUser.id);
           setFollowedIds(ids);
-          ids.forEach(id => followedIds.add(id));
+          ids.forEach((id) => followedIds.add(id));
         }
+        followedIds.add(authUser.id);
       } else {
         setUser(null);
       }
@@ -378,8 +343,8 @@ export default function CommunityPage() {
       const livePostIds = livePosts.map((post) => post.id);
       let likeRows: DbLike[] = [];
 
-      if (!postError && livePostIds.length > 0 && supabase) {
-        const { data: likeData, error: likeError } = await supabase
+      if (!postError && livePostIds.length > 0) {
+        const { data: likeData, error: likeError } = await client
           .from("community_post_likes")
           .select("post_id,user_id")
           .in("post_id", livePostIds)
@@ -414,15 +379,15 @@ export default function CommunityPage() {
 
       if (postError) {
         const missingSetup = isSetupError(postError);
-        const needsAuth = isPermissionError(postError);
+        const needsAuth = isPermissionError(postError) && !authUser;
         setSetupNeeded(missingSetup);
-        setPosts(mergePosts(localPosts));
+        setPosts([]);
         if (missingSetup) {
-          setSubmitInfo("Live posting is not configured yet. Posts will save locally on this device.");
+          setSubmitInfo("Live community database is not configured yet.");
         } else if (needsAuth) {
           setSubmitInfo("Sign in to load live community posts.");
         } else {
-          setSubmitInfo("");
+          setSubmitInfo("Unable to load community posts right now.");
         }
       } else {
         const livePostsWithLikes = livePosts.map((post) => ({
@@ -431,7 +396,7 @@ export default function CommunityPage() {
         }));
         setSetupNeeded(false);
         setSubmitInfo("");
-        setPosts(mergePosts(localPosts, livePostsWithLikes));
+        setPosts(mergePosts(livePostsWithLikes));
       }
 
       if (commentError) {
@@ -439,11 +404,11 @@ export default function CommunityPage() {
         const needsAuth = isPermissionError(commentError) && !authUser;
         setCommentsSetupNeeded(missingCommentsSetup);
         setCommentsAuthNeeded(needsAuth);
-        setCommentsByPost(groupCommentsByPost(localComments));
+        setCommentsByPost({});
       } else {
         setCommentsSetupNeeded(false);
         setCommentsAuthNeeded(false);
-        setCommentsByPost(groupCommentsByPost(mergeComments(localComments, liveComments)));
+        setCommentsByPost(groupCommentsByPost(liveComments));
       }
 
       const liveMembers = new Set<string>();
@@ -458,15 +423,205 @@ export default function CommunityPage() {
       });
 
       if (authUser) liveMembers.add(authUser.id);
-      const fallbackLocalMemberCount = Array.from(localHandles).filter(Boolean).length;
-      setMemberCount(Math.max(liveMembers.size, fallbackLocalMemberCount));
+      setMemberCount(liveMembers.size);
 
       setLoading(false);
     };
 
-    load();
+    const subscribeToLive = () => {
+      if (!client) return;
+      channel = client
+        .channel("community-feed")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "community_posts" },
+          async (payload) => {
+            if (!mounted) return;
+            const eventType = payload.eventType;
+            if (eventType === "INSERT") {
+              const row = payload.new as DbPost;
+              const { data } = await client
+                .from("community_posts")
+                .select("*, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
+                .eq("id", row.id)
+                .single();
+              if (!mounted) return;
+              const normalized = data
+                ? normalizePost(data as DbPost, followedIdsRef.current)
+                : normalizePost(row, followedIdsRef.current);
+              setPosts((prev) => mergePosts([normalized], prev));
+              return;
+            }
+            if (eventType === "UPDATE") {
+              const row = payload.new as DbPost;
+              const normalized = normalizePost(row, followedIdsRef.current);
+              setPosts((prev) =>
+                prev.map((post) =>
+                  post.id === row.id
+                    ? {
+                        ...post,
+                        ...normalized,
+                        likesCount: post.likesCount,
+                        commentsCount: post.commentsCount,
+                        isFollowing: post.isFollowing,
+                        profiles: row.profiles ?? post.profiles,
+                      }
+                    : post
+                )
+              );
+              return;
+            }
+            if (eventType === "DELETE") {
+              const row = payload.old as DbPost;
+              if (!row?.id) return;
+              setPosts((prev) => prev.filter((post) => post.id !== row.id));
+              setCommentsByPost((prev) => {
+                if (!prev[row.id]) return prev;
+                const next = { ...prev };
+                delete next[row.id];
+                return next;
+              });
+              setLiked((prev) => {
+                if (!prev.has(row.id)) return prev;
+                const next = new Set(prev);
+                next.delete(row.id);
+                return next;
+              });
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "community_post_comments" },
+          (payload) => {
+            if (!mounted) return;
+            const eventType = payload.eventType;
+            if (eventType === "INSERT") {
+              const row = payload.new as DbComment;
+              const existing = commentsByPostRef.current[row.post_id] || [];
+              if (existing.some((comment) => comment.id === row.id)) return;
+              const normalized = normalizeComment(row);
+              setCommentsByPost((prev) => {
+                const nextForPost = [...(prev[row.post_id] || []), normalized].sort(
+                  (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)
+                );
+                const next = { ...prev, [row.post_id]: nextForPost };
+                commentsByPostRef.current = next;
+                return next;
+              });
+              setPosts((prev) =>
+                prev.map((post) =>
+                  post.id === row.post_id
+                    ? { ...post, commentsCount: Math.max(0, post.commentsCount + 1) }
+                    : post
+                )
+              );
+              return;
+            }
+            if (eventType === "UPDATE") {
+              const row = payload.new as DbComment;
+              setCommentsByPost((prev) => {
+                const nextForPost = (prev[row.post_id] || []).map((comment) =>
+                  comment.id === row.id ? normalizeComment(row) : comment
+                );
+                const next = { ...prev, [row.post_id]: nextForPost };
+                commentsByPostRef.current = next;
+                return next;
+              });
+              return;
+            }
+            if (eventType === "DELETE") {
+              const row = payload.old as DbComment;
+              if (!row?.post_id) return;
+              const existing = commentsByPostRef.current[row.post_id] || [];
+              if (!existing.some((comment) => comment.id === row.id)) return;
+              setCommentsByPost((prev) => {
+                const nextForPost = (prev[row.post_id] || []).filter((comment) => comment.id !== row.id);
+                if (nextForPost.length === 0) {
+                  const next = { ...prev };
+                  delete next[row.post_id];
+                  commentsByPostRef.current = next;
+                  return next;
+                }
+                const next = { ...prev, [row.post_id]: nextForPost };
+                commentsByPostRef.current = next;
+                return next;
+              });
+              setPosts((prev) =>
+                prev.map((post) =>
+                  post.id === row.post_id
+                    ? { ...post, commentsCount: Math.max(0, post.commentsCount - 1) }
+                    : post
+                )
+              );
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "community_post_likes" },
+          (payload) => {
+            if (!mounted) return;
+            const eventType = payload.eventType;
+            if (eventType === "INSERT") {
+              const row = payload.new as DbLike;
+              const isSelf = userIdRef.current && row.user_id === userIdRef.current;
+              const alreadySelfLiked = isSelf && likedRef.current.has(row.post_id);
+              if (!alreadySelfLiked) {
+                setPosts((prev) =>
+                  prev.map((post) =>
+                    post.id === row.post_id
+                      ? { ...post, likesCount: Math.max(0, post.likesCount + 1) }
+                      : post
+                  )
+                );
+              }
+              if (isSelf && !likedRef.current.has(row.post_id)) {
+                setLiked((prev) => {
+                  const next = new Set(prev);
+                  next.add(row.post_id);
+                  likedRef.current = next;
+                  return next;
+                });
+              }
+              return;
+            }
+            if (eventType === "DELETE") {
+              const row = payload.old as DbLike;
+              const isSelf = userIdRef.current && row.user_id === userIdRef.current;
+              const shouldDecrement = !isSelf || likedRef.current.has(row.post_id);
+              if (shouldDecrement) {
+                setPosts((prev) =>
+                  prev.map((post) =>
+                    post.id === row.post_id
+                      ? { ...post, likesCount: Math.max(0, post.likesCount - 1) }
+                      : post
+                  )
+                );
+              }
+              if (isSelf && likedRef.current.has(row.post_id)) {
+                setLiked((prev) => {
+                  const next = new Set(prev);
+                  next.delete(row.post_id);
+                  likedRef.current = next;
+                  return next;
+                });
+              }
+            }
+          }
+        )
+        .subscribe();
+    };
+
+    load().then(() => {
+      if (mounted) subscribeToLive();
+    });
+
     return () => {
       mounted = false;
+      if (channel && client) {
+        client.removeChannel(channel);
+      }
     };
   }, []);
 
@@ -500,7 +655,6 @@ export default function CommunityPage() {
   }, [posts]);
 
   const toggleLike = async (postId: string) => {
-    const targetPost = posts.find((post) => post.id === postId);
     const alreadyLiked = liked.has(postId);
 
     const applyLikeLocally = (likeIt: boolean) => {
@@ -508,6 +662,7 @@ export default function CommunityPage() {
         const next = new Set(prev);
         if (likeIt) next.add(postId);
         else next.delete(postId);
+        likedRef.current = next;
         return next;
       });
       setPosts((prev) =>
@@ -529,17 +684,17 @@ export default function CommunityPage() {
 
     if (likePendingFor === postId) return;
 
-    // Local posts or missing DB setup use local-only likes.
-    if (!isUuid(postId) || targetPost?.localOnly || likesSetupNeeded) {
-      applyLikeLocally(!alreadyLiked);
+    if (!supabase) {
+      setSubmitError("Live likes are unavailable. Configure Supabase first.");
+      return;
+    }
+
+    if (likesSetupNeeded) {
+      setSubmitError("Likes are not configured yet.");
       return;
     }
 
     setLikePendingFor(postId);
-
-    if (!supabase) {
-      return;
-    }
 
     if (alreadyLiked) {
       const { error } = await supabase
@@ -552,7 +707,7 @@ export default function CommunityPage() {
       if (error) {
         if (isLikeSetupError(error || null)) {
           setLikesSetupNeeded(true);
-          applyLikeLocally(false);
+          setSubmitError("Likes are not configured yet.");
           return;
         }
         setSubmitError(error.message || "Could not remove like.");
@@ -572,12 +727,17 @@ export default function CommunityPage() {
     if (error) {
       if (error.code === "23505") {
         // Like row already exists; sync local UI state without re-incrementing.
-        setLiked((prev) => new Set(prev).add(postId));
+        setLiked((prev) => {
+          const next = new Set(prev);
+          next.add(postId);
+          likedRef.current = next;
+          return next;
+        });
         return;
       }
       if (isLikeSetupError(error || null)) {
         setLikesSetupNeeded(true);
-        applyLikeLocally(true);
+        setSubmitError("Likes are not configured yet.");
         return;
       }
       setSubmitError(error.message || "Could not like post.");
@@ -603,40 +763,16 @@ export default function CommunityPage() {
     }
 
     const tags = parseTags(postTags);
-    const saveLocalOnlyPost = (notice: string) => {
-      const localPost: CommunityPost = {
-        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        userId: user.id,
-        userName: user.name,
-        userHandle: user.handle,
-        content,
-        tags,
-        likesCount: 0,
-        commentsCount: 0,
-        createdAt: new Date().toISOString(),
-        isFollowing: true,
-        localOnly: true,
-      };
-      setPosts((prev) => {
-        // Local post is always "following" by definition (own post)
-        const next = mergePosts([{ ...localPost, isFollowing: true }], prev);
-        writeLocalPosts(next.filter((post) => post.localOnly));
-        return next;
-      });
-      setFilter("Latest");
-      setPostText("");
-      setSubmitInfo(notice);
-      recordAction("post");
-    };
 
     if (setupNeeded) {
-      saveLocalOnlyPost("Live DB is not ready yet. Your post was saved locally on this device.");
+      setSubmitError("Live community database is not configured yet.");
       return;
     }
 
     setSubmitPending(true);
     if (!supabase) {
       setSubmitPending(false);
+      setSubmitError("Live community is unavailable. Configure Supabase first.");
       return;
     }
     const { data, error } = await supabase
@@ -648,14 +784,14 @@ export default function CommunityPage() {
         content,
         tags,
       })
-      .select("id,user_id,user_name,user_handle,content,tags,likes_count,comments_count,created_at")
+      .select("*, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
       .single();
     setSubmitPending(false);
 
     if (error || !data) {
       if (isSetupError(error || null)) {
         setSetupNeeded(true);
-        saveLocalOnlyPost("Live DB is not ready yet. Your post was saved locally on this device.");
+        setSubmitError("Live community database is not configured yet.");
         return;
       }
       setSubmitError(error?.message || "Post failed.");
@@ -671,7 +807,6 @@ export default function CommunityPage() {
 
   const submitComment = async (postId: string) => {
     const content = (commentDrafts[postId] || "").trim();
-    const targetPost = posts.find((post) => post.id === postId);
     setCommentErrorByPost((prev) => ({ ...prev, [postId]: "" }));
     setCommentInfoByPost((prev) => ({ ...prev, [postId]: "" }));
 
@@ -690,7 +825,7 @@ export default function CommunityPage() {
           (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)
         );
         const next = { ...prev, [postId]: nextForPost };
-        writeLocalComments(Object.values(next).flat().filter((item) => item.localOnly));
+        commentsByPostRef.current = next;
         return next;
       });
       setPosts((prev) =>
@@ -702,33 +837,15 @@ export default function CommunityPage() {
       recordAction("comment");
     };
 
-    const saveLocalComment = (notice: string) => {
-      pushCommentToState({
-        id: `local-comment-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        postId,
-        userName: user.name,
-        userHandle: user.handle,
-        content,
-        createdAt: new Date().toISOString(),
-        localOnly: true,
-      });
-      setCommentInfoByPost((prev) => ({ ...prev, [postId]: notice }));
-    };
-
-    // Demo/local posts do not exist in the live DB, so comments stay local.
-    if (!isUuid(postId) || targetPost?.localOnly) {
-      saveLocalComment("This post is local only. Comment saved on this device.");
-      return;
-    }
-
     if (commentsSetupNeeded) {
-      saveLocalComment("Live comments are not configured yet. Saved locally on this device.");
+      setCommentErrorByPost((prev) => ({ ...prev, [postId]: "Live comments are not configured yet." }));
       return;
     }
 
     setCommentPendingFor(postId);
     if (!supabase) {
       setCommentPendingFor(null);
+      setCommentErrorByPost((prev) => ({ ...prev, [postId]: "Live comments are unavailable right now." }));
       return;
     }
     const { data, error } = await supabase
@@ -747,11 +864,11 @@ export default function CommunityPage() {
     if (error || !data) {
       if (isCommentSetupError(error || null)) {
         setCommentsSetupNeeded(true);
-        saveLocalComment("Live comments are not configured yet. Saved locally on this device.");
+        setCommentErrorByPost((prev) => ({ ...prev, [postId]: "Live comments are not configured yet." }));
         return;
       }
       if (error?.code === "22P02" || error?.code === "23503") {
-        saveLocalComment("This post is not available in live DB yet. Comment saved locally.");
+        setCommentErrorByPost((prev) => ({ ...prev, [postId]: "This post is not available in the live DB yet." }));
         return;
       }
       setCommentErrorByPost((prev) => ({ ...prev, [postId]: error?.message || "Comment failed." }));
@@ -1579,7 +1696,7 @@ function PostCard({
                 {commentErrorByPost[post.id] ||
                   commentInfoByPost[post.id] ||
                   (commentsSetupNeeded
-                    ? "Comments currently save locally on this device."
+                    ? "Live comments are not configured yet."
                     : commentsAuthNeeded
                     ? "Sign in to view comments and reply."
                     : "Reply and help move the discussion forward.")}
