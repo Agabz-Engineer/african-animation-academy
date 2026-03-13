@@ -2,20 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Clock, BookOpen, Star, Camera, X, Lock } from "lucide-react";
+import { Search, Clock, BookOpen, Star, Camera, X, Lock, Play } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-const COURSES = [
-  { title: "Introduction to Animation", instructor: "Kwame Mensah",     level: "Beginner",     duration: "4h 30m", lessons: 12, price: "GH₵50", rating: 4.8, desc: "Master the core principles of designing compelling characters for animation." },
-  { title: "Bouncing Ball Animation",    instructor: "Amara Diallo",     level: "Beginner",     duration: "2h 30m", lessons: 8,  price: "GH₵40", rating: 4.9, desc: "Learn the fundamental principles of animation with the classic bouncing ball exercise." },
-  { title: "Bicycle Animation",          instructor: "Kofi Asante",     level: "Beginner",     duration: "3h 00m", lessons: 9,  price: "GH₵45", rating: 4.8, desc: "Master complex motion paths with the bicycle animation exercise." },
-  { title: "2D Animation Basics",        instructor: "Ngozi Okafor",     level: "Beginner",     duration: "3h 45m", lessons: 10, price: "GH₵50", rating: 4.7, desc: "Turn ideas into visual sequences that studios can produce." },
-  { title: "Toon Boom Animation",        instructor: "Fatima Al-Hassan", level: "Intermediate", duration: "6h 15m", lessons: 18, price: "GH₵160", rating: 4.9, desc: "Professional 2D animation using industry-standard Toon Boom Harmony software." },
-  { title: "3D Animation Fundamentals", instructor: "Seun Adeyemi",     level: "Intermediate", duration: "6h 15m", lessons: 18, price: "GH₵150", rating: 4.9, desc: "Create professional motion graphics for ads, intros and explainer videos." },
-  { title: "Advanced 3D Modeling",       instructor: "Ama Owusu",        level: "Intermediate", duration: "8h 20m", lessons: 24, price: "GH₵200", rating: 4.8, desc: "Industry-standard Blender and Maya skills every studio expects." },
-  { title: "Character Animation",        instructor: "Kwame Mensah",     level: "Intermediate", duration: "5h 00m", lessons: 15, price: "GH₵180", rating: 4.7, desc: "The essential skill for character animation — bring dialogue to life." },
-  { title: "Visual Effects & Compositing",instructor: "Amara Diallo",     level: "Advanced",     duration: "7h 10m", lessons: 20, price: "GH₵250", rating: 4.8, desc: "Finishing and post-production techniques used in professional studios." },
-  { title: "Portfolio Development",       instructor: "Kofi Asante",     level: "Advanced",     duration: "2h 50m", lessons: 8,  price: "GH₵100", rating: 4.9, desc: "Present your work so studios notice you and want to hire you." },
+type Course = {
+  title: string;
+  instructor: string;
+  level: string;
+  duration: string;
+  lessons: number;
+  rating: number;
+  desc: string;
+  videoUrl?: string;
+  enrollUrl?: string;
+};
+
+const COURSES: Course[] = [
+  { title: "Introduction to Animation", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", lessons: 12, rating: 4.8, desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://drive.google.com/uc?export=download&id=1Sfgqgq86j3Th1sRReM9CrdIA7DC8A2dV", enrollUrl: "https://drive.google.com/uc?export=download&id=1Sfgqgq86j3Th1sRReM9CrdIA7DC8A2dV" },
 ];
 
 const ACCESSIBLE: Record<string, string[]> = {
@@ -163,23 +166,58 @@ export default function CoursesPage() {
       <div style={{ padding: "0 2.5rem 3rem" }}>
         {filtered.map((course, i) => {
           const locked = isLocked(course.level);
+          const hasPreview = Boolean(course.videoUrl);
+          const canPreview = hasPreview && !locked;
+          const thumbnail = (
+            <div style={{ width: "96px", height: "68px", borderRadius: "10px", backgroundColor: T.imgBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}`, position: "relative", overflow: "hidden" }}>
+              {hasPreview ? (
+                <>
+                  <div style={{ position: "absolute", inset: 0, background: theme === "dark" ? "linear-gradient(135deg, rgba(255,109,31,0.2), rgba(34,34,34,0.8))" : "linear-gradient(135deg, rgba(255,109,31,0.18), rgba(255,255,255,0.9))" }} />
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: "34px", height: "34px", borderRadius: "999px", backgroundColor: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}` }}>
+                      <Play style={{ width: "16px", height: "16px", color: T.text }} />
+                    </div>
+                  </div>
+                  <span style={{ position: "absolute", top: "6px", left: "6px", fontSize: "0.55rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: T.text, backgroundColor: theme === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.7)", padding: "2px 6px", borderRadius: "6px", border: `1px solid ${T.border}` }}>
+                    Official preview
+                  </span>
+                  <span style={{ position: "absolute", bottom: "6px", right: "6px", fontSize: "0.55rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: T.accent, backgroundColor: T.accentSoft, padding: "2px 6px", borderRadius: "6px" }}>
+                    Open Drive
+                  </span>
+                </>
+              ) : (
+                <Camera style={{ width: "16px", height: "16px", color: T.textDim, opacity: 0.4 }} />
+              )}
+              {locked && (
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: theme === "dark" ? "rgba(34,34,34,0.85)" : "rgba(250,243,225,0.85)" }}>
+                  <Lock style={{ width: "15px", height: "15px", color: T.textDim }} />
+                </div>
+              )}
+            </div>
+          );
+
           return (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: i * 0.04 }}
-              style={{ display: "flex", alignItems: "center", gap: "1.5rem", padding: "1.5rem 0", borderBottom: `1px solid ${T.border}`, cursor: locked ? "not-allowed" : "pointer", opacity: locked ? 0.4 : 1, transition: "opacity 0.2s" }}
+              style={{ display: "flex", alignItems: "center", gap: "1.5rem", padding: "1.5rem 0", borderBottom: `1px solid ${T.border}`, cursor: locked ? "not-allowed" : "default", opacity: locked ? 0.4 : 1, transition: "opacity 0.2s" }}
             >
               {/* Thumbnail */}
-              <div style={{ width: "96px", height: "68px", borderRadius: "10px", backgroundColor: T.imgBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}`, position: "relative", overflow: "hidden" }}>
-                <Camera style={{ width: "16px", height: "16px", color: T.textDim, opacity: 0.4 }} />
-                {locked && (
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: theme === "dark" ? "rgba(34,34,34,0.85)" : "rgba(250,243,225,0.85)" }}>
-                    <Lock style={{ width: "15px", height: "15px", color: T.textDim }} />
-                  </div>
-                )}
-              </div>
+              {canPreview ? (
+                <a
+                  href={course.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${course.title} preview on Google Drive`}
+                  style={{ display: "block", textDecoration: "none" }}
+                >
+                  {thumbnail}
+                </a>
+              ) : (
+                thumbnail
+              )}
 
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -222,17 +260,28 @@ export default function CoursesPage() {
 
               {/* Price + button */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem", flexShrink: 0 }}>
-                <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1rem", color: course.price === "Free" ? "#4CAF50" : T.text }}>
-                  {course.price}
+                <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.75rem", color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Included in subscription
                 </span>
-                <button
-                  disabled={locked}
-                  style={{ padding: "0.45rem 1.1rem", borderRadius: "8px", border: `1px solid ${locked ? T.border : T.accent}`, backgroundColor: "transparent", color: locked ? T.textDim : T.accent, fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.775rem", cursor: locked ? "not-allowed" : "pointer", transition: "all 0.18s", whiteSpace: "nowrap" }}
-                  onMouseEnter={(e) => { if (!locked) { const b = e.currentTarget as HTMLButtonElement; b.style.backgroundColor = T.accent; b.style.color = T.accentText; }}}
-                  onMouseLeave={(e) => { if (!locked) { const b = e.currentTarget as HTMLButtonElement; b.style.backgroundColor = "transparent"; b.style.color = T.accent; }}}
-                >
-                  {locked ? "Locked" : "Enrol"}
-                </button>
+                {locked ? (
+                  <button
+                    disabled
+                    style={{ padding: "0.45rem 1.1rem", borderRadius: "8px", border: `1px solid ${T.border}`, backgroundColor: "transparent", color: T.textDim, fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.775rem", cursor: "not-allowed", transition: "all 0.18s", whiteSpace: "nowrap" }}
+                  >
+                    Locked
+                  </button>
+                ) : (
+                  <a
+                    href={course.enrollUrl || course.videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ padding: "0.45rem 1.1rem", borderRadius: "8px", border: `1px solid ${T.accent}`, backgroundColor: "transparent", color: T.accent, fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.775rem", cursor: "pointer", transition: "all 0.18s", whiteSpace: "nowrap", textDecoration: "none", display: "inline-flex" }}
+                    onMouseEnter={(e) => { const b = e.currentTarget as HTMLAnchorElement; b.style.backgroundColor = T.accent; b.style.color = T.accentText; }}
+                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLAnchorElement; b.style.backgroundColor = "transparent"; b.style.color = T.accent; }}
+                  >
+                    Enrol
+                  </a>
+                )}
               </div>
             </motion.div>
           );
