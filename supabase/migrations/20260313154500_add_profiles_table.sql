@@ -4,11 +4,15 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
+  user_name text,
   avatar_url text,
   role text not null default 'user' check (role in ('user', 'admin', 'moderator')),
   status text not null default 'active' check (status in ('active', 'inactive', 'banned')),
   skill_level text,
   subscription_tier text,
+  followers_count integer not null default 0,
+  following_count integer not null default 0,
+  total_platform_likes integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
