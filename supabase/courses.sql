@@ -13,6 +13,7 @@ create table if not exists public.courses (
   rating decimal(3,2) default 0.00 check (rating >= 0 and rating <= 5),
   enrolled_count integer not null default 0 check (enrolled_count >= 0),
   thumbnail_url text,
+  video_path text,
   status text not null default 'draft' check (status in ('draft', 'published', 'archived')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
