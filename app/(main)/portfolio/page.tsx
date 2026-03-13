@@ -331,7 +331,7 @@ export default function PortfolioPage() {
           backgroundClip: "text",
           color: "transparent",
         }}>
-          Animation Portfolio
+          Here are some of your works
         </h1>
         <p style={{ color: C.muted, margin: 0, fontFamily: "'General Sans', sans-serif", fontSize: "0.9rem" }}>
           Showcase your creative journey through animation
@@ -428,7 +428,7 @@ export default function PortfolioPage() {
             fontSize: "1.25rem", fontWeight: 700,
             marginBottom: "1.25rem", color: C.text,
           }}>
-            ⭐ Featured Works
+            Featured Works
           </h2>
 
           <motion.div
