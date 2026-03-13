@@ -20,8 +20,7 @@ import {
   UserPlus,
   RefreshCw
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { banUser, unbanUser, deleteUser, getAdminUsers } from "@/app/admin/actions";
+import { banUser, unbanUser, deleteUser, getAdminUsers, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -65,6 +64,7 @@ export default function UserManagement() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncingProfiles, setSyncingProfiles] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -80,29 +80,26 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const { profiles, authUsers } = await getAdminUsers();
-
-      // Transform data to match User interface
-      const transformedUsers: User[] = (profiles || []).map((profile: any) => {
-        const authUser = authUsers.find(user => user.id === profile.id);
-        return {
-          id: profile.id,
-          email: authUser?.email || 'unknown',
-          full_name: profile.full_name,
-          role: profile.role || 'user',
-          status: profile.status || 'active',
-          created_at: profile.created_at,
-          last_sign_in: authUser?.last_sign_in_at,
-          skill_level: profile.skill_level || null,
-          subscription_tier: profile.subscription_tier || null,
-        };
-      });
-
-      setUsers(transformedUsers);
+      const { users } = await getAdminUsers();
+      setUsers(users);
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncProfiles = async () => {
+    setSyncingProfiles(true);
+    try {
+      const result = await syncProfilesFromAuth();
+      await fetchUsers();
+      alert(`Synced profiles. Inserted ${result.inserted} of ${result.total} users.`);
+    } catch (error) {
+      console.error('Error syncing profiles:', error);
+      alert('Failed to sync profiles. Make sure the profiles table exists.');
+    } finally {
+      setSyncingProfiles(false);
     }
   };
 
@@ -129,21 +126,10 @@ export default function UserManagement() {
           result = await deleteUser(userId);
           break;
         case 'make_admin':
-          // Assuming you still want this done via client or add action later,
-          // For now we'll leave it as a client call since it's just modifying profile,
-          // but ideal is to move all. Let's create proper error handling just in case.
-          if (!supabase) throw new Error('Supabase not initialized');
-          await supabase
-            .from('profiles')
-            .update({ role: 'admin' })
-            .eq('id', userId);
+          result = await setUserRole(userId, 'admin');
           break;
         case 'remove_admin':
-          if (!supabase) throw new Error('Supabase not initialized');
-          await supabase
-            .from('profiles')
-            .update({ role: 'user' })
-            .eq('id', userId);
+          result = await setUserRole(userId, 'user');
           break;
       }
       
@@ -326,6 +312,27 @@ export default function UserManagement() {
           >
             <Download style={{ width: "16px", height: "16px" }} />
             Export ({selectedUsers.length})
+          </button>
+          <button
+            onClick={handleSyncProfiles}
+            disabled={syncingProfiles}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.75rem 1.5rem",
+              borderRadius: "8px",
+              backgroundColor: syncingProfiles ? UI.border : UI.accent,
+              color: syncingProfiles ? UI.textMuted : "#FFFFFF",
+              border: "none",
+              cursor: syncingProfiles ? "not-allowed" : "pointer",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              transition: "all 0.2s ease",
+            }}
+          >
+            <RefreshCw style={{ width: "16px", height: "16px" }} />
+            {syncingProfiles ? "Syncing..." : "Sync Profiles"}
           </button>
           <button
             onClick={() => setShowUserModal(true)}

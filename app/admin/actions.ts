@@ -1,6 +1,66 @@
 "use server";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import type { User } from "@supabase/supabase-js";
+
+const AUTH_USERS_PAGE_SIZE = 1000;
+const PROFILE_SYNC_BATCH_SIZE = 500;
+
+const listAllAuthUsers = async (): Promise<User[]> => {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const users: User[] = [];
+  let page = 1;
+
+  while (true) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage: AUTH_USERS_PAGE_SIZE,
+    });
+
+    if (error) throw error;
+
+    const batch = data?.users || [];
+    users.push(...batch);
+
+    if (batch.length < AUTH_USERS_PAGE_SIZE) break;
+    page += 1;
+  }
+
+  return users;
+};
+
+const safeCount = async (
+  query: Promise<{ count: number | null; error: { message?: string } | null }>,
+  label: string
+): Promise<number | null> => {
+  const { count, error } = await query;
+  if (error) {
+    console.warn(`Admin stats count failed for ${label}:`, error.message || error);
+    return null;
+  }
+  return count ?? 0;
+};
+
+const safeSelect = async <T>(
+  query: Promise<{ data: T[] | null; error: { message?: string } | null }>,
+  label: string
+): Promise<T[]> => {
+  const { data, error } = await query;
+  if (error) {
+    console.warn(`Admin stats query failed for ${label}:`, error.message || error);
+    return [];
+  }
+  return data || [];
+};
+
+const chunkArray = <T>(items: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+};
 
 // ==========================================
 // Data Fetching Actions (Bypass RLS)
@@ -9,64 +69,241 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 export async function getAdminDashboardData() {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
 
+  const today = new Date();
+  const todayDate = today.toISOString().split("T")[0];
+  const thisMonth = today.toISOString().slice(0, 7);
+  const activeCutoff = new Date();
+  activeCutoff.setDate(activeCutoff.getDate() - 30);
+
   const [
-    { count: totalUsers },
-    { count: activeUsers },
-    { count: totalCourses },
-    { count: publishedCourses },
-    { count: totalPosts },
-    { count: pendingPosts },
-    { data: payments }
+    authUsers,
+    activeProfilesCount,
+    totalCourses,
+    totalPosts,
+    pendingPosts,
+    payments,
+    recentCourses,
+    recentPosts,
+    recentPayments,
   ] = await Promise.all([
-    supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    supabaseAdmin.from('courses').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('courses').select('*', { count: 'exact', head: true }).eq('status', 'published'),
-    supabaseAdmin.from('community_posts').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('community_posts').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabaseAdmin.from('payments').select('amount, created_at').eq('status', 'completed')
+    listAllAuthUsers(),
+    safeCount(
+      supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }).eq("status", "active"),
+      "profiles active"
+    ),
+    safeCount(
+      supabaseAdmin.from("courses").select("*", { count: "exact", head: true }),
+      "courses total"
+    ),
+    safeCount(
+      supabaseAdmin.from("community_posts").select("*", { count: "exact", head: true }),
+      "community_posts total"
+    ),
+    safeCount(
+      supabaseAdmin.from("community_posts").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      "community_posts pending"
+    ),
+    safeSelect(
+      supabaseAdmin.from("payments").select("id, amount, created_at").eq("status", "completed"),
+      "payments"
+    ),
+    safeSelect(
+      supabaseAdmin
+        .from("courses")
+        .select("id, title, created_at, status")
+        .order("created_at", { ascending: false })
+        .limit(3),
+      "recent courses"
+    ),
+    safeSelect(
+      supabaseAdmin
+        .from("community_posts")
+        .select("id, content, created_at")
+        .order("created_at", { ascending: false })
+        .limit(3),
+      "recent posts"
+    ),
+    safeSelect(
+      supabaseAdmin
+        .from("payments")
+        .select("id, amount, created_at")
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(3),
+      "recent payments"
+    ),
   ]);
 
-  const today = new Date().toISOString().split('T')[0];
-  const { count: newUsersToday } = await supabaseAdmin
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', today);
+  const totalUsers = authUsers.length;
+  const newUsersToday = authUsers.filter((user) => user.created_at?.startsWith(todayDate)).length;
+  const activeUsersFallback = authUsers.filter((user) => {
+    if (!user.last_sign_in_at) return false;
+    return new Date(user.last_sign_in_at) >= activeCutoff;
+  }).length;
+  const totalCoursesValue = totalCourses ?? 0;
+  const totalPostsValue = totalPosts ?? 0;
+  const pendingPostsValue = pendingPosts ?? 0;
+  const activeUsers =
+    activeProfilesCount === null ? activeUsersFallback : activeProfilesCount;
 
-  const totalRevenue = payments?.reduce((sum, p) => sum + parseFloat(p.amount), 0) || 0;
-  
-  const thisMonth = new Date().toISOString().slice(0, 7);
-  const monthlyRevenue = payments
-    ?.filter(p => p.created_at.startsWith(thisMonth))
-    .reduce((sum, p) => sum + parseFloat(p.amount), 0) || 0;
+  const totalRevenue =
+    payments.reduce((sum, payment) => sum + parseFloat(payment.amount || "0"), 0) || 0;
+  const monthlyRevenue =
+    payments
+      .filter((payment) => payment.created_at?.startsWith(thisMonth))
+      .reduce((sum, payment) => sum + parseFloat(payment.amount || "0"), 0) || 0;
+
+  const recentUsers = authUsers
+    .slice()
+    .sort((a, b) => (a.created_at > b.created_at ? -1 : 1))
+    .slice(0, 3)
+    .map((user) => {
+      const name =
+        (user.user_metadata?.full_name as string | undefined) ||
+        (user.user_metadata?.name as string | undefined) ||
+        user.email ||
+        "New user";
+      return {
+        id: `user-${user.id}`,
+        type: "user" as const,
+        title: "New User Registration",
+        description: `${name} joined the platform`,
+        timestamp: user.created_at || today.toISOString(),
+        status: "success" as const,
+      };
+    });
+
+  const recentCourseActivity = recentCourses.map((course) => ({
+    id: `course-${course.id}`,
+    type: "course" as const,
+    title: "Course Update",
+    description: `${course.title} created`,
+    timestamp: course.created_at || today.toISOString(),
+    status: course.status === "published" ? ("success" as const) : ("info" as const),
+  }));
+
+  const recentPostActivity = recentPosts.map((post) => ({
+    id: `post-${post.id}`,
+    type: "post" as const,
+    title: "Community Post",
+    description: String(post.content || "").replace(/\s+/g, " ").slice(0, 80),
+    timestamp: post.created_at || today.toISOString(),
+    status: "warning" as const,
+  }));
+
+  const recentPaymentActivity = recentPayments.map((payment) => ({
+    id: `payment-${payment.id}`,
+    type: "payment" as const,
+    title: "Payment Received",
+    description: `Payment completed: ${payment.amount || "0"}`,
+    timestamp: payment.created_at || today.toISOString(),
+    status: "success" as const,
+  }));
+
+  const recentActivity = [
+    ...recentUsers,
+    ...recentCourseActivity,
+    ...recentPostActivity,
+    ...recentPaymentActivity,
+  ]
+    .sort((a, b) => (a.timestamp > b.timestamp ? -1 : 1))
+    .slice(0, 6);
 
   return {
-    totalUsers: totalUsers || 0,
-    activeUsers: activeUsers || 0,
-    newUsersToday: newUsersToday || 0,
-    totalCourses: totalCourses || 0,
-    publishedCourses: publishedCourses || 0,
-    totalPosts: totalPosts || 0,
-    pendingPosts: pendingPosts || 0,
-    totalRevenue,
-    monthlyRevenue,
+    stats: {
+      totalUsers,
+      activeUsers,
+      newUsersToday,
+      totalCourses: totalCoursesValue,
+      totalPosts: totalPostsValue,
+      pendingPosts: pendingPostsValue,
+      totalRevenue,
+      monthlyRevenue,
+    },
+    recentActivity,
   };
 }
 
 export async function getAdminUsers() {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
-  
+
+  const [{ data: profiles, error: profilesError }, authUsers] = await Promise.all([
+    supabaseAdmin.from("profiles").select("*").order("created_at", { ascending: false }),
+    listAllAuthUsers(),
+  ]);
+
+  if (profilesError) {
+    console.warn("Failed to load profiles for admin users list:", profilesError.message || profilesError);
+  }
+
+  const profileMap = new Map((profiles || []).map((profile: any) => [profile.id, profile]));
+
+  const users = authUsers.map((user) => {
+    const profile = profileMap.get(user.id);
+    return {
+      id: user.id,
+      email: user.email || "unknown",
+      full_name:
+        profile?.full_name ||
+        (user.user_metadata?.full_name as string | undefined) ||
+        (user.user_metadata?.name as string | undefined) ||
+        null,
+      role: profile?.role || (user.app_metadata?.role as string | undefined) || "user",
+      status: profile?.status || "active",
+      created_at: profile?.created_at || user.created_at || new Date().toISOString(),
+      last_sign_in: user.last_sign_in_at || null,
+      skill_level: profile?.skill_level || null,
+      subscription_tier: profile?.subscription_tier || null,
+    };
+  });
+
+  return { users };
+}
+
+export async function syncProfilesFromAuth() {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const authUsers = await listAllAuthUsers();
+
   const { data: profiles, error: profilesError } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .from("profiles")
+    .select("id");
 
-  if (profilesError) throw profilesError;
+  if (profilesError) {
+    throw new Error(
+      profilesError.message ||
+        "Failed to load profiles. Make sure the profiles table exists."
+    );
+  }
 
-  const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-  if (authError) throw authError;
+  const existingIds = new Set((profiles || []).map((profile) => profile.id));
+  const missingUsers = authUsers.filter((user) => !existingIds.has(user.id));
 
-  return { profiles: profiles || [], authUsers: authUsers.users || [] };
+  if (missingUsers.length === 0) {
+    return { total: authUsers.length, inserted: 0 };
+  }
+
+  const payload = missingUsers.map((user) => ({
+    id: user.id,
+    full_name:
+      (user.user_metadata?.full_name as string | undefined) ||
+      (user.user_metadata?.name as string | undefined) ||
+      null,
+    avatar_url: (user.user_metadata?.avatar_url as string | undefined) || null,
+  }));
+
+  const chunks = chunkArray(payload, PROFILE_SYNC_BATCH_SIZE);
+
+  for (const chunk of chunks) {
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .upsert(chunk, { onConflict: "id", ignoreDuplicates: true });
+    if (error) {
+      throw error;
+    }
+  }
+
+  return { total: authUsers.length, inserted: missingUsers.length };
 }
 
 export async function getAdminCourses() {
@@ -88,7 +325,7 @@ export async function getAdminCommunityPosts() {
     .from('community_posts')
     .select(`
       *,
-      profiles!inner (full_name, avatar_url),
+      profiles (full_name, avatar_url),
       community_reports (count)
     `)
     .order('created_at', { ascending: false });
@@ -105,8 +342,7 @@ export async function banUser(userId: string) {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
   const { error } = await supabaseAdmin
     .from('profiles')
-    .update({ status: 'banned' })
-    .eq('id', userId);
+    .upsert({ id: userId, status: 'banned' }, { onConflict: 'id' });
   if (error) throw error;
   return { success: true };
 }
@@ -115,10 +351,18 @@ export async function unbanUser(userId: string) {
    if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
    const { error } = await supabaseAdmin
     .from('profiles')
-    .update({ status: 'active' })
-    .eq('id', userId);
+    .upsert({ id: userId, status: 'active' }, { onConflict: 'id' });
    if (error) throw error;
    return { success: true };
+}
+
+export async function setUserRole(userId: string, role: string) {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .upsert({ id: userId, role }, { onConflict: 'id' });
+  if (error) throw error;
+  return { success: true };
 }
 
 export async function deleteUser(userId: string) {

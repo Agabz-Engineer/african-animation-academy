@@ -19,7 +19,6 @@ import {
   PieChart,
   Calendar
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { getAdminDashboardData } from "@/app/admin/actions";
 
 const DARK_UI = {
@@ -89,47 +88,32 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
+  const formatRelativeTime = (isoString: string) => {
+    if (!isoString) return "Unknown";
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return "Unknown";
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMinutes < 1) return "Just now";
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return "Yesterday";
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    });
+  };
+
   const fetchDashboardData = async () => {
     try {
-      const dashboardStats = await getAdminDashboardData();
-      setStats(dashboardStats);
-
-      // Mock recent activity
-      setRecentActivity([
-        {
-          id: '1',
-          type: 'user',
-          title: 'New User Registration',
-          description: 'John Doe joined the platform',
-          timestamp: '2 hours ago',
-          status: 'success'
-        },
-        {
-          id: '2',
-          type: 'course',
-          title: 'Course Enrollment',
-          description: 'Sarah enrolled in 3D Animation Fundamentals',
-          timestamp: '3 hours ago',
-          status: 'info'
-        },
-        {
-          id: '3',
-          type: 'post',
-          title: 'New Community Post',
-          description: 'Mike shared animation progress',
-          timestamp: '5 hours ago',
-          status: 'warning'
-        },
-        {
-          id: '4',
-          type: 'payment',
-          title: 'Payment Received',
-          description: 'GH₵300 from Pro subscription',
-          timestamp: '6 hours ago',
-          status: 'success'
-        },
-      ]);
-
+      const dashboardData = await getAdminDashboardData();
+      setStats(dashboardData.stats);
+      setRecentActivity(dashboardData.recentActivity || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -202,6 +186,10 @@ export default function AdminDashboard() {
       color: UI.accent,
     },
   ];
+
+  const activePercent = stats.totalUsers > 0
+    ? Math.round((stats.activeUsers / stats.totalUsers) * 100)
+    : 0;
 
   if (loading) {
     return (
@@ -399,66 +387,72 @@ export default function AdminDashboard() {
           }}>
             Recent Activity
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  padding: "0.75rem",
-                  borderRadius: "8px",
-                  border: `1px solid ${UI.border}`,
-                }}
-              >
-                <div style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  backgroundColor: activity.status === 'success' ? `${UI.success}20` :
-                                   activity.status === 'warning' ? `${UI.warning}20` :
-                                   activity.status === 'danger' ? `${UI.danger}20` : `${UI.info}20`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}>
-                  {activity.type === 'user' && <UserPlus style={{ width: "16px", height: "16px", color: UI.success }} />}
-                  {activity.type === 'course' && <BookOpen style={{ width: "16px", height: "16px", color: UI.info }} />}
-                  {activity.type === 'post' && <MessageSquare style={{ width: "16px", height: "16px", color: UI.warning }} />}
-                  {activity.type === 'payment' && <CreditCard style={{ width: "16px", height: "16px", color: UI.success }} />}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ 
-                    color: UI.text, 
-                    fontSize: "0.875rem", 
-                    fontWeight: 600, 
-                    margin: "0 0 0.25rem 0" 
-                  }}>
-                    {activity.title}
-                  </h4>
-                  <p style={{ 
-                    color: UI.textMuted, 
-                    fontSize: "0.75rem", 
-                    margin: "0 0 0.25rem 0" 
-                  }}>
-                    {activity.description}
-                  </p>
-                  <p style={{ 
-                    color: UI.textMuted, 
-                    fontSize: "0.75rem", 
-                    margin: 0,
+          {recentActivity.length === 0 ? (
+            <p style={{ color: UI.textMuted, fontSize: "0.875rem", margin: 0 }}>
+              No recent activity yet.
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {recentActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "0.25rem"
+                    gap: "1rem",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    border: `1px solid ${UI.border}`,
+                  }}
+                >
+                  <div style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50%",
+                    backgroundColor: activity.status === 'success' ? `${UI.success}20` :
+                                     activity.status === 'warning' ? `${UI.warning}20` :
+                                     activity.status === 'danger' ? `${UI.danger}20` : `${UI.info}20`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}>
-                    <Clock style={{ width: "12px", height: "12px" }} />
-                    {activity.timestamp}
-                  </p>
+                    {activity.type === 'user' && <UserPlus style={{ width: "16px", height: "16px", color: UI.success }} />}
+                    {activity.type === 'course' && <BookOpen style={{ width: "16px", height: "16px", color: UI.info }} />}
+                    {activity.type === 'post' && <MessageSquare style={{ width: "16px", height: "16px", color: UI.warning }} />}
+                    {activity.type === 'payment' && <CreditCard style={{ width: "16px", height: "16px", color: UI.success }} />}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ 
+                      color: UI.text, 
+                      fontSize: "0.875rem", 
+                      fontWeight: 600, 
+                      margin: "0 0 0.25rem 0" 
+                    }}>
+                      {activity.title}
+                    </h4>
+                    <p style={{ 
+                      color: UI.textMuted, 
+                      fontSize: "0.75rem", 
+                      margin: "0 0 0.25rem 0" 
+                    }}>
+                      {activity.description}
+                    </p>
+                    <p style={{ 
+                      color: UI.textMuted, 
+                      fontSize: "0.75rem", 
+                      margin: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.25rem"
+                    }}>
+                      <Clock style={{ width: "12px", height: "12px" }} />
+                      {formatRelativeTime(activity.timestamp)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -489,7 +483,7 @@ export default function AdminDashboard() {
               height: "100px",
               margin: "0 auto 1rem",
               borderRadius: "50%",
-              background: `conic-gradient(${UI.accent} 0% ${stats.activeUsers / stats.totalUsers * 100}%, ${UI.border} ${stats.activeUsers / stats.totalUsers * 100}% 100%)`,
+              background: `conic-gradient(${UI.accent} 0% ${activePercent}%, ${UI.border} ${activePercent}% 100%)`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -505,7 +499,7 @@ export default function AdminDashboard() {
                 justifyContent: "center",
               }}>
                 <span style={{ color: UI.text, fontSize: "1.25rem", fontWeight: 700 }}>
-                  {Math.round(stats.activeUsers / stats.totalUsers * 100)}%
+                  {activePercent}%
                 </span>
               </div>
             </div>
@@ -571,3 +565,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
