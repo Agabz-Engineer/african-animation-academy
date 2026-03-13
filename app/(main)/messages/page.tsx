@@ -80,9 +80,12 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    async function getSession() {
-      if (!supabase) return;
-      const { data: { session } } = await supabase.auth.getSession();
+    if (!supabase) return;
+    const client = supabase;
+    let active = true;
+
+    const handleSession = (session: any) => {
+      if (!active) return;
       if (session?.user) {
         setUser({
           id: session.user.id,
@@ -91,10 +94,26 @@ export default function MessagesPage() {
         });
         fetchConversations(session.user.id);
       } else {
+        setUser(null);
         setLoading(false);
       }
-    }
-    getSession();
+    };
+
+    const init = async () => {
+      const { data: { session } } = await client.auth.getSession();
+      handleSession(session);
+    };
+
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+      handleSession(session);
+    });
+
+    init();
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -288,6 +307,16 @@ export default function MessagesPage() {
     return () => {
       client.removeChannel(channel);
     };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || !supabase) return;
+    const interval = setInterval(() => {
+      fetchConversations(user.id);
+      const current = selectedChatRef.current;
+      if (current) fetchMessages(current.other_user_id);
+    }, 8000);
+    return () => clearInterval(interval);
   }, [user?.id]);
 
   if (!user && !loading) {

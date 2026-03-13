@@ -248,6 +248,30 @@ export default function CommunityPage() {
   const [openCommentFor, setOpenCommentFor] = useState<string | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+
+  const refreshFollowersCount = async (targetUserId: string) => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("followers_count")
+      .eq("id", targetUserId)
+      .single();
+    if (error || !data) return;
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.userId === targetUserId
+          ? {
+              ...post,
+              profiles: {
+                followers_count: data.followers_count,
+                total_platform_likes: post.profiles?.total_platform_likes ?? 0,
+                avatar_url: post.profiles?.avatar_url ?? null
+              }
+            }
+          : post
+      )
+    );
+  };
   const [commentPendingFor, setCommentPendingFor] = useState<string | null>(null);
   const [commentErrorByPost, setCommentErrorByPost] = useState<Record<string, string>>({});
   const [commentInfoByPost, setCommentInfoByPost] = useState<Record<string, string>>({});
@@ -1252,7 +1276,7 @@ export default function CommunityPage() {
                   const postComments = commentsByPost[post.id] || [];
                   const commentOpen = openCommentFor === post.id;
                   const visibleCommentCount = getCommentCount(post);
-                  return <PostCard key={post.id} post={post} index={index} hasLiked={hasLiked} postComments={postComments} commentOpen={commentOpen} visibleCommentCount={visibleCommentCount} T={T} user={user} setOpenCommentFor={setOpenCommentFor} toggleLike={toggleLike} likePendingFor={likePendingFor} commentDrafts={commentDrafts} setCommentDrafts={setCommentDrafts} commentPendingFor={commentPendingFor} submitComment={submitComment} commentErrorByPost={commentErrorByPost} commentInfoByPost={commentInfoByPost} commentsSetupNeeded={commentsSetupNeeded} commentsAuthNeeded={commentsAuthNeeded} timeAgo={timeAgo} setSearch={setSearch} />;
+                  return <PostCard key={post.id} post={post} index={index} hasLiked={hasLiked} postComments={postComments} commentOpen={commentOpen} visibleCommentCount={visibleCommentCount} T={T} user={user} setOpenCommentFor={setOpenCommentFor} toggleLike={toggleLike} likePendingFor={likePendingFor} commentDrafts={commentDrafts} setCommentDrafts={setCommentDrafts} commentPendingFor={commentPendingFor} submitComment={submitComment} commentErrorByPost={commentErrorByPost} commentInfoByPost={commentInfoByPost} commentsSetupNeeded={commentsSetupNeeded} commentsAuthNeeded={commentsAuthNeeded} timeAgo={timeAgo} setSearch={setSearch} onFollowUpdate={refreshFollowersCount} />;
                 })}
               </AnimatePresence>
             )}
@@ -1484,7 +1508,7 @@ function PostCard({
   post, index, hasLiked, postComments, commentOpen, visibleCommentCount, T, user, 
   setOpenCommentFor, toggleLike, likePendingFor, commentDrafts, setCommentDrafts, 
   commentPendingFor, submitComment, commentErrorByPost, commentInfoByPost, 
-  commentsSetupNeeded, commentsAuthNeeded, timeAgo, setSearch 
+  commentsSetupNeeded, commentsAuthNeeded, timeAgo, setSearch, onFollowUpdate 
 }: any) {
   const [isMsgOpen, setIsMsgOpen] = useState(false);
 
@@ -1541,7 +1565,7 @@ function PostCard({
            >
               <MessageSquare size={13} />
            </button>
-           <FollowButton targetUserId={post.userId as string} />
+           <FollowButton targetUserId={post.userId as string} onUpdate={() => onFollowUpdate?.(post.userId as string)} />
         </div>
       </div>
 

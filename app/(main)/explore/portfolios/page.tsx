@@ -72,7 +72,7 @@ const LIGHT = {
 const CATEGORIES = ["All", "Following", "2D Animation", "3D Animation", "Character Design", "Motion Graphics", "VFX"];
 
 // ─── Components ──────────────────────────────────────────
-function ProjectCard({ project, theme, viewMode }: { project: PortfolioProject, theme: any, viewMode: "grid" | "list" }) {
+function ProjectCard({ project, theme, viewMode, onFollowUpdate }: { project: PortfolioProject, theme: any, viewMode: "grid" | "list", onFollowUpdate: (userId: string) => void }) {
   const isGrid = viewMode === "grid";
   const [isMsgOpen, setIsMsgOpen] = useState(false);
   
@@ -136,7 +136,7 @@ function ProjectCard({ project, theme, viewMode }: { project: PortfolioProject, 
              >
                 <MessageSquare size={14} />
              </button>
-             <FollowButton targetUserId={project.user_id} />
+             <FollowButton targetUserId={project.user_id} onUpdate={() => onFollowUpdate(project.user_id)} />
           </div>
         </div>
 
@@ -217,6 +217,30 @@ export default function ExplorePortfoliosPage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const PAGE_SIZE = 12;
+
+  const refreshFollowersCount = async (targetUserId: string) => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("followers_count")
+      .eq("id", targetUserId)
+      .single();
+    if (error || !data) return;
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.user_id === targetUserId
+          ? {
+              ...project,
+              profiles: {
+                followers_count: data.followers_count,
+                total_platform_likes: project.profiles?.total_platform_likes ?? 0,
+                avatar_url: project.profiles?.avatar_url ?? null
+              }
+            }
+          : project
+      )
+    );
+  };
 
   const fetchProjects = async (pageNum = 1) => {
     if (!supabase) {
@@ -425,7 +449,7 @@ export default function ExplorePortfoliosPage() {
         >
           <AnimatePresence>
             {filteredProjects.map(project => (
-              <ProjectCard key={project.id} project={project} theme={theme} viewMode={viewMode} />
+              <ProjectCard key={project.id} project={project} theme={theme} viewMode={viewMode} onFollowUpdate={refreshFollowersCount} />
             ))}
           </AnimatePresence>
         </motion.div>
