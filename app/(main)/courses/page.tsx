@@ -17,6 +17,7 @@ type Course = {
 
 const COURSES: Course[] = [
   { title: "Quick Poses for Strong Silhouettes", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10" },
+  { title: "Expressive Walk Cycles: The Gathering Place Study", instructor: "TBA", level: "Beginner", duration: "TBD", desc: "Study rhythm, weight, and personality in walk cycles using a lively gathering‑place scene.", videoUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", enrollUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0" },
 ];
 
 const ACCESSIBLE: Record<string, string[]> = {
