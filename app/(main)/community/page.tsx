@@ -10,6 +10,7 @@ import {
   Heart,
   Lock,
   MessageCircle,
+  MessageSquare,
   PenSquare,
   Search,
   Send,
@@ -21,12 +22,14 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useGamification } from "@/lib/useGamification";
 import { useThemeMode } from "@/lib/useThemeMode";
+import FollowButton from "@/app/components/ui/FollowButton";
+import MessageModal from "@/app/components/ui/MessageModal";
 
 type FeedFilter = "For You" | "Latest" | "Following";
 
 type CommunityPost = {
   id: string;
-  userId?: string | null;
+  userId: string | null;
   userName: string;
   userHandle: string;
   content: string;
@@ -36,6 +39,11 @@ type CommunityPost = {
   createdAt: string;
   isFollowing: boolean;
   localOnly?: boolean;
+  profiles?: {
+    followers_count: number;
+    total_platform_likes: number;
+    avatar_url: string | null;
+  };
 };
 
 type DbPost = {
@@ -205,7 +213,7 @@ const parseTags = (value: string) =>
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-const normalizePost = (row: DbPost): CommunityPost => ({
+const normalizePost = (row: any): CommunityPost => ({
   id: row.id,
   userId: row.user_id,
   userName: row.user_name || "Animator",
@@ -216,6 +224,7 @@ const normalizePost = (row: DbPost): CommunityPost => ({
   commentsCount: Math.max(0, row.comments_count || 0),
   createdAt: row.created_at,
   isFollowing: false,
+  profiles: row.profiles
 });
 
 const normalizeComment = (row: DbComment): CommunityComment => ({
@@ -318,7 +327,7 @@ export default function CommunityPage() {
         supabase.auth.getUser(),
         supabase
           .from("community_posts")
-          .select("id,user_id,user_name,user_handle,content,tags,likes_count,comments_count,created_at")
+          .select("*, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
           .order("created_at", { ascending: false })
           .limit(40),
         supabase
@@ -583,6 +592,7 @@ export default function CommunityPage() {
     const saveLocalOnlyPost = (notice: string) => {
       const localPost: CommunityPost = {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        userId: user.id,
         userName: user.name,
         userHandle: user.handle,
         content,
@@ -1097,10 +1107,6 @@ export default function CommunityPage() {
               <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.dim, fontFamily: "'Satoshi', sans-serif" }}>
                 Loading community feed...
               </div>
-            ) : filteredPosts.length === 0 ? (
-              <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.muted, fontFamily: "'Satoshi', sans-serif" }}>
-                No posts yet. You can be first to post.
-              </div>
             ) : (
               <AnimatePresence mode="popLayout">
                 {filteredPosts.map((post, index) => {
@@ -1108,198 +1114,7 @@ export default function CommunityPage() {
                   const postComments = commentsByPost[post.id] || [];
                   const commentOpen = openCommentFor === post.id;
                   const visibleCommentCount = getCommentCount(post);
-                  return (
-                    <motion.article
-                      key={post.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.22, delay: index * 0.02 }}
-                      style={{
-                        border: `1px solid ${T.border}`,
-                        borderRadius: "16px",
-                        background: T.panel,
-                        padding: "0.95rem",
-                        boxShadow: "0 10px 26px rgba(0,0,0,0.1)",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.52rem" }}>
-                        <div>
-                          <p style={{ fontWeight: 700, fontSize: "0.89rem", fontFamily: "'Cabinet Grotesk', sans-serif" }}>{post.userName}</p>
-                          <p style={{ color: T.dim, fontSize: "0.73rem", fontFamily: "'Satoshi', sans-serif" }}>
-                            @{post.userHandle} - {timeAgo(post.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <p style={{ fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "0.62rem", fontFamily: "'Satoshi', sans-serif" }}>{post.content}</p>
-
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.38rem", marginBottom: "0.62rem" }}>
-                        {post.tags.map((tag) => (
-                          <button
-                            key={`${post.id}-${tag}`}
-                            onClick={() => setSearch(tag)}
-                            style={{
-                              borderRadius: "999px",
-                              border: `1px solid ${T.border}`,
-                              backgroundColor: T.chip,
-                              color: T.muted,
-                              fontSize: "0.69rem",
-                              padding: "0.16rem 0.52rem",
-                              cursor: "pointer",
-                              fontFamily: "'Satoshi', sans-serif",
-                            }}
-                          >
-                            #{tag}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
-                        <div style={{ display: "flex", gap: "0.46rem" }}>
-                          <button
-                            onClick={() => toggleLike(post.id)}
-                            disabled={!user || likePendingFor === post.id}
-                            style={{
-                              borderRadius: "999px",
-                              border: `1px solid ${hasLiked ? `${T.accent}66` : T.border}`,
-                              backgroundColor: hasLiked ? T.accentSoft : T.chip,
-                              color: hasLiked ? T.accent : T.muted,
-                              padding: "0.28rem 0.62rem",
-                              fontSize: "0.74rem",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "0.33rem",
-                              cursor: !user || likePendingFor === post.id ? "not-allowed" : "pointer",
-                              fontFamily: "'Satoshi', sans-serif",
-                            }}
-                          >
-                            <Heart style={{ width: "12px", height: "12px", fill: hasLiked ? T.accent : "transparent" }} />
-                            {likePendingFor === post.id ? "..." : post.likesCount}
-                          </button>
-                          <button
-                            onClick={() =>
-                              setOpenCommentFor((prev) => (prev === post.id ? null : post.id))
-                            }
-                            style={{
-                              borderRadius: "999px",
-                              border: `1px solid ${commentOpen ? `${T.accent}66` : T.border}`,
-                              backgroundColor: commentOpen ? T.accentSoft : T.chip,
-                              color: commentOpen ? T.accent : T.muted,
-                              padding: "0.28rem 0.62rem",
-                              fontSize: "0.74rem",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "0.33rem",
-                              cursor: "pointer",
-                              fontFamily: "'Satoshi', sans-serif",
-                            }}
-                          >
-                            <MessageCircle style={{ width: "12px", height: "12px" }} />
-                            {visibleCommentCount}
-                          </button>
-                        </div>
-                        {post.likesCount < 2 && <span style={{ color: T.dim, fontSize: "0.7rem", fontFamily: "'Satoshi', sans-serif" }}>Be first to like</span>}
-                      </div>
-
-                      {(commentOpen || postComments.length > 0) && (
-                        <div
-                          style={{
-                            marginTop: "0.66rem",
-                            borderTop: `1px solid ${T.border}`,
-                            paddingTop: "0.62rem",
-                          }}
-                        >
-                          {postComments.length > 0 && (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", marginBottom: "0.58rem" }}>
-                              {postComments.map((comment) => (
-                                <div
-                                  key={comment.id}
-                                  style={{
-                                    border: `1px solid ${T.border}`,
-                                    backgroundColor: T.chip,
-                                    borderRadius: "10px",
-                                    padding: "0.45rem 0.56rem",
-                                  }}
-                                >
-                                  <p style={{ fontSize: "0.72rem", color: T.dim, fontFamily: "'Satoshi', sans-serif", marginBottom: "0.2rem" }}>
-                                    @{comment.userHandle} - {timeAgo(comment.createdAt)}
-                                  </p>
-                                  <p style={{ fontSize: "0.82rem", color: T.text, lineHeight: 1.5, fontFamily: "'Satoshi', sans-serif" }}>{comment.content}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {commentOpen && (
-                            <div>
-                              <div className="community-comment-row">
-                                <input
-                                  value={commentDrafts[post.id] || ""}
-                                  onChange={(event) =>
-                                    setCommentDrafts((prev) => ({
-                                      ...prev,
-                                      [post.id]: event.target.value,
-                                    }))
-                                  }
-                                  placeholder={user ? "Write a comment..." : "Sign in to comment"}
-                                  disabled={!user || commentPendingFor === post.id}
-                                  style={{
-                                    width: "100%",
-                                    borderRadius: "9px",
-                                    border: `1px solid ${T.border}`,
-                                    backgroundColor: T.input,
-                                    color: T.text,
-                                    padding: "0.44rem 0.66rem",
-                                    fontSize: "0.78rem",
-                                    outline: "none",
-                                    fontFamily: "'Satoshi', sans-serif",
-                                  }}
-                                />
-                                <button
-                                  onClick={() => submitComment(post.id)}
-                                  disabled={!user || commentPendingFor === post.id}
-                                  style={{
-                                    borderRadius: "9px",
-                                    border: "none",
-                                    backgroundColor: user ? T.accent : T.chip,
-                                    color: user ? "#FFFFFF" : T.dim,
-                                    cursor: user ? "pointer" : "not-allowed",
-                                    fontFamily: "'Satoshi', sans-serif",
-                                    fontSize: "0.74rem",
-                                    fontWeight: 700,
-                                    padding: "0.44rem 0.55rem",
-                                  }}
-                                >
-                                  {commentPendingFor === post.id ? "..." : "Send"}
-                                </button>
-                              </div>
-                              <p
-                                style={{
-                                  marginTop: "0.38rem",
-                                  fontSize: "0.72rem",
-                                  color: commentErrorByPost[post.id]
-                                    ? T.danger
-                                    : commentInfoByPost[post.id]
-                                    ? T.accent
-                                    : T.dim,
-                                  fontFamily: "'Satoshi', sans-serif",
-                                }}
-                              >
-                                {commentErrorByPost[post.id] ||
-                                  commentInfoByPost[post.id] ||
-                                  (commentsSetupNeeded
-                                    ? "Comments currently save locally on this device."
-                                    : commentsAuthNeeded
-                                    ? "Sign in to view comments and reply."
-                                    : "Reply and help move the discussion forward.")}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </motion.article>
-                  );
+                  return <PostCard key={post.id} post={post} index={index} hasLiked={hasLiked} postComments={postComments} commentOpen={commentOpen} visibleCommentCount={visibleCommentCount} T={T} user={user} setOpenCommentFor={setOpenCommentFor} toggleLike={toggleLike} likePendingFor={likePendingFor} commentDrafts={commentDrafts} setCommentDrafts={setCommentDrafts} commentPendingFor={commentPendingFor} submitComment={submitComment} commentErrorByPost={commentErrorByPost} commentInfoByPost={commentInfoByPost} commentsSetupNeeded={commentsSetupNeeded} commentsAuthNeeded={commentsAuthNeeded} timeAgo={timeAgo} setSearch={setSearch} />;
                 })}
               </AnimatePresence>
             )}
@@ -1523,6 +1338,250 @@ export default function CommunityPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+// ─── Post Card Component ──────────────────────────────────
+function PostCard({ 
+  post, index, hasLiked, postComments, commentOpen, visibleCommentCount, T, user, 
+  setOpenCommentFor, toggleLike, likePendingFor, commentDrafts, setCommentDrafts, 
+  commentPendingFor, submitComment, commentErrorByPost, commentInfoByPost, 
+  commentsSetupNeeded, commentsAuthNeeded, timeAgo, setSearch 
+}: any) {
+  const [isMsgOpen, setIsMsgOpen] = useState(false);
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.22, delay: index * 0.02 }}
+      style={{
+        border: `1px solid ${T.border}`,
+        borderRadius: "16px",
+        background: T.panel,
+        padding: "0.95rem",
+        boxShadow: "0 10px 26px rgba(0,0,0,0.1)",
+        marginBottom: "1rem"
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "0.6rem", marginBottom: "0.52rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <div style={{ 
+            width: "36px", 
+            height: "36px", 
+            borderRadius: "50%", 
+            backgroundColor: T.accent, 
+            backgroundImage: post.profiles?.avatar_url ? `url(${post.profiles.avatar_url})` : "none",
+            backgroundSize: "cover",
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            fontSize: "0.8rem", 
+            color: "#fff", 
+            fontWeight: 700 
+          }}>
+            {!post.profiles?.avatar_url && post.userName.charAt(0)}
+          </div>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: "0.89rem", fontFamily: "'Cabinet Grotesk', sans-serif", margin: 0 }}>{post.userName}</p>
+            <p style={{ color: T.dim, fontSize: "0.73rem", fontFamily: "'Satoshi', sans-serif", margin: 0 }}>
+              @{post.userHandle} - {timeAgo(post.createdAt)}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+           <div style={{ textAlign: "right", marginRight: "0.5rem" }}>
+             <p style={{ margin: 0, fontSize: "0.65rem", color: T.dim }}>{post.profiles?.followers_count || 0} followers</p>
+             <p style={{ margin: 0, fontSize: "0.65rem", color: T.dim }}>{post.profiles?.total_platform_likes || 0} likes</p>
+           </div>
+           
+           <button 
+              onClick={(e) => { e.stopPropagation(); setIsMsgOpen(true); }}
+              style={{ background: T.accentSoft, border: "none", color: T.accent, padding: "0.35rem", borderRadius: "8px", cursor: "pointer" }}
+           >
+              <MessageSquare size={13} />
+           </button>
+           <FollowButton targetUserId={post.userId as string} />
+        </div>
+      </div>
+
+      <p style={{ fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "0.62rem", fontFamily: "'Satoshi', sans-serif" }}>{post.content}</p>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.38rem", marginBottom: "0.62rem" }}>
+        {post.tags.map((tag: string) => (
+          <button
+            key={`${post.id}-${tag}`}
+            onClick={() => setSearch(tag)}
+            style={{
+              borderRadius: "999px",
+              border: `1px solid ${T.border}`,
+              backgroundColor: T.chip,
+              color: T.muted,
+              fontSize: "0.69rem",
+              padding: "0.16rem 0.52rem",
+              cursor: "pointer",
+              fontFamily: "'Satoshi', sans-serif",
+            }}
+          >
+            #{tag}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.46rem" }}>
+          <button
+            onClick={() => toggleLike(post.id)}
+            disabled={!user || likePendingFor === post.id}
+            style={{
+              borderRadius: "999px",
+              border: `1px solid ${hasLiked ? `${T.accent}66` : T.border}`,
+              backgroundColor: hasLiked ? T.accentSoft : T.chip,
+              color: hasLiked ? T.accent : T.muted,
+              padding: "0.28rem 0.62rem",
+              fontSize: "0.74rem",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.33rem",
+              cursor: !user || likePendingFor === post.id ? "not-allowed" : "pointer",
+              fontFamily: "'Satoshi', sans-serif",
+            }}
+          >
+            <Heart style={{ width: "12px", height: "12px", fill: hasLiked ? T.accent : "transparent" }} />
+            {likePendingFor === post.id ? "..." : post.likesCount}
+          </button>
+          <button
+            onClick={() =>
+              setOpenCommentFor((prev: any) => (prev === post.id ? null : post.id))
+            }
+            style={{
+              borderRadius: "999px",
+              border: `1px solid ${commentOpen ? `${T.accent}66` : T.border}`,
+              backgroundColor: commentOpen ? T.accentSoft : T.chip,
+              color: commentOpen ? T.accent : T.muted,
+              padding: "0.28rem 0.62rem",
+              fontSize: "0.74rem",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.33rem",
+              cursor: "pointer",
+              fontFamily: "'Satoshi', sans-serif",
+            }}
+          >
+            <MessageCircle style={{ width: "12px", height: "12px" }} />
+            {visibleCommentCount}
+          </button>
+        </div>
+        {post.likesCount < 2 && <span style={{ color: T.dim, fontSize: "0.7rem", fontFamily: "'Satoshi', sans-serif" }}>Be first to like</span>}
+      </div>
+
+      {(commentOpen || postComments.length > 0) && (
+        <div
+          style={{
+            marginTop: "0.66rem",
+            borderTop: `1px solid ${T.border}`,
+            paddingTop: "0.62rem",
+          }}
+        >
+          {postComments.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", marginBottom: "0.58rem" }}>
+              {postComments.map((comment: any) => (
+                <div
+                  key={comment.id}
+                  style={{
+                    border: `1px solid ${T.border}`,
+                    backgroundColor: T.chip,
+                    borderRadius: "10px",
+                    padding: "0.45rem 0.56rem",
+                  }}
+                >
+                  <p style={{ fontSize: "0.72rem", color: T.dim, fontFamily: "'Satoshi', sans-serif", marginBottom: "0.2rem" }}>
+                    @{comment.userHandle} - {timeAgo(comment.createdAt)}
+                  </p>
+                  <p style={{ fontSize: "0.82rem", color: T.text, lineHeight: 1.5, fontFamily: "'Satoshi', sans-serif" }}>{comment.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {commentOpen && (
+            <div>
+              <div className="community-comment-row">
+                <input
+                  value={commentDrafts[post.id] || ""}
+                  onChange={(event) =>
+                    setCommentDrafts((prev: any) => ({
+                      ...prev,
+                      [post.id]: event.target.value,
+                    }))
+                  }
+                  placeholder={user ? "Write a comment..." : "Sign in to comment"}
+                  disabled={!user || commentPendingFor === post.id}
+                  style={{
+                    width: "100%",
+                    borderRadius: "9px",
+                    border: `1px solid ${T.border}`,
+                    backgroundColor: T.input,
+                    color: T.text,
+                    padding: "0.44rem 0.66rem",
+                    fontSize: "0.78rem",
+                    outline: "none",
+                    fontFamily: "'Satoshi', sans-serif",
+                  }}
+                />
+                <button
+                  onClick={() => submitComment(post.id)}
+                  disabled={!user || commentPendingFor === post.id}
+                  style={{
+                    borderRadius: "9px",
+                    border: "none",
+                    backgroundColor: user ? T.accent : T.chip,
+                    color: user ? "#FFFFFF" : T.dim,
+                    cursor: user ? "pointer" : "not-allowed",
+                    fontFamily: "'Satoshi', sans-serif",
+                    fontSize: "0.74rem",
+                    fontWeight: 700,
+                    padding: "0.44rem 0.55rem",
+                  }}
+                >
+                  {commentPendingFor === post.id ? "..." : "Send"}
+                </button>
+              </div>
+              <p
+                style={{
+                  marginTop: "0.38rem",
+                  fontSize: "0.72rem",
+                  color: commentErrorByPost[post.id]
+                    ? T.danger
+                    : commentInfoByPost[post.id]
+                    ? T.accent
+                    : T.dim,
+                  fontFamily: "'Satoshi', sans-serif",
+                }}
+              >
+                {commentErrorByPost[post.id] ||
+                  commentInfoByPost[post.id] ||
+                  (commentsSetupNeeded
+                    ? "Comments currently save locally on this device."
+                    : commentsAuthNeeded
+                    ? "Sign in to view comments and reply."
+                    : "Reply and help move the discussion forward.")}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <MessageModal
+        isOpen={isMsgOpen}
+        onClose={() => setIsMsgOpen(false)}
+        receiverId={post.userId}
+        receiverName={post.userName}
+        contextTitle={post.content.substring(0, 30) + "..."}
+      />
+    </motion.article>
   );
 }
 

@@ -19,6 +19,7 @@ const NAV_LINKS = [
   { label: "Events",    href: "/events",     icon: Calendar  },
   { label: "Portfolio", href: "/portfolio",  icon: ImageIcon },
   { label: "Community", href: "/community",  icon: Users     },
+  { label: "Messages",  href: "/messages",   icon: Mail      },
   { label: "Pricing",   href: "/pricing",    icon: DollarSign},
   { label: "Profile",   href: "/profile",    icon: User      },
 ];
@@ -27,7 +28,7 @@ const BOTTOM_NAV = [
   { label: "Home",      href: "/dashboard",  icon: Home      },
   { label: "Courses",   href: "/courses",    icon: BookOpen  },
   { label: "Community", href: "/community",  icon: Users     },
-  { label: "Portfolio", href: "/portfolio",  icon: ImageIcon },
+  { label: "Messages",  href: "/messages",   icon: Mail      },
   { label: "Profile",   href: "/profile",    icon: User      },
 ];
 

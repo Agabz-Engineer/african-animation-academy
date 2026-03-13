@@ -11,10 +11,14 @@ import {
   Play, 
   Users as UsersIcon,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  MessageSquare,
+  Heart
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
+import FollowButton from "@/app/components/ui/FollowButton";
+import MessageModal from "@/app/components/ui/MessageModal";
 
 // ─── Types ─────────────────────────────────────────────────
 type PortfolioProject = {
@@ -29,6 +33,11 @@ type PortfolioProject = {
   media_url: string | null;
   tags: string[];
   created_at: string;
+  profiles?: {
+    followers_count: number;
+    total_platform_likes: number;
+    avatar_url: string | null;
+  };
 };
 
 // ─── Themes ───────────────────────────────────────────────
@@ -65,6 +74,7 @@ const CATEGORIES = ["All", "2D Animation", "3D Animation", "Character Design", "
 // ─── Components ──────────────────────────────────────────
 function ProjectCard({ project, theme, viewMode }: { project: PortfolioProject, theme: any, viewMode: "grid" | "list" }) {
   const isGrid = viewMode === "grid";
+  const [isMsgOpen, setIsMsgOpen] = useState(false);
   
   return (
     <motion.div
@@ -107,16 +117,29 @@ function ProjectCard({ project, theme, viewMode }: { project: PortfolioProject, 
       </div>
 
       {/* Content */}
-      <div style={{ padding: isGrid ? "1.2rem" : "0.5rem 0", flex: 1 }}>
-        <h3 style={{ 
-          fontFamily: "'Cabinet Grotesk', sans-serif", 
-          fontSize: "1.1rem", 
-          fontWeight: 700, 
-          margin: "0 0 0.4rem",
-          color: theme.text
-        }}>
-          {project.title}
-        </h3>
+      <div style={{ padding: isGrid ? "1.2rem" : "0.5rem 0", flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.4rem" }}>
+          <h3 style={{ 
+            fontFamily: "'Cabinet Grotesk', sans-serif", 
+            fontSize: "1.1rem", 
+            fontWeight: 700, 
+            margin: 0,
+            color: theme.text
+          }}>
+            {project.title}
+          </h3>
+          <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+             {/* Messaging action */}
+             <button 
+                onClick={(e) => { e.stopPropagation(); setIsMsgOpen(true); }}
+                style={{ background: theme.accentSoft, border: "none", color: theme.accent, padding: "0.4rem", borderRadius: "8px", cursor: "pointer" }}
+             >
+                <MessageSquare size={14} />
+             </button>
+             <FollowButton targetUserId={project.user_id} />
+          </div>
+        </div>
+
         <p style={{ 
           fontSize: "0.85rem", 
           color: theme.muted, 
@@ -129,11 +152,36 @@ function ProjectCard({ project, theme, viewMode }: { project: PortfolioProject, 
         }}>
           {project.description || "No description provided."}
         </p>
+
+        {/* Social Stats */}
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+           <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem", color: theme.dim }}>
+              <UsersIcon size={12} />
+              <span>{project.profiles?.followers_count || 0} followers</span>
+           </div>
+           <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.75rem", color: theme.dim }}>
+              <Heart size={12} />
+              <span>{project.profiles?.total_platform_likes || 0} platform likes</span>
+           </div>
+        </div>
         
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <div style={{ width: "24px", height: "24px", borderRadius: "50%", backgroundColor: theme.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", color: "#fff", fontWeight: 700 }}>
-              {project.user_name.charAt(0)}
+            <div style={{ 
+              width: "24px", 
+              height: "24px", 
+              borderRadius: "50%", 
+              backgroundColor: theme.accent, 
+              backgroundImage: project.profiles?.avatar_url ? `url(${project.profiles.avatar_url})` : "none",
+              backgroundSize: "cover",
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center", 
+              fontSize: "0.65rem", 
+              color: "#fff", 
+              fontWeight: 700 
+            }}>
+              {!project.profiles?.avatar_url && project.user_name.charAt(0)}
             </div>
             <span style={{ fontSize: "0.78rem", color: theme.dim, fontFamily: "'Satoshi', sans-serif" }}>@{project.user_handle}</span>
           </div>
@@ -142,6 +190,14 @@ function ProjectCard({ project, theme, viewMode }: { project: PortfolioProject, 
           </button>
         </div>
       </div>
+
+      <MessageModal
+        isOpen={isMsgOpen}
+        onClose={() => setIsMsgOpen(false)}
+        receiverId={project.user_id}
+        receiverName={project.user_name}
+        contextTitle={project.title}
+      />
     </motion.div>
   );
 }
@@ -166,11 +222,11 @@ export default function ExplorePortfoliosPage() {
       
       const { data, error } = await supabase
         .from("portfolio_projects")
-        .select("*")
+        .select("*, profiles!portfolio_projects_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
         .order("created_at", { ascending: false });
         
       if (!error && data) {
-        setProjects(data);
+        setProjects(data as any);
       }
       setLoading(false);
     }
