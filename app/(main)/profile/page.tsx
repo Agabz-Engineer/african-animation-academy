@@ -13,58 +13,119 @@ import {
   Plus,
   MoreHorizontal,
   CreditCard,
-  Clock
+  Clock,
+  Heart,
+  MessageCircle,
+  GraduationCap,
+  History,
+  Play,
+  Share2,
+  Trash2,
+  Settings
 } from "lucide-react";
 import DashboardLayout from "@/app/components/ui/DashboardLayout";
 import { useThemeMode } from "@/lib/useThemeMode";
+import { supabase } from "@/lib/supabase";
 
-const TABS = ["Overview", "Compensation", "Emergency", "Time Off", "Performance", "Files", "Onboarding"];
-
-const PROFILE_DATA = {
-  name: "Nicholas Swatz",
-  id: "#ERD246534",
-  about: {
-    phone: "(629) 555-0123",
-    email: "nicholasswatz@gmail.com"
-  },
-  address: {
-    line: "390 Market Street, Suite 200",
-    cityState: "San Francisco CA",
-    postcode: "94102"
-  },
-  details: {
-    dob: "Sep 26, 1988",
-    nationalId: "GER10654",
-    title: "Project Manager",
-    hireDate: "Jan 05, 2023"
-  }
+// ─── Types ─────────────────────────────────────────────────
+type Experience = {
+  company: string;
+  role: string;
+  period: string;
+  description: string;
 };
 
-const JOB_INFO = [
-  { dept: "Creative Associate", division: "Project Management", manager: "Alex Foster", date: "May 13, 2024", location: "Metro DC" },
-  { dept: "Marketing Team", division: "Leadership", manager: "Jack Danniel", date: "Sep 05, 2024", location: "Bergen, NJ" },
-  { dept: "Team Lead", division: "Creator", manager: "Alina Skazka", date: "Jun 08, 2023", location: "Miami, FL" },
-  { dept: "Finance & Accounting", division: "Senior Consultant", manager: "John Miller", date: "Sep 13, 2022", location: "Chicago, IL" },
-  { dept: "Team Lead", division: "Creator", manager: "Mark Baldwin", date: "Jul 07, 2023", location: "Miami, FL" },
-];
+type Education = {
+  school: string;
+  degree: string;
+  year: string;
+};
 
-const ACTIVITIES = [
-  { name: "John Miller", action: "last login on", date: "Jul 13, 2024", time: "05:36 PM" },
-  { name: "Merva Sahin", action: "date created on", date: "Sep 08, 2024", time: "03:12 PM" },
-  { name: "Tammy Collier", action: "updated on", date: "Aug 15, 2023", time: "05:36 PM" },
-];
+type Profile = {
+  id: string;
+  full_name: string;
+  user_name: string;
+  avatar_url: string | null;
+  skill_level: string;
+  total_platform_likes: number;
+  education: Education[];
+  experience: Experience[];
+  status: string;
+  role: string;
+};
 
-const COMPENSATION = [
-  { amount: "862.00 USD", period: "per month", effective: "May 10, 2015" },
-  { amount: "1560.00 USD", period: "per quater", effective: "Jun 08, 2022" },
-  { amount: "378.00 USD", period: "per week", effective: "Jun 08, 2022" },
-];
+type Project = {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  thumbnail_url: string | null;
+  likes_count: number;
+  created_at: string;
+  has_liked?: boolean;
+};
+
+const TABS = ["Overview", "Portfolio", "Compensation", "Security"];
+
+const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️"];
 
 export default function ProfilePage() {
-  const theme = useThemeMode();
   const [activeTab, setActiveTab] = useState("Overview");
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLiking, setIsLiking] = useState<string | null>(null);
 
-  // Palette: Cream #FAF3E1, Sand #F5E7C6, Orange #FF6D1F, Dark #222222
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!supabase) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 1. Fetch Profile
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      
+      if (prof) setProfile(prof);
+
+      // 2. Fetch Portfolio Projects
+      const { data: projs } = await supabase
+        .from("portfolio_projects")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      
+      if (projs) setProjects(projs);
+      setLoading(false);
+    }
+    fetchProfile();
+  }, []);
+
+  const handleLike = async (projectId: string) => {
+    if (!supabase || !profile || isLiking) return;
+    setIsLiking(projectId);
+    
+    // Optimistic toggle
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    
+    // Simplified for now - we'd normally check if already liked
+    const { error } = await supabase
+      .from("portfolio_likes")
+      .insert({ project_id: projectId, user_id: profile.id });
+
+    if (!error) {
+      setProjects(prev => prev.map(p => 
+        p.id === projectId ? { ...p, likes_count: p.likes_count + 1 } : p
+      ));
+    }
+    setIsLiking(null);
+  };
+
+  const theme = useThemeMode();
   const isDark = theme === "dark";
   const C = {
     bg: isDark ? "#222222" : "#FAF3E1",
@@ -74,30 +135,54 @@ export default function ProfilePage() {
     muted: isDark ? "#D2C9B8" : "#555555",
     accent: "#FF6D1F",
     accentSoft: "rgba(255, 109, 31, 0.1)",
+    shadow: isDark ? "0 4px 24px rgba(0,0,0,0.4)" : "0 4px 20px rgba(0,0,0,0.05)",
   };
+
+  if (loading) return <DashboardLayout><div style={{ padding: "4rem", textAlign: "center", color: C.text }}>Loading Profile...</div></DashboardLayout>;
 
   return (
     <DashboardLayout>
       <div style={{ padding: "1.5rem", color: C.text, fontFamily: "'General Sans', sans-serif" }}>
         
         {/* Header Section */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, fontFamily: "'Clash Display', sans-serif" }}>Profile</h1>
-          <button style={{ 
-            background: isDark ? C.text : C.accent, 
-            color: isDark ? C.bg : "#fff",
-            border: "none",
-            padding: "0.6rem 1.2rem",
-            borderRadius: "8px",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            cursor: "pointer"
-          }}>
-            <Plus size={18} />
-            Add employee
-          </button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem" }}>
+          <div>
+            <div style={{ fontSize: "0.85rem", color: C.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>Creator Dashboard</div>
+            <h1 style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "'Clash Display', sans-serif", letterSpacing: "-0.03em" }}>My Profile</h1>
+          </div>
+          <div style={{ display: "flex", gap: "1rem" }}>
+            <button style={{ 
+              background: C.bg, 
+              color: C.text,
+              border: `1px solid ${C.border}`,
+              padding: "0.75rem 1.5rem",
+              borderRadius: "14px",
+              fontWeight: 700,
+              fontSize: "0.9rem",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem"
+            }}>
+              <Share2 size={18} /> Public View
+            </button>
+            <button style={{ 
+              background: C.accent, 
+              color: "#fff",
+              border: "none",
+              padding: "0.75rem 1.5rem",
+              borderRadius: "14px",
+              fontWeight: 700,
+              fontSize: "0.9rem",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              boxShadow: `0 8px 20px ${C.accent}33`
+            }}>
+              <Settings size={18} /> Settings
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -139,152 +224,196 @@ export default function ProfilePage() {
               animate={{ opacity: 1, y: 0 }}
               style={{ 
                 background: C.cardBg, 
-                borderRadius: "16px", 
+                borderRadius: "24px", 
                 padding: "2rem",
                 border: `1px solid ${C.border}`,
-                boxShadow: "0 4px 20px rgba(0,0,0,0.05)"
+                boxShadow: C.shadow
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-                <div style={{ width: "80px", height: "80px", borderRadius: "20px", background: "linear-gradient(135deg, #FF6D1F, #E04D00)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                  <User size={40} color="#fff" />
+                <div style={{ width: "80px", height: "80px", borderRadius: "24px", background: "linear-gradient(135deg, #FF6D1F, #E04D00)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <User size={40} color="#fff" />
+                  )}
+                  <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: "50%", background: C.accent, border: `3px solid ${C.cardBg}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>⚡</div>
                 </div>
                 <button style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><MoreHorizontal /></button>
               </div>
-              <h2 style={{ fontSize: "1.4rem", fontWeight: 700, marginBottom: "0.25rem" }}>{PROFILE_DATA.name}</h2>
-              <div style={{ fontSize: "0.85rem", color: C.muted, marginBottom: "1.5rem" }}>{PROFILE_DATA.id}</div>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>{profile?.full_name || "Creative Member"}</h2>
+              <div style={{ fontSize: "0.85rem", color: C.muted, marginBottom: "1.5rem", fontWeight: 600 }}>@{profile?.user_name || "anonymous"}</div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 <section>
-                  <h3 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em", color: C.muted, marginBottom: "0.75rem", fontWeight: 700 }}>About</h3>
+                  <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: C.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Contact Info</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.9rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Phone size={14} color={C.muted} /> {PROFILE_DATA.about.phone}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Mail size={14} color={C.muted} /> {PROFILE_DATA.about.email}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Mail size={14} color={C.accent} /> {profile?.id.substring(0, 12)}...</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><MapPin size={14} color={C.accent} /> Based in Africa</div>
                   </div>
                 </section>
 
                 <section>
-                  <h3 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em", color: C.muted, marginBottom: "0.75rem", fontWeight: 700 }}>Address</h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.9rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><MapPin size={14} color={C.muted} /> {PROFILE_DATA.address.line}</div>
-                    <div style={{ paddingLeft: "1.6rem" }}>{PROFILE_DATA.address.cityState}</div>
-                    <div style={{ paddingLeft: "1.6rem" }}>Postcode: {PROFILE_DATA.address.postcode}</div>
+                  <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: C.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Skill Level</h3>
+                  <div style={{ padding: "0.75rem", borderRadius: "12px", background: C.bg, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <div style={{ fontSize: "1.2rem" }}>🎨</div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>{profile?.skill_level || "Apprentice"}</div>
+                      <div style={{ fontSize: "0.7rem", color: C.muted }}>Artist Level</div>
+                    </div>
                   </div>
                 </section>
 
-                <section>
-                  <h3 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em", color: C.muted, marginBottom: "0.75rem", fontWeight: 700 }}>Employee details</h3>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.9rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Calendar size={14} color={C.muted} /> Date of birth: {PROFILE_DATA.details.dob}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><IdCard size={14} color={C.muted} /> National ID: {PROFILE_DATA.details.nationalId}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Briefcase size={14} color={C.muted} /> Title: {PROFILE_DATA.details.title}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Calendar size={14} color={C.muted} /> Hire date: {PROFILE_DATA.details.hireDate}</div>
-                  </div>
-                </section>
+                <div style={{ paddingTop: "1rem", display: "flex", gap: "0.75rem" }}>
+                  <button style={{ flex: 1, padding: "0.8rem", borderRadius: "12px", background: C.accent, color: "#fff", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", boxShadow: `0 4px 15px ${C.accent}44` }}>Edit Profile</button>
+                  <button style={{ padding: "0.8rem", borderRadius: "12px", background: C.bg, border: `1px solid ${C.border}`, color: C.text, cursor: "pointer" }}><Share2 size={18} /></button>
+                </div>
               </div>
             </motion.div>
           </div>
 
-          {/* Right Column: Dynamic Stats & Activity */}
+          {/* Right Column: Dynamic Content based on Tabs */}
           <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
             
-            {/* Job Information Table */}
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              style={{ 
-                background: C.cardBg, 
-                borderRadius: "16px", 
-                padding: "1.5rem",
-                border: `1px solid ${C.border}`
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-                <h3 style={{ fontWeight: 700, fontSize: "1.1rem" }}>Job information</h3>
-                <button style={{ color: C.accent, background: "none", border: "none", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>+ Add Info</button>
-              </div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
-                  <thead>
-                    <tr style={{ color: C.muted, textAlign: "left", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                      <th style={{ padding: "0.75rem 0", fontWeight: 700 }}>Department</th>
-                      <th style={{ padding: "0.75rem 0", fontWeight: 700 }}>Division</th>
-                      <th style={{ padding: "0.75rem 0", fontWeight: 700 }}>Manager</th>
-                      <th style={{ padding: "0.75rem 0", fontWeight: 700 }}>Hire Date</th>
-                      <th style={{ padding: "0.75rem 0", fontWeight: 700 }}>Location</th>
-                      <th style={{ width: "30px" }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {JOB_INFO.map((job, idx) => (
-                      <tr key={idx} style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)"}` }}>
-                        <td style={{ padding: "1rem 0", fontWeight: 600 }}>{job.dept}</td>
-                        <td style={{ padding: "1rem 0", color: C.muted }}>{job.division}</td>
-                        <td style={{ padding: "1rem 0" }}>{job.manager}</td>
-                        <td style={{ padding: "1rem 0" }}>{job.date}</td>
-                        <td style={{ padding: "1rem 0" }}>{job.location}</td>
-                        <td style={{ textAlign: "right" }}><MoreHorizontal size={14} color={C.muted} cursor="pointer" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }} className="stats-grid">
-              
-              {/* Activity Section */}
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                style={{ background: C.cardBg, borderRadius: "16px", padding: "1.5rem", border: `1px solid ${C.border}` }}
-              >
-                <h3 style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "1.5rem" }}>Activity</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                  {ACTIVITIES.map((act, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                      <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: C.accentSoft, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Clock size={16} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "0.85rem" }}>
-                          <span style={{ fontWeight: 600 }}>{act.name}</span> <span style={{ color: C.muted }}>{act.action}</span> <span style={{ fontWeight: 600 }}>{act.date}</span>
+            <AnimatePresence mode="wait">
+              {activeTab === "Overview" && (
+                <motion.div
+                  key="overview"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
+                >
+                  {/* Experience Section */}
+                  <div style={{ background: C.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${C.border}`, boxShadow: C.shadow }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <div style={{ padding: "0.5rem", borderRadius: "12px", background: C.accentSoft, color: C.accent }}>
+                          <History size={20} />
                         </div>
-                        <div style={{ fontSize: "0.7rem", color: C.muted, marginTop: "2px" }}>{act.time}</div>
+                        <h3 style={{ fontWeight: 700, fontSize: "1.2rem" }}>Employment History</h3>
+                      </div>
+                      <button style={{ color: C.accent, background: "none", border: "none", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>+ Add</button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                      {profile?.experience?.length ? profile.experience.map((exp, idx) => (
+                        <div key={idx} style={{ display: "flex", gap: "1.5rem", position: "relative" }}>
+                          <div style={{ width: "2px", background: C.border, margin: "0.5rem 0", position: "relative" }}>
+                            <div style={{ position: "absolute", top: 0, left: "-4px", width: "10px", height: "10px", borderRadius: "50%", background: C.accent }} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                              <h4 style={{ fontWeight: 700, fontSize: "1rem" }}>{exp.role}</h4>
+                              <span style={{ fontSize: "0.8rem", color: C.muted }}>{exp.period}</span>
+                            </div>
+                            <div style={{ fontSize: "0.9rem", color: C.accent, fontWeight: 600, marginBottom: "0.5rem" }}>{exp.company}</div>
+                            <p style={{ fontSize: "0.85rem", color: C.muted, lineHeight: 1.6 }}>{exp.description}</p>
+                          </div>
+                        </div>
+                      )) : (
+                        <p style={{ fontSize: "0.9rem", color: C.muted }}>No experience listed yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Awards & Education Grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+                    {/* Education */}
+                    <div style={{ background: C.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${C.border}`, boxShadow: C.shadow }}>
+                      <h3 style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <GraduationCap size={18} color={C.accent} /> Education
+                      </h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                        {profile?.education?.length ? profile.education.map((edu, idx) => (
+                          <div key={idx}>
+                            <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{edu.degree}</div>
+                            <div style={{ fontSize: "0.85rem", color: C.muted }}>{edu.school} • {edu.year}</div>
+                          </div>
+                        )) : (
+                          <p style={{ fontSize: "0.85rem", color: C.muted }}>Degrees and certifications will appear here.</p>
+                        )}
                       </div>
                     </div>
-                  ))}
-                  <button style={{ color: C.accent, background: "none", border: "none", alignSelf: "flex-start", fontSize: "0.85rem", fontWeight: 600, marginTop: "0.5rem", cursor: "pointer" }}>View all</button>
-                </div>
-              </motion.div>
 
-              {/* Compensation Section */}
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                style={{ background: C.cardBg, borderRadius: "16px", padding: "1.5rem", border: `1px solid ${C.border}` }}
-              >
-                <h3 style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "1.5rem" }}>Compensation</h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                  {COMPENSATION.map((comp, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-                      <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: C.accentSoft, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <CreditCard size={16} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{comp.amount} <span style={{ color: C.muted, fontWeight: 500 }}>{comp.period}</span></div>
-                        <div style={{ fontSize: "0.7rem", color: C.muted, marginTop: "2px" }}>Effective date on {comp.effective}</div>
+                    {/* Stats/Metrics */}
+                    <div style={{ background: C.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${C.border}`, boxShadow: C.shadow }}>
+                      <h3 style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "1.5rem" }}>Quick Stats</h3>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                        <div style={{ padding: "1rem", borderRadius: "16px", background: C.bg, border: `1px solid ${C.border}` }}>
+                          <div style={{ fontSize: "1.5rem", fontWeight: 800, color: C.accent }}>{projects.length}</div>
+                          <div style={{ fontSize: "0.7rem", color: C.muted, textTransform: "uppercase", fontWeight: 600 }}>Projects</div>
+                        </div>
+                        <div style={{ padding: "1rem", borderRadius: "16px", background: C.bg, border: `1px solid ${C.border}` }}>
+                          <div style={{ fontSize: "1.5rem", fontWeight: 800, color: C.accent }}>{profile?.total_platform_likes || 0}</div>
+                          <div style={{ fontSize: "0.7rem", color: C.muted, textTransform: "uppercase", fontWeight: 600 }}>Likes</div>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                  <button style={{ color: C.accent, background: "none", border: "none", alignSelf: "flex-start", fontSize: "0.85rem", fontWeight: 600, marginTop: "0.5rem", cursor: "pointer" }}>View all</button>
-                </div>
-              </motion.div>
+                  </div>
+                </motion.div>
+              )}
 
-            </div>
+              {activeTab === "Portfolio" && (
+                <motion.div
+                  key="portfolio"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                >
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
+                    {projects.map(project => (
+                      <motion.div 
+                        key={project.id}
+                        whileHover={{ y: -5 }}
+                        style={{ background: C.cardBg, borderRadius: "20px", overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: C.shadow }}
+                      >
+                        <div style={{ height: "160px", background: "#111", position: "relative", overflow: "hidden" }}>
+                          {project.thumbnail_url ? (
+                            <img src={project.thumbnail_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: C.accentSoft }}>
+                              <Play size={40} />
+                            </div>
+                          )}
+                          <div style={{ position: "absolute", top: "1rem", right: "1rem", padding: "0.4rem 0.8rem", borderRadius: "99px", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", fontSize: "0.7rem", fontWeight: 600, color: "#fff" }}>
+                            {project.category}
+                          </div>
+                        </div>
+                        <div style={{ padding: "1.25rem" }}>
+                          <h4 style={{ fontWeight: 700, fontSize: "1.05rem", marginBottom: "0.5rem" }}>{project.title}</h4>
+                          <p style={{ fontSize: "0.85rem", color: C.muted, marginBottom: "1rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{project.description}</p>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ display: "flex", gap: "1rem" }}>
+                              <button 
+                                onClick={() => handleLike(project.id)}
+                                style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: "0.25rem", color: project.has_liked ? C.accent : C.muted, cursor: "pointer", transition: "transform 0.2s" }}
+                                onMouseDown={e => (e.currentTarget.style.transform = "scale(0.9)")}
+                                onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
+                              >
+                                <Heart size={16} fill={project.has_liked ? C.accent : "none"} />
+                                <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{project.likes_count}</span>
+                              </button>
+                              <div style={{ fontSize: "0.85rem", color: C.muted, display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                <MessageCircle size={16} />
+                                <span>0</span>
+                              </div>
+                            </div>
+                            <button style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><Share2 size={16} /></button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                    <motion.div 
+                      whileHover={{ scale: 0.98 }}
+                      style={{ border: `2px dashed ${C.border}`, borderRadius: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem", minHeight: "280px", cursor: "pointer", color: C.muted }}
+                    >
+                      <div style={{ padding: "1rem", borderRadius: "50%", background: C.accentSoft, color: C.accent }}><Plus size={24} /></div>
+                      <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Add New Work</span>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
         </div>
