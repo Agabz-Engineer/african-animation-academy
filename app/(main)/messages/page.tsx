@@ -173,26 +173,25 @@ export default function MessagesPage() {
     try {
       const { data: msgs, error } = await supabase
         .from("direct_messages")
-        .select(`
-          *,
-          sender:profiles!direct_messages_sender_id_fkey(full_name, user_name, avatar_url),
-          receiver:profiles!direct_messages_receiver_id_fkey(full_name, user_name, avatar_url)
-        `)
+        .select("*")
         .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       
       const convosMap = new Map<string, Conversation>();
+      const otherUserIds = new Set<string>();
+
       msgs?.forEach((m: any) => {
-        const otherUser = m.sender_id === userId ? m.receiver : m.sender;
         const otherId = m.sender_id === userId ? m.receiver_id : m.sender_id;
+        otherUserIds.add(otherId);
+        
         if (!convosMap.has(otherId)) {
           convosMap.set(otherId, {
             other_user_id: otherId,
-            other_user_name: otherUser?.full_name || "Unknown",
-            other_user_handle: otherUser?.user_name || "unknown",
-            other_user_avatar: otherUser?.avatar_url,
+            other_user_name: "User",
+            other_user_handle: "animator",
+            other_user_avatar: null,
             last_message: m.content,
             last_message_at: m.created_at,
             unread_count: m.receiver_id === userId && !m.is_read ? 1 : 0
@@ -202,6 +201,25 @@ export default function MessagesPage() {
           c.unread_count++;
         }
       });
+
+      if (otherUserIds.size > 0) {
+        const { data: profiles, error: profileErr } = await supabase
+          .from("profiles")
+          .select("id, full_name, user_name, avatar_url")
+          .in("id", Array.from(otherUserIds));
+          
+        if (!profileErr && profiles) {
+          profiles.forEach(p => {
+             const convo = convosMap.get(p.id);
+             if (convo) {
+               convo.other_user_name = p.full_name || "Creative";
+               convo.other_user_handle = p.user_name || "creative";
+               convo.other_user_avatar = p.avatar_url;
+             }
+          });
+        }
+      }
+
       setConversations(Array.from(convosMap.values()));
     } catch (err) {
       console.error("Error fetching conversations:", err);
