@@ -880,6 +880,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-grid-4  { grid-template-columns: 1fr 1fr !important; }
           .dash-momentum-grid { grid-template-columns: 1fr !important; }
           .dash-padding { padding: 1.25rem !important; }
+          .app-footer-shell { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+          .app-footer-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
         }
         @media (min-width: 1024px) {
           .dash-grid-4    { grid-template-columns: repeat(4,1fr); }
