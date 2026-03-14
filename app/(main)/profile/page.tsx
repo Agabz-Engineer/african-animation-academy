@@ -25,7 +25,11 @@ import {
   X,
   Camera,
   Loader2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Globe,
+  Twitter,
+  Instagram,
+  Linkedin
 } from "lucide-react";
 import DashboardLayout from "@/app/components/ui/DashboardLayout";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -50,12 +54,19 @@ type Profile = {
   full_name: string;
   user_name: string;
   avatar_url: string | null;
+  cover_url: string | null;
+  bio: string | null;
+  location: string | null;
   skill_level: string;
   total_platform_likes: number;
   education: Education[];
   experience: Experience[];
   status: string;
   role: string;
+  website_url?: string | null;
+  twitter_url?: string | null;
+  instagram_url?: string | null;
+  linkedin_url?: string | null;
 };
 
 type Project = {
@@ -79,6 +90,20 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLiking, setIsLiking] = useState<string | null>(null);
+  const [stats, setStats] = useState({ followers: 0, following: 0 });
+
+  // Edit Profile States
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<Partial<Profile>>({});
+  const [saving, setSaving] = useState(false);
+
+  // Experience/Education Edit States
+  const [isEditingExp, setIsEditingExp] = useState(false);
+  const [isEditingEdu, setIsEditingEdu] = useState(false);
+  const [selectedExp, setSelectedExp] = useState<Experience | null>(null);
+  const [selectedEdu, setSelectedEdu] = useState<Education | null>(null);
+  const [expIndex, setExpIndex] = useState<number | null>(null);
+  const [eduIndex, setEduIndex] = useState<number | null>(null);
 
   // New Project State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -207,7 +232,10 @@ export default function ProfilePage() {
         .eq("id", user.id)
         .single();
       
-      if (prof) setProfile(prof);
+      if (prof) {
+        setProfile(prof);
+        setEditData(prof);
+      }
 
       // 2. Fetch Portfolio Projects
       const { data: projs } = await supabase
@@ -217,10 +245,130 @@ export default function ProfilePage() {
         .order("created_at", { ascending: false });
       
       if (projs) setProjects(projs);
+
+      // 3. Fetch Social Stats
+      const { count: followers } = await supabase
+        .from("user_follows")
+        .select("*", { count: 'exact', head: true })
+        .eq("following_id", user.id);
+      
+      const { count: following } = await supabase
+        .from("user_follows")
+        .select("*", { count: 'exact', head: true })
+        .eq("follower_id", user.id);
+
+      setStats({ followers: followers || 0, following: following || 0 });
       setLoading(false);
     }
     fetchProfile();
   }, []);
+
+  const handleUpdateProfile = async () => {
+    if (!profile || !supabase || saving) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editData.full_name,
+          user_name: editData.user_name,
+          bio: editData.bio,
+          location: editData.location,
+          website_url: editData.website_url,
+          twitter_url: editData.twitter_url,
+          instagram_url: editData.instagram_url,
+          linkedin_url: editData.linkedin_url,
+        })
+        .eq("id", profile.id);
+
+      if (error) throw error;
+      setProfile(prev => prev ? { ...prev, ...editData } : null);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Update profile error:", err);
+      alert("Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateExperience = async (newExp: Experience[]) => {
+    if (!profile || !supabase) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ experience: newExp })
+      .eq("id", profile.id);
+    
+    if (!error) setProfile(prev => prev ? { ...prev, experience: newExp } : null);
+  };
+
+  const handleUpdateEducation = async (newEdu: Education[]) => {
+    if (!profile || !supabase) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ education: newEdu })
+      .eq("id", profile.id);
+    
+    if (!error) setProfile(prev => prev ? { ...prev, education: newEdu } : null);
+  };
+
+  const handleSaveExperience = async () => {
+    if (!profile || !selectedExp) return;
+    let newExperience = [...(profile.experience || [])];
+    if (expIndex !== null) {
+      newExperience[expIndex] = selectedExp;
+    } else {
+      newExperience.unshift(selectedExp);
+    }
+    await handleUpdateExperience(newExperience);
+    setIsEditingExp(false);
+    setSelectedExp(null);
+    setExpIndex(null);
+  };
+
+  const handleDeleteExperience = async (index: number) => {
+    if (!profile) return;
+    const newExperience = profile.experience.filter((_, i) => i !== index);
+    await handleUpdateExperience(newExperience);
+  };
+
+  const handleSaveEducation = async () => {
+    if (!profile || !selectedEdu) return;
+    let newEducation = [...(profile.education || [])];
+    if (eduIndex !== null) {
+      newEducation[eduIndex] = selectedEdu;
+    } else {
+      newEducation.unshift(selectedEdu);
+    }
+    await handleUpdateEducation(newEducation);
+    setIsEditingEdu(false);
+    setSelectedEdu(null);
+    setEduIndex(null);
+  };
+
+  const handleDeleteEducation = async (index: number) => {
+    if (!profile) return;
+    const newEducation = profile.education.filter((_, i) => i !== index);
+    await handleUpdateEducation(newEducation);
+  };
+
+  const handleCoverUpload = async (file: File) => {
+    if (!profile || !supabase) return;
+    try {
+      const blob = await compressImage(file);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}-cover.${fileExt}`;
+      const filePath = `covers/${fileName}`;
+
+      await supabase.storage.from('portfolio-attachments').upload(filePath, blob, { upsert: true });
+      const { data: { publicUrl } } = supabase.storage.from('portfolio-attachments').getPublicUrl(filePath);
+
+      const { error } = await supabase.from("profiles").update({ cover_url: publicUrl }).eq("id", profile.id);
+      if (!error) setProfile(prev => prev ? { ...prev, cover_url: publicUrl } : null);
+    } catch (err) {
+      console.error("Cover upload error:", err);
+    }
+  };
 
   const handleLike = async (projectId: string) => {
     if (!supabase || !profile || isLiking) return;
@@ -245,7 +393,7 @@ export default function ProfilePage() {
 
   const theme = useThemeMode();
   const isDark = theme === "dark";
-  const C = {
+  const T = {
     bg: isDark ? "#222222" : "#FAF3E1",
     cardBg: isDark ? "#2C2C2C" : "#FFFFFF",
     border: isDark ? "#444444" : "#E7DBBD",
@@ -256,24 +404,89 @@ export default function ProfilePage() {
     shadow: isDark ? "0 4px 24px rgba(0,0,0,0.4)" : "0 4px 20px rgba(0,0,0,0.05)",
   };
 
-  if (loading) return <DashboardLayout><div style={{ padding: "4rem", textAlign: "center", color: C.text }}>Loading Profile...</div></DashboardLayout>;
+  if (loading) return <DashboardLayout><div style={{ padding: "4rem", textAlign: "center", color: T.text }}>Loading Profile...</div></DashboardLayout>;
 
   return (
     <>
       <DashboardLayout>
-        <div style={{ padding: "1.5rem", color: C.text, fontFamily: "'General Sans', sans-serif" }}>
+        <div style={{ padding: "1.5rem", color: T.text, fontFamily: "'General Sans', sans-serif" }}>
           
+          {/* Cover Photo Area */}
+          <div style={{ position: "relative", marginBottom: "3rem" }}>
+            <div style={{ 
+              height: "220px", 
+              borderRadius: "32px", 
+              background: profile?.cover_url ? `url(${profile.cover_url}) center/cover` : "linear-gradient(45deg, #FF6D1F, #FFAC71)",
+              boxShadow: T.shadow,
+              overflow: "hidden",
+              position: "relative",
+              border: `1px solid ${T.border}`
+            }}>
+              {!profile?.cover_url && (
+                <div style={{ position: "absolute", inset: 0, opacity: 0.1, backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+              )}
+              
+              <label 
+                htmlFor="cover-upload"
+                style={{ 
+                  position: "absolute", 
+                  bottom: "1.5rem", 
+                  right: "1.5rem", 
+                  background: "rgba(0,0,0,0.5)", 
+                  backdropFilter: "blur(10px)",
+                  color: "#fff",
+                  padding: "0.6rem 1.25rem",
+                  borderRadius: "12px",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  border: "1px solid rgba(255,255,255,0.2)"
+                }}
+              >
+                <Camera size={16} /> Change Cover
+                <input type="file" id="cover-upload" accept="image/*" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && handleCoverUpload(e.target.files[0])} />
+              </label>
+            </div>
+            
+            {/* Presence Stats Overlay */}
+            <div style={{ 
+              position: "absolute", 
+              bottom: "-1.5rem", 
+              left: "2rem", 
+              display: "flex", 
+              gap: "1rem", 
+              background: T.cardBg, 
+              padding: "0.75rem 1.5rem", 
+              borderRadius: "18px", 
+              boxShadow: T.shadow,
+              border: `1px solid ${T.border}`
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ fontWeight: 800, color: T.accent }}>{stats.followers}</span>
+                <span style={{ fontSize: "0.75rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Followers</span>
+              </div>
+              <div style={{ width: "1px", height: "14px", background: T.border, alignSelf: "center" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ fontWeight: 800, color: T.text }}>{stats.following}</span>
+                <span style={{ fontSize: "0.75rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Following</span>
+              </div>
+            </div>
+          </div>
+
           {/* Header Section */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem" }}>
             <div>
-              <div style={{ fontSize: "0.85rem", color: C.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>Creator Dashboard</div>
+              <div style={{ fontSize: "0.85rem", color: T.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>Creator Dashboard</div>
               <h1 style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "'Clash Display', sans-serif", letterSpacing: "-0.03em" }}>My Profile</h1>
             </div>
             <div style={{ display: "flex", gap: "1rem" }}>
               <button style={{ 
-                background: C.bg, 
-                color: C.text,
-                border: `1px solid ${C.border}`,
+                background: T.bg, 
+                color: T.text,
+                border: `1px solid ${T.border}`,
                 padding: "0.75rem 1.5rem",
                 borderRadius: "14px",
                 fontWeight: 700,
@@ -286,7 +499,7 @@ export default function ProfilePage() {
                 <Share2 size={18} /> Public View
               </button>
               <button style={{ 
-                background: C.accent, 
+                background: T.accent, 
                 color: "#fff",
                 border: "none",
                 padding: "0.75rem 1.5rem",
@@ -297,7 +510,7 @@ export default function ProfilePage() {
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
-                boxShadow: `0 8px 20px ${C.accent}33`
+                boxShadow: `0 8px 20px ${T.accent}33`
               }}>
                 <Settings size={18} /> Settings
               </button>
@@ -305,7 +518,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Tabs */}
-          <div style={{ display: "flex", gap: "2rem", borderBottom: `1px solid ${C.border}`, marginBottom: "2rem", overflowX: "auto", whiteSpace: "nowrap", paddingBottom: "2px" }}>
+          <div style={{ display: "flex", gap: "2rem", borderBottom: `1px solid ${T.border}`, marginBottom: "2rem", overflowX: "auto", whiteSpace: "nowrap", paddingBottom: "2px" }}>
             {TABS.map(tab => (
               <button
                 key={tab}
@@ -314,7 +527,7 @@ export default function ProfilePage() {
                   background: "none",
                   border: "none",
                   padding: "0.75rem 0",
-                  color: activeTab === tab ? C.text : C.muted,
+                  color: activeTab === tab ? T.text : T.muted,
                   fontWeight: activeTab === tab ? 600 : 500,
                   fontSize: "0.9rem",
                   cursor: "pointer",
@@ -326,7 +539,7 @@ export default function ProfilePage() {
                 {activeTab === tab && (
                   <motion.div 
                     layoutId="activeTab"
-                    style={{ position: "absolute", bottom: -1, left: 0, right: 0, height: "2px", background: C.accent }} 
+                    style={{ position: "absolute", bottom: -1, left: 0, right: 0, height: "2px", background: T.accent }} 
                   />
                 )}
               </button>
@@ -342,11 +555,11 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 style={{ 
-                  background: C.cardBg, 
+                  background: T.cardBg, 
                   borderRadius: "24px", 
                   padding: "2rem",
-                  border: `1px solid ${C.border}`,
-                  boxShadow: C.shadow
+                  border: `1px solid ${T.border}`,
+                  boxShadow: T.shadow
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
@@ -356,36 +569,65 @@ export default function ProfilePage() {
                     ) : (
                       <User size={40} color="#fff" />
                     )}
-                    <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: "50%", background: C.accent, border: `3px solid ${C.cardBg}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>⚡</div>
+                    <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: "50%", background: T.accent, border: `3px solid ${T.cardBg}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>⚡</div>
                   </div>
-                  <button style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><MoreHorizontal /></button>
+                  <button style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}><MoreHorizontal /></button>
                 </div>
                 <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>{profile?.full_name || "Creative Member"}</h2>
-                <div style={{ fontSize: "0.85rem", color: C.muted, marginBottom: "1.5rem", fontWeight: 600 }}>@{profile?.user_name || "anonymous"}</div>
+                <div style={{ fontSize: "0.85rem", color: T.muted, marginBottom: "1rem", fontWeight: 600 }}>@{profile?.user_name || "anonymous"}</div>
+
+                {profile?.bio && (
+                  <p style={{ fontSize: "0.88rem", color: T.muted, lineHeight: 1.6, marginBottom: "1.5rem" }}>{profile.bio}</p>
+                )}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                   <section>
-                    <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: C.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Contact Info</h3>
+                    <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Contact Info</h3>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.9rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Mail size={14} color={C.accent} /> {profile?.id.substring(0, 12)}...</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><MapPin size={14} color={C.accent} /> Based in Africa</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Mail size={14} color={T.accent} /> {profile?.id.substring(0, 12)}...</div>
+                      {profile?.location && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><MapPin size={14} color={T.accent} /> {profile.location}</div>
+                      )}
+                      {!profile?.location && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><MapPin size={14} color={T.accent} /> Based in Africa</div>
+                      )}
                     </div>
                   </section>
+                  
+                  {(profile?.twitter_url || profile?.instagram_url || profile?.linkedin_url || profile?.website_url) && (
+                    <section>
+                      <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Social Links</h3>
+                      <div style={{ display: "flex", gap: "1rem", color: T.muted }}>
+                        {profile?.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}><Twitter size={18} /></a>}
+                        {profile?.instagram_url && <a href={profile.instagram_url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}><Instagram size={18} /></a>}
+                        {profile?.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}><Linkedin size={18} /></a>}
+                        {profile?.website_url && <a href={profile.website_url} target="_blank" rel="noreferrer" style={{ color: "inherit" }}><Globe size={18} /></a>}
+                      </div>
+                    </section>
+                  )}
 
                   <section>
-                    <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: C.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Skill Level</h3>
-                    <div style={{ padding: "0.75rem", borderRadius: "12px", background: C.bg, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Skill Level</h3>
+                    <div style={{ padding: "0.75rem", borderRadius: "12px", background: T.bg, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: "0.75rem" }}>
                       <div style={{ fontSize: "1.2rem" }}>🎨</div>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>{profile?.skill_level || "Apprentice"}</div>
-                        <div style={{ fontSize: "0.7rem", color: C.muted }}>Artist Level</div>
+                        <div style={{ fontSize: "0.7rem", color: T.muted }}>Artist Level</div>
                       </div>
                     </div>
                   </section>
 
                   <div style={{ paddingTop: "1rem", display: "flex", gap: "0.75rem" }}>
-                    <button style={{ flex: 1, padding: "0.8rem", borderRadius: "12px", background: C.accent, color: "#fff", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", boxShadow: `0 4px 15px ${C.accent}44` }}>Edit Profile</button>
-                    <button style={{ padding: "0.8rem", borderRadius: "12px", background: C.bg, border: `1px solid ${C.border}`, color: C.text, cursor: "pointer" }}><Share2 size={18} /></button>
+                    <button 
+                      onClick={() => {
+                        setEditData(profile || {});
+                        setIsEditing(true);
+                      }}
+                      style={{ flex: 1, padding: "0.8rem", borderRadius: "12px", background: T.accent, color: "#fff", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", boxShadow: `0 4px 15px ${T.accent}44` }}
+                    >
+                      Edit Profile
+                    </button>
+                    <button style={{ padding: "0.8rem", borderRadius: "12px", background: T.bg, border: `1px solid ${T.border}`, color: T.text, cursor: "pointer" }}><Share2 size={18} /></button>
                   </div>
                 </div>
               </motion.div>
@@ -404,33 +646,62 @@ export default function ProfilePage() {
                     style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
                   >
                     {/* Experience Section */}
-                    <div style={{ background: C.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${C.border}`, boxShadow: C.shadow }}>
+                    <div style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                          <div style={{ padding: "0.5rem", borderRadius: "12px", background: C.accentSoft, color: C.accent }}>
+                          <div style={{ padding: "0.5rem", borderRadius: "12px", background: T.accentSoft, color: T.accent }}>
                             <History size={20} />
                           </div>
                           <h3 style={{ fontWeight: 700, fontSize: "1.2rem" }}>Employment History</h3>
                         </div>
-                        <button style={{ color: C.accent, background: "none", border: "none", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>+ Add</button>
+                        <button 
+                          onClick={() => {
+                            setSelectedExp({ role: "", company: "", period: "", description: "" });
+                            setExpIndex(null);
+                            setIsEditingExp(true);
+                          }}
+                          style={{ color: T.accent, background: "none", border: "none", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}
+                        >
+                          + Add
+                        </button>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                         {profile?.experience?.length ? profile.experience.map((exp, idx) => (
                           <div key={idx} style={{ display: "flex", gap: "1.5rem", position: "relative" }}>
-                            <div style={{ width: "2px", background: C.border, margin: "0.5rem 0", position: "relative" }}>
-                              <div style={{ position: "absolute", top: 0, left: "-4px", width: "10px", height: "10px", borderRadius: "50%", background: C.accent }} />
+                            <div style={{ width: "2px", background: T.border, margin: "0.5rem 0", position: "relative" }}>
+                              <div style={{ position: "absolute", top: 0, left: "-4px", width: "10px", height: "10px", borderRadius: "50%", background: T.accent }} />
                             </div>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-                                <h4 style={{ fontWeight: 700, fontSize: "1rem" }}>{exp.role}</h4>
-                                <span style={{ fontSize: "0.8rem", color: C.muted }}>{exp.period}</span>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                  <h4 style={{ fontWeight: 700, fontSize: "1rem" }}>{exp.role}</h4>
+                                  <div style={{ display: "flex", gap: "0.5rem", opacity: 0 }} className="card-actions">
+                                    <button 
+                                      onClick={() => {
+                                        setSelectedExp(exp);
+                                        setExpIndex(idx);
+                                        setIsEditingExp(true);
+                                      }}
+                                      style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}
+                                    >
+                                      <Settings size={14} />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteExperience(idx)}
+                                      style={{ background: "none", border: "none", color: "#ff4d4d", cursor: "pointer" }}
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: "0.8rem", color: T.muted }}>{exp.period}</span>
                               </div>
-                              <div style={{ fontSize: "0.9rem", color: C.accent, fontWeight: 600, marginBottom: "0.5rem" }}>{exp.company}</div>
-                              <p style={{ fontSize: "0.85rem", color: C.muted, lineHeight: 1.6 }}>{exp.description}</p>
+                              <div style={{ fontSize: "0.9rem", color: T.accent, fontWeight: 600, marginBottom: "0.5rem" }}>{exp.company}</div>
+                              <p style={{ fontSize: "0.85rem", color: T.muted, lineHeight: 1.6 }}>{exp.description}</p>
                             </div>
                           </div>
                         )) : (
-                          <p style={{ fontSize: "0.9rem", color: C.muted }}>No experience listed yet.</p>
+                          <p style={{ fontSize: "0.9rem", color: T.muted }}>No experience listed yet.</p>
                         )}
                       </div>
                     </div>
@@ -438,33 +709,51 @@ export default function ProfilePage() {
                     {/* Awards & Education Grid */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
                       {/* Education */}
-                      <div style={{ background: C.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${C.border}`, boxShadow: C.shadow }}>
-                        <h3 style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <GraduationCap size={18} color={C.accent} /> Education
-                        </h3>
+                      <div style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                          <h3 style={{ fontWeight: 700, fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+                            <GraduationCap size={18} color={T.accent} /> Education
+                          </h3>
+                          <button 
+                            onClick={() => {
+                              setSelectedEdu({ school: "", degree: "", year: "" });
+                              setEduIndex(null);
+                              setIsEditingEdu(true);
+                            }}
+                            style={{ color: T.accent, background: "none", border: "none", fontWeight: 600, fontSize: "0.8rem", cursor: "pointer" }}
+                          >
+                            + Add
+                          </button>
+                        </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                           {profile?.education?.length ? profile.education.map((edu, idx) => (
-                            <div key={idx}>
-                              <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{edu.degree}</div>
-                              <div style={{ fontSize: "0.85rem", color: C.muted }}>{edu.school} • {edu.year}</div>
+                            <div key={idx} style={{ position: "relative" }} className="group">
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{edu.degree}</div>
+                                <div style={{ display: "flex", gap: "0.5rem", opacity: 0 }} className="card-actions">
+                                  <button onClick={() => { setSelectedEdu(edu); setEduIndex(idx); setIsEditingEdu(true); }} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}><Settings size={12} /></button>
+                                  <button onClick={() => handleDeleteEducation(idx)} style={{ background: "none", border: "none", color: "#ff4d4d", cursor: "pointer" }}><Trash2 size={12} /></button>
+                                </div>
+                              </div>
+                              <div style={{ fontSize: "0.85rem", color: T.muted }}>{edu.school} • {edu.year}</div>
                             </div>
                           )) : (
-                            <p style={{ fontSize: "0.85rem", color: C.muted }}>Degrees and certifications will appear here.</p>
+                            <p style={{ fontSize: "0.85rem", color: T.muted }}>Degrees and certifications will appear here.</p>
                           )}
                         </div>
                       </div>
 
                       {/* Stats/Metrics */}
-                      <div style={{ background: C.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${C.border}`, boxShadow: C.shadow }}>
+                      <div style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}>
                         <h3 style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "1.5rem" }}>Quick Stats</h3>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                          <div style={{ padding: "1rem", borderRadius: "16px", background: C.bg, border: `1px solid ${C.border}` }}>
-                            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: C.accent }}>{projects.length}</div>
-                            <div style={{ fontSize: "0.7rem", color: C.muted, textTransform: "uppercase", fontWeight: 600 }}>Projects</div>
+                          <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
+                            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: T.accent }}>{projects.length}</div>
+                            <div style={{ fontSize: "0.7rem", color: T.muted, textTransform: "uppercase", fontWeight: 600 }}>Projects</div>
                           </div>
-                          <div style={{ padding: "1rem", borderRadius: "16px", background: C.bg, border: `1px solid ${C.border}` }}>
-                            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: C.accent }}>{profile?.total_platform_likes || 0}</div>
-                            <div style={{ fontSize: "0.7rem", color: C.muted, textTransform: "uppercase", fontWeight: 600 }}>Likes</div>
+                          <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
+                            <div style={{ fontSize: "1.5rem", fontWeight: 800, color: T.accent }}>{profile?.total_platform_likes || 0}</div>
+                            <div style={{ fontSize: "0.7rem", color: T.muted, textTransform: "uppercase", fontWeight: 600 }}>Likes</div>
                           </div>
                         </div>
                       </div>
@@ -484,13 +773,13 @@ export default function ProfilePage() {
                         <motion.div 
                           key={project.id}
                           whileHover={{ y: -5 }}
-                          style={{ background: C.cardBg, borderRadius: "20px", overflow: "hidden", border: `1px solid ${C.border}`, boxShadow: C.shadow }}
+                          style={{ background: T.cardBg, borderRadius: "20px", overflow: "hidden", border: `1px solid ${T.border}`, boxShadow: T.shadow }}
                         >
                           <div style={{ height: "160px", background: "#111", position: "relative", overflow: "hidden" }}>
                             {project.thumbnail_url ? (
                               <img src={project.thumbnail_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             ) : (
-                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: C.accentSoft }}>
+                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: T.accentSoft }}>
                                 <Play size={40} />
                               </div>
                             )}
@@ -500,34 +789,34 @@ export default function ProfilePage() {
                           </div>
                           <div style={{ padding: "1.25rem" }}>
                             <h4 style={{ fontWeight: 700, fontSize: "1.05rem", marginBottom: "0.5rem" }}>{project.title}</h4>
-                            <p style={{ fontSize: "0.85rem", color: C.muted, marginBottom: "1rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{project.description}</p>
+                            <p style={{ fontSize: "0.85rem", color: T.muted, marginBottom: "1rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{project.description}</p>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <div style={{ display: "flex", gap: "1rem" }}>
                                 <button 
                                   onClick={() => handleLike(project.id)}
-                                  style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: "0.25rem", color: project.has_liked ? C.accent : C.muted, cursor: "pointer", transition: "transform 0.2s" }}
+                                  style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: "0.25rem", color: project.has_liked ? T.accent : T.muted, cursor: "pointer", transition: "transform 0.2s" }}
                                   onMouseDown={e => (e.currentTarget.style.transform = "scale(0.9)")}
                                   onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
                                 >
-                                  <Heart size={16} fill={project.has_liked ? C.accent : "none"} />
+                                  <Heart size={16} fill={project.has_liked ? T.accent : "none"} />
                                   <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{project.likes_count}</span>
                                 </button>
-                                <div style={{ fontSize: "0.85rem", color: C.muted, display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                <div style={{ fontSize: "0.85rem", color: T.muted, display: "flex", alignItems: "center", gap: "0.25rem" }}>
                                   <MessageCircle size={16} />
                                   <span>0</span>
                                 </div>
                               </div>
-                              <button style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><Share2 size={16} /></button>
+                              <button style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}><Share2 size={16} /></button>
                             </div>
                           </div>
                         </motion.div>
                       ))}
                       <motion.div 
                         onClick={() => setShowAddModal(true)}
-                        whileHover={{ scale: 0.98, borderColor: C.accent }}
-                        style={{ border: `2px dashed ${C.border}`, borderRadius: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem", minHeight: "280px", cursor: "pointer", color: C.muted, transition: "all 0.2s" }}
+                        whileHover={{ scale: 0.98, borderColor: T.accent }}
+                        style={{ border: `2px dashed ${T.border}`, borderRadius: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem", minHeight: "280px", cursor: "pointer", color: T.muted, transition: "all 0.2s" }}
                       >
-                        <div style={{ padding: "1rem", borderRadius: "50%", background: C.accentSoft, color: C.accent }}><Plus size={24} /></div>
+                        <div style={{ padding: "1rem", borderRadius: "50%", background: T.accentSoft, color: T.accent }}><Plus size={24} /></div>
                         <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>Add New Work</span>
                       </motion.div>
                     </div>
@@ -540,13 +829,13 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    style={{ background: C.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${C.border}`, textAlign: "center" }}
+                    style={{ background: T.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${T.border}`, textAlign: "center" }}
                   >
-                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: C.accentSoft, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: T.accentSoft, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
                       <CreditCard size={32} />
                     </div>
                     <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Compensation & Benefits</h3>
-                    <p style={{ color: C.muted, fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto" }}>This section is currently under review for your account. Please check back later for full details.</p>
+                    <p style={{ color: T.muted, fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto" }}>This section is currently under review for your account. Please check back later for full details.</p>
                   </motion.div>
                 )}
 
@@ -556,13 +845,13 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    style={{ background: C.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${C.border}`, textAlign: "center" }}
+                    style={{ background: T.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${T.border}`, textAlign: "center" }}
                   >
-                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: C.accentSoft, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: T.accentSoft, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
                       <Plus size={32} />
                     </div>
                     <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Security Settings</h3>
-                    <p style={{ color: C.muted, fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto" }}>Manage your password, multi-factor authentication, and active sessions from this panel.</p>
+                    <p style={{ color: T.muted, fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto" }}>Manage your password, multi-factor authentication, and active sessions from this panel.</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -572,14 +861,171 @@ export default function ProfilePage() {
 
           <style jsx>{`
             .profile-grid { grid-template-columns: 320px 1fr; }
+            .card-actions { transition: opacity 0.2s; }
+            div[key]:hover .card-actions, 
+            div[style*="relative"]:hover .card-actions { opacity: 1 !important; }
             @media (max-width: 1024px) {
               .profile-grid { grid-template-columns: 1fr; }
               .stats-grid { grid-template-columns: 1fr; }
             }
+            .hide-scroll::-webkit-scrollbar { display: none; }
+            .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
           `}</style>
         </div>
       </DashboardLayout>
       
+      <AnimatePresence>
+        {isEditing && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !saving && setIsEditing(false)}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }} 
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              style={{ 
+                width: "100%", 
+                maxWidth: "600px", 
+                maxHeight: "90vh",
+                background: T.cardBg, 
+                borderRadius: "32px", 
+                border: `1px solid ${T.border}`, 
+                boxShadow: "0 24px 48px rgba(0,0,0,0.5)",
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden"
+              }}
+            >
+              <div style={{ padding: "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+                <h3 style={{ fontWeight: 800, fontSize: "1.25rem" }}>Edit Profile</h3>
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  disabled={saving}
+                  style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div style={{ padding: "2rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "2rem" }} className="hide-scroll">
+                
+                {/* Basic Identity */}
+                <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, fontWeight: 800 }}>Identity</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Full Name</label>
+                      <input 
+                        value={editData.full_name || ""}
+                        onChange={e => setEditData(prev => ({ ...prev, full_name: e.target.value }))}
+                        style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Username</label>
+                      <input 
+                        value={editData.user_name || ""}
+                        onChange={e => setEditData(prev => ({ ...prev, user_name: e.target.value }))}
+                        style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, fontWeight: 800 }}>About</h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Bio</label>
+                      <textarea 
+                        rows={3}
+                        value={editData.bio || ""}
+                        onChange={e => setEditData(prev => ({ ...prev, bio: e.target.value }))}
+                        placeholder="Tell the community who you are..."
+                        style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none", resize: "none" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Location</label>
+                      <input 
+                        value={editData.location || ""}
+                        onChange={e => setEditData(prev => ({ ...prev, location: e.target.value }))}
+                        placeholder="City, Country"
+                        style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, fontWeight: 800 }}>Social Links</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Website</label>
+                      <input 
+                        value={editData.website_url || ""}
+                        onChange={e => setEditData(prev => ({ ...prev, website_url: e.target.value }))}
+                        placeholder="https://yourportfolio.com"
+                        style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Twitter</label>
+                      <input 
+                        value={editData.twitter_url || ""}
+                        onChange={e => setEditData(prev => ({ ...prev, twitter_url: e.target.value }))}
+                        placeholder="@username"
+                        style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Instagram</label>
+                      <input 
+                        value={editData.instagram_url || ""}
+                        onChange={e => setEditData(prev => ({ ...prev, instagram_url: e.target.value }))}
+                        placeholder="@username"
+                        style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>LinkedIn</label>
+                      <input 
+                        value={editData.linkedin_url || ""}
+                        onChange={e => setEditData(prev => ({ ...prev, linkedin_url: e.target.value }))}
+                        placeholder="linkedin.com/in/username"
+                        style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
+                      />
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div style={{ padding: "1.5rem 2rem", background: T.bg, borderTop: `1px solid ${T.border}`, display: "flex", gap: "1rem", flexShrink: 0 }}>
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  style={{ flex: 1, padding: "1rem", borderRadius: "16px", background: "none", border: `1px solid ${T.border}`, color: T.text, fontWeight: 700, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleUpdateProfile}
+                  disabled={saving}
+                  style={{ flex: 2, padding: "1rem", borderRadius: "16px", background: T.accent, color: "#fff", border: "none", fontWeight: 800, cursor: "pointer", boxShadow: `0 8px 24px ${T.accent}44` }}
+                >
+                  {saving ? "Saving Changes..." : "Save Profile"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showAddModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
@@ -597,20 +1043,20 @@ export default function ProfilePage() {
               style={{ 
                 width: "100%", 
                 maxWidth: "500px", 
-                background: C.cardBg, 
+                background: T.cardBg, 
                 borderRadius: "32px", 
-                border: `1px solid ${C.border}`, 
+                border: `1px solid ${T.border}`, 
                 boxShadow: "0 24px 48px rgba(0,0,0,0.5)",
                 position: "relative",
                 overflow: "hidden"
               }}
             >
-              <div style={{ padding: "1.5rem 2rem", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ padding: "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h3 style={{ fontWeight: 800, fontSize: "1.25rem" }}>Add New Work</h3>
                 <button 
                   onClick={() => setShowAddModal(false)}
                   disabled={uploading}
-                  style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}
+                  style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}
                 >
                   <X size={24} />
                 </button>
@@ -632,14 +1078,14 @@ export default function ProfilePage() {
                       width: "100%",
                       height: "180px",
                       borderRadius: "20px",
-                      border: projPreview ? "none" : `2px dashed ${C.border}`,
-                      background: projPreview ? `url(${projPreview}) center/cover` : C.bg,
+                      border: projPreview ? "none" : `2px dashed ${T.border}`,
+                      background: projPreview ? `url(${projPreview}) center/cover` : T.bg,
                       cursor: "pointer",
                       transition: "all 0.2s"
                     }}
                   >
                     {!projPreview && (
-                      <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: C.muted }}>
+                      <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0.5rem", color: T.muted }}>
                         <Camera size={32} />
                         <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>Click to upload thumbnail</span>
                         <span style={{ fontSize: "0.7rem" }}>compressed to &lt; 1MB automatically</span>
@@ -658,12 +1104,12 @@ export default function ProfilePage() {
                     placeholder="Project Title"
                     value={newProj.title}
                     onChange={e => setNewProj(prev => ({ ...prev, title: e.target.value }))}
-                    style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${C.border}`, background: C.bg, color: C.text, outline: "none" }}
+                    style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
                   />
                   <select
                     value={newProj.category}
                     onChange={e => setNewProj(prev => ({ ...prev, category: e.target.value }))}
-                    style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${C.border}`, background: C.bg, color: C.text, outline: "none" }}
+                    style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
                   >
                     <option>Animation</option>
                     <option>Character Design</option>
@@ -676,7 +1122,7 @@ export default function ProfilePage() {
                     value={newProj.description}
                     onChange={e => setNewProj(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
-                    style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${C.border}`, background: C.bg, color: C.text, outline: "none", resize: "none" }}
+                    style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none", resize: "none" }}
                   />
                 </div>
 
@@ -687,7 +1133,7 @@ export default function ProfilePage() {
                     width: "100%", 
                     padding: "1rem", 
                     borderRadius: "16px", 
-                    background: (uploading || !projFile || !newProj.title.trim()) ? C.border : C.accent, 
+                    background: (uploading || !projFile || !newProj.title.trim()) ? T.border : T.accent, 
                     color: "#fff", 
                     border: "none", 
                     fontWeight: 800, 
@@ -697,12 +1143,55 @@ export default function ProfilePage() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "0.75rem",
-                    boxShadow: !uploading ? `0 8px 24px ${C.accent}44` : "none"
+                    boxShadow: !uploading ? `0 8px 24px ${T.accent}44` : "none"
                   }}
                 >
                   {uploading ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} />}
                   {uploading ? "Compressing & Publishing..." : "Publish Work"}
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Experience Edit Modal */}
+      <AnimatePresence>
+        {isEditingExp && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditingExp(false)} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} style={{ width: "100%", maxWidth: "500px", background: T.cardBg, borderRadius: "32px", border: `1px solid ${T.border}`, boxShadow: "0 24px 48px rgba(0,0,0,0.5)", position: "relative", overflow: "hidden" }}>
+              <div style={{ padding: "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3 style={{ fontWeight: 800, fontSize: "1.25rem" }}>{expIndex !== null ? "Edit Experience" : "Add Experience"}</h3>
+                <button onClick={() => setIsEditingExp(false)} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}><X size={24} /></button>
+              </div>
+              <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <input placeholder="Role / Job Title" value={selectedExp?.role || ""} onChange={e => setSelectedExp(prev => ({ ...prev!, role: e.target.value }))} style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }} />
+                <input placeholder="Company / Studio" value={selectedExp?.company || ""} onChange={e => setSelectedExp(prev => ({ ...prev!, company: e.target.value }))} style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }} />
+                <input placeholder="Period (e.g. 2020 - Present)" value={selectedExp?.period || ""} onChange={e => setSelectedExp(prev => ({ ...prev!, period: e.target.value }))} style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }} />
+                <textarea placeholder="Description of your work..." rows={4} value={selectedExp?.description || ""} onChange={e => setSelectedExp(prev => ({ ...prev!, description: e.target.value }))} style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none", resize: "none" }} />
+                <button onClick={handleSaveExperience} style={{ width: "100%", padding: "1rem", borderRadius: "16px", background: T.accent, color: "#fff", border: "none", fontWeight: 800, cursor: "pointer", boxShadow: `0 8px 24px ${T.accent}44` }}>Save Experience</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Education Edit Modal */}
+      <AnimatePresence>
+        {isEditingEdu && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditingEdu(false)} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} style={{ width: "100%", maxWidth: "500px", background: T.cardBg, borderRadius: "32px", border: `1px solid ${T.border}`, boxShadow: "0 24px 48px rgba(0,0,0,0.5)", position: "relative", overflow: "hidden" }}>
+              <div style={{ padding: "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3 style={{ fontWeight: 800, fontSize: "1.25rem" }}>{eduIndex !== null ? "Edit Education" : "Add Education"}</h3>
+                <button onClick={() => setIsEditingEdu(false)} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}><X size={24} /></button>
+              </div>
+              <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <input placeholder="Degree / Certification" value={selectedEdu?.degree || ""} onChange={e => setSelectedEdu(prev => ({ ...prev!, degree: e.target.value }))} style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }} />
+                <input placeholder="Institution / School" value={selectedEdu?.school || ""} onChange={e => setSelectedEdu(prev => ({ ...prev!, school: e.target.value }))} style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }} />
+                <input placeholder="Year" value={selectedEdu?.year || ""} onChange={e => setSelectedEdu(prev => ({ ...prev!, year: e.target.value }))} style={{ width: "100%", padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }} />
+                <button onClick={handleSaveEducation} style={{ width: "100%", padding: "1rem", borderRadius: "16px", background: T.accent, color: "#fff", border: "none", fontWeight: 800, cursor: "pointer", boxShadow: `0 8px 24px ${T.accent}44` }}>Save Education</button>
               </div>
             </motion.div>
           </div>
