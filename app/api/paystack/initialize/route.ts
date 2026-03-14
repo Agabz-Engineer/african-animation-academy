@@ -35,22 +35,6 @@ export async function POST(request: Request) {
     const amount = toMinorUnits(amountGhs);
     const callbackUrl = SITE_URL ? `${SITE_URL.replace(/\/$/, "")}/pricing?status=success` : undefined;
 
-    const planCodeMap: Record<BillingTermMonths, string | undefined> = {
-      1: undefined,
-      3: process.env.PAYSTACK_PLAN_PRO_3M,
-      4: process.env.PAYSTACK_PLAN_PRO_4M,
-      9: process.env.PAYSTACK_PLAN_PRO_9M,
-    };
-    const planCode = planCodeMap[termMonths];
-    const requiresPlan = termMonths > 1;
-
-    if (requiresPlan && !planCode) {
-      return NextResponse.json(
-        { error: "Paystack plan code not configured for this term." },
-        { status: 500 }
-      );
-    }
-
     const payload: Record<string, unknown> = {
       email,
       amount,
@@ -60,15 +44,10 @@ export async function POST(request: Request) {
         plan: "pro",
         billing_cycle: "monthly",
         term_months: termMonths,
-        payment_type: requiresPlan ? "subscription" : "topup",
+        payment_type: "topup",
       },
-      channels: requiresPlan
-        ? ["card"]
-        : ["card", "mobile_money", "bank_transfer", "bank", "ussd"],
+      channels: ["card", "mobile_money", "bank_transfer", "bank", "ussd"],
     };
-    if (planCode) {
-      payload.plan = planCode;
-    }
     if (callbackUrl) {
       payload.callback_url = callbackUrl;
     }

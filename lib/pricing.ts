@@ -1,4 +1,4 @@
-export const TERM_MONTHS = [1, 3, 4, 9] as const;
+export const TERM_MONTHS = [1] as const;
 export type BillingTermMonths = typeof TERM_MONTHS[number];
 
 export const PRICING: {
@@ -10,9 +10,6 @@ export const PRICING: {
   proMonthly: 100,
   termDiscounts: {
     1: 0,
-    3: 2,
-    4: 3,
-    9: 5,
   },
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   BadgeCheck,
   Check,
@@ -15,10 +15,7 @@ import { useThemeMode } from "@/lib/useThemeMode";
 import { supabase } from "@/lib/supabase";
 import {
   PRICING,
-  TERM_MONTHS,
   getProMonthlyRate,
-  getProTermSavings,
-  getTermDiscount,
   type BillingTermMonths,
 } from "@/lib/pricing";
 
@@ -92,10 +89,6 @@ const FAQS = [
     a: "Yes. You can cancel your plan from account settings at any time. Your paid access stays active until the end of your current billing period.",
   },
   {
-    q: "How do the 3, 4, or 9 month plans work?",
-    a: "They charge monthly by card for the term you select. When the term ends, you can renew or switch to a different term.",
-  },
-  {
     q: "Do you offer refunds?",
     a: "Yes. Paid plans are covered by a 14-day money-back guarantee from the date of first purchase.",
   },
@@ -109,7 +102,7 @@ const FAQS = [
   },
   {
     q: "Can I use Mobile Money or bank transfer?",
-    a: "Yes for 1-month top-ups. Multi-month plans are card only because subscriptions need card authorization.",
+    a: "Yes. Pay with card, Mobile Money, or bank transfer and renew monthly.",
   },
 ];
 
@@ -160,35 +153,25 @@ export default function PricingPage() {
   const theme = useThemeMode();
   const T = theme === "dark" ? DARK : LIGHT;
 
-  const [termMonths, setTermMonths] = useState<BillingTermMonths>(1);
+  const termMonths: BillingTermMonths = 1;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
-  const planPricing = useMemo(() => {
-    return PLANS.map((plan) => {
-      if (plan.monthlyPrice === 0) {
-        return {
-          ...plan,
-          amount: 0,
-          periodLabel: "forever",
-          termMonths: 1,
-          termSavings: 0,
-          discount: 0,
-        };
-      }
-
-      const discount = getTermDiscount(termMonths);
-      const termSavings = getProTermSavings(termMonths);
+  const planPricing = PLANS.map((plan) => {
+    if (plan.monthlyPrice === 0) {
       return {
         ...plan,
-        amount: getProMonthlyRate(termMonths),
-        periodLabel: "month",
-        termMonths,
-        termSavings,
-        discount,
+        amount: 0,
+        periodLabel: "forever",
       };
-    });
-  }, [termMonths]);
+    }
+
+    return {
+      ...plan,
+      amount: getProMonthlyRate(termMonths),
+      periodLabel: "month",
+    };
+  });
 
   const handleCheckout = async () => {
     if (!supabase) {
@@ -252,42 +235,9 @@ export default function PricingPage() {
         </h1>
 
         <p style={{ color: T.muted }}>
-          Pick a term length, unlock the tools you need, and move from learning to industry-ready
+          Go Pro monthly, unlock the tools you need, and move from learning to industry-ready
           output.
         </p>
-
-        <div className="billing-row">
-          <div
-            className="billing-toggle"
-            style={{ border: `1px solid ${T.border}`, background: T.chip }}
-            role="tablist"
-            aria-label="Billing term"
-          >
-            {TERM_MONTHS.map((term) => (
-              <button
-                key={term}
-                type="button"
-                onClick={() => setTermMonths(term)}
-                className={termMonths === term ? "active" : ""}
-                style={{
-                  background: termMonths === term ? T.accent : "transparent",
-                  color: termMonths === term ? (theme === "dark" ? "#222222" : "#FFFFFF") : T.muted,
-                }}
-              >
-                {term === 1 ? "1 month" : `${term} months`}
-              </button>
-            ))}
-          </div>
-
-          <span
-            className="save-chip"
-            style={{ border: `1px solid ${T.accent}66`, background: T.accentSoft, color: T.accent }}
-          >
-            {termMonths === 1
-              ? "MoMo + bank top-up"
-              : `Save ${getTermDiscount(termMonths)}% on ${termMonths} months`}
-          </span>
-        </div>
 
         <div className="trust-row">
           <div className="trust-pill" style={{ border: `1px solid ${T.border}`, background: T.chip, color: T.muted }}>
@@ -347,17 +297,9 @@ export default function PricingPage() {
                   </>
                 )}
               </div>
-              {isPaid && plan.termMonths > 1 && (
-                <p className="term-note" style={{ color: T.success }}>
-                  Save {plan.discount}% - GH?{plan.termSavings} over {plan.termMonths} months
-                </p>
-              )}
-
               {isPaid && (
                 <p className="payment-note" style={{ color: T.muted }}>
-                  {plan.termMonths === 1
-                    ? "MoMo + bank top-up. Renew monthly."
-                    : `Card only. Auto-renews monthly for ${plan.termMonths} months.`}
+                  MoMo + bank top-up. Renew monthly.
                 </p>
               )}
 
@@ -524,32 +466,6 @@ export default function PricingPage() {
           line-height: 1.58;
           max-width: 66ch;
         }
-        .billing-row {
-          margin-top: 0.85rem;
-          display: flex;
-          align-items: center;
-          gap: 0.65rem;
-          flex-wrap: wrap;
-        }
-        .billing-toggle {
-          display: inline-flex;
-          border-radius: 999px;
-          padding: 0.2rem;
-          gap: 0.22rem;
-        }
-        .billing-toggle button {
-          border: none;
-          border-radius: 999px;
-          padding: 0.36rem 0.9rem;
-          cursor: pointer;
-          font: 700 0.76rem "General Sans", sans-serif;
-          transition: background 0.2s ease, color 0.2s ease;
-        }
-        .save-chip {
-          border-radius: 999px;
-          padding: 0.32rem 0.72rem;
-          font: 700 0.75rem "General Sans", sans-serif;
-        }
         .trust-row {
           margin-top: 0.8rem;
           display: grid;
@@ -611,10 +527,6 @@ export default function PricingPage() {
         }
         .period {
           font: 600 0.78rem "General Sans", sans-serif;
-        }
-        .term-note {
-          margin-top: 0.3rem;
-          font: 700 0.73rem "General Sans", sans-serif;
         }
         .payment-note {
           margin-top: 0.35rem;

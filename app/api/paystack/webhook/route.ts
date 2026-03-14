@@ -35,8 +35,7 @@ export async function POST(request: Request) {
     const data = event.data;
     const metadata = data?.metadata || {};
     const userId = metadata.user_id as string | undefined;
-    const termMonthsRaw = Number(metadata.term_months ?? 1);
-    const termMonths = [1, 3, 4, 9].includes(termMonthsRaw) ? termMonthsRaw : 1;
+    const termMonths = 1;
     const billingCycle = "monthly";
 
     if (!userId) {
