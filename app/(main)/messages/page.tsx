@@ -39,31 +39,35 @@ type Conversation = {
 };
 
 const DARK = {
-  pageBg: "#0B141A", // WhatsApp-like dark background
-  panel: "#111B21",  // Lighter sidebar/panel
-  border: "rgba(255,255,255,0.05)",
-  text: "#E9EDEF",
-  muted: "#8696A0",
-  dim: "#667781",
+  pageBg: "#010101", // Deeper black for high contrast
+  panel: "#0D0D0D",  // Slightly lighter panel
+  border: "rgba(255,255,255,0.06)",
+  text: "#FFFFFF",
+  muted: "#A0A0A5",
+  dim: "#636366",
   accent: "#FF6D1F",
-  accentSoft: "rgba(255,109,31,0.12)",
-  input: "#2A3942",
-  glass: "rgba(11,20,26,0.9)",
-  unreadBadge: "#00A884", // WhatsApp green
+  accentSoft: "rgba(255,109,31,0.14)",
+  input: "#1C1C1E",
+  glass: "rgba(10,10,10,0.7)",
+  unreadBadge: "#FF6D1F", // Using brand orange for unreads in premium mode
+  shadow: "0 4px 24px -1px rgba(0, 0, 0, 0.4), 0 2px 8px -1px rgba(0, 0, 0, 0.2)",
+  bubbleShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
 };
 
 const LIGHT = {
-  pageBg: "#F5F5F7",
+  pageBg: "#F2F2F7",
   panel: "#FFFFFF",
-  border: "rgba(0,0,0,0.08)",
-  text: "#1D1D1F",
-  muted: "#86868B",
-  dim: "#AEAEB2",
+  border: "rgba(0,0,0,0.05)",
+  text: "#000000",
+  muted: "#8E8E93",
+  dim: "#C7C7CC",
   accent: "#FF6D1F",
-  accentSoft: "rgba(255,109,31,0.08)",
-  input: "#E5E5EA",
-  glass: "rgba(255,255,255,0.8)",
-  unreadBadge: "#00A884",
+  accentSoft: "rgba(255,109,31,0.06)",
+  input: "#E9E9EB",
+  glass: "rgba(255,255,255,0.7)",
+  unreadBadge: "#FF6D1F",
+  shadow: "0 4px 24px -1px rgba(0, 0, 0, 0.08), 0 2px 8px -1px rgba(0, 0, 0, 0.04)",
+  bubbleShadow: "0 1px 4px rgba(0, 0, 0, 0.05)",
 };
 
 const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️", "📍", "🎨", "🎬", "💎"];
@@ -433,34 +437,41 @@ export default function MessagesPage() {
         zIndex: 10
       }}>
         <div style={{ 
-          padding: "1rem", 
+          padding: "1.2rem 1rem 0.5rem 1rem", 
           display: "flex", 
           alignItems: "center", 
           justifyContent: "space-between",
-          backgroundColor: T.panel
+          backgroundColor: T.pageBg
         }}>
-          <h1 style={{ fontSize: "1.4rem", fontWeight: 700, margin: 0, color: T.text }}>Chats</h1>
-          <div style={{ display: "flex", gap: "1rem" }}>
-             <MessageSquare size={20} color={T.dim} style={{ cursor: "pointer" }} />
-             <MoreVertical size={20} color={T.dim} style={{ cursor: "pointer" }} />
+          <h1 style={{ fontSize: "1.6rem", fontWeight: 800, margin: 0, color: T.text, letterSpacing: "-0.04em" }}>Messages</h1>
+          <div style={{ display: "flex", gap: "0.8rem" }}>
+             <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} style={{ padding: "0.4rem", cursor: "pointer", color: T.dim }}>
+               <MessageSquare size={22} />
+             </motion.div>
+             <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} style={{ padding: "0.4rem", cursor: "pointer", color: T.dim }}>
+               <MoreVertical size={22} />
+             </motion.div>
           </div>
         </div>
 
-        <div style={{ padding: "0.5rem 1rem", backgroundColor: T.panel }}>
+        <div style={{ padding: "0.5rem 1rem 1rem 1rem", backgroundColor: T.pageBg }}>
           <div style={{ position: "relative" }}>
             <Search style={{ position: "absolute", left: "0.8rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: T.dim }} />
             <input 
-              placeholder="Search or start new chat"
+              placeholder="Search conversations"
               style={{
                 width: "100%",
-                padding: "0.5rem 0.5rem 0.5rem 2.5rem",
-                borderRadius: "8px",
+                padding: "0.6rem 0.6rem 0.6rem 2.6rem",
+                borderRadius: "10px",
                 border: "none",
                 backgroundColor: T.input,
                 color: T.text,
-                fontSize: "0.85rem",
+                fontSize: "0.9rem",
                 outline: "none",
+                transition: "background-color 0.2s ease"
               }}
+              onFocus={(e) => e.target.style.backgroundColor = theme === 'dark' ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)"}
+              onBlur={(e) => e.target.style.backgroundColor = T.input}
             />
           </div>
         </div>
@@ -470,10 +481,28 @@ export default function MessagesPage() {
             <div style={{ padding: "2rem", textAlign: "center", color: T.dim, fontSize: "0.9rem" }}>Loading...</div>
           ) : conversations.length === 0 ? (
             <div style={{ padding: "4rem 2rem", textAlign: "center", color: T.muted }}>
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4, ease: "easeOut" }} style={{ marginBottom: "1rem" }}>
-                <MessageSquare size={48} style={{ margin: "0 auto", strokeWidth: 1.5, opacity: 0.3 }} />
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                transition={{ type: "spring", stiffness: 200, damping: 20 }} 
+                style={{ marginBottom: "1.5rem" }}
+              >
+                <div style={{ 
+                  width: "80px", 
+                  height: "80px", 
+                  borderRadius: "24px", 
+                  backgroundColor: T.input, 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  margin: "0 auto",
+                  boxShadow: T.shadow
+                }}>
+                  <MessageSquare size={40} style={{ strokeWidth: 1.5, opacity: 0.4, color: T.accent }} />
+                </div>
               </motion.div>
-              <p style={{ fontSize: "0.95rem", lineHeight: 1.5 }}>No messages yet.<br/>Connect with creators to start!</p>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 700, color: T.text, margin: "0 0 0.5rem 0" }}>No Conversations</h2>
+              <p style={{ fontSize: "0.85rem", lineHeight: 1.6, maxWidth: "200px", margin: "0 auto" }}>Your active threads will appear here once you start messaging.</p>
             </div>
           ) : (
             <AnimatePresence>
@@ -483,50 +512,66 @@ export default function MessagesPage() {
                 
                 return (
                   <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
                     key={convo.other_user_id}
                     onClick={() => {
                       setSelectedChat(convo);
                       fetchMessages(convo.other_user_id);
                     }}
-                    whileHover={{ backgroundColor: isActive ? T.accentSoft : T.input }}
+                    whileHover={{ backgroundColor: isActive ? T.accentSoft : theme === 'dark' ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}
                     style={{
-                      padding: "0.8rem 1rem",
+                      padding: "0.75rem 1rem",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
-                      gap: "0.9rem",
+                      gap: "1rem",
                       backgroundColor: isActive ? T.accentSoft : "transparent",
-                      borderBottom: `1px solid ${T.border}`,
-                      transition: "background-color 0.2s ease",
-                      position: "relative"
+                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                      position: "relative",
+                      borderLeft: isActive ? `3px solid ${T.accent}` : "3px solid transparent",
                     }}
                   >
-                    <div style={{ 
-                      width: "48px", 
-                      height: "48px", 
-                      borderRadius: "50%", 
-                      backgroundColor: T.accent,
-                      backgroundImage: convo.other_user_avatar ? `url(${convo.other_user_avatar})` : "none",
-                      backgroundSize: "cover",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontWeight: 600,
-                      flexShrink: 0
-                    }}>
-                      {!convo.other_user_avatar && convo.other_user_name.charAt(0)}
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <div style={{ 
+                        width: "52px", 
+                        height: "52px", 
+                        borderRadius: "16px", // Organic squircle
+                        backgroundColor: T.accent,
+                        backgroundImage: convo.other_user_avatar ? `url(${convo.other_user_avatar})` : "none",
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontWeight: 700,
+                        boxShadow: T.bubbleShadow,
+                        fontSize: "1.2rem"
+                      }}>
+                        {!convo.other_user_avatar && convo.other_user_name.charAt(0)}
+                      </div>
+                      {/* Presence Indicator (Demo) */}
+                      <div style={{
+                        position: "absolute",
+                        bottom: "-2px",
+                        right: "-2px",
+                        width: "14px",
+                        height: "14px",
+                        borderRadius: "50%",
+                        backgroundColor: "#34C759", // iOS Green
+                        border: `2px solid ${T.pageBg}`
+                      }} />
                     </div>
                     
-                    <div style={{ flex: 1, minWidth: 0, paddingRight: "40px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "2px" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
                         <h3 style={{ 
-                          fontSize: "1rem", 
-                          fontWeight: 600, 
+                          fontSize: "0.95rem", 
+                          fontWeight: 700, 
                           color: T.text, 
                           margin: 0,
+                          letterSpacing: "-0.01em",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis"
@@ -534,9 +579,10 @@ export default function MessagesPage() {
                           {convo.other_user_name}
                         </h3>
                         <span style={{ 
-                          fontSize: "0.75rem", 
-                          color: isUnread ? T.unreadBadge : T.dim, 
-                          fontWeight: isUnread ? 600 : 400 
+                          fontSize: "0.7rem", 
+                          color: isUnread ? T.accent : T.muted, 
+                          fontWeight: isUnread ? 700 : 500,
+                          textTransform: "uppercase"
                         }}>
                           {timeAgo(convo.last_message_at)}
                         </span>
@@ -550,30 +596,34 @@ export default function MessagesPage() {
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
+                          lineHeight: 1.2,
                           fontWeight: isUnread ? 500 : 400
                         }}>
                           {convo.last_message}
                         </p>
                         
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          {convo.other_user_id === 'pinned-demo' && <Pin size={14} style={{ color: T.dim, transform: "rotate(45deg)" }} />}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "8px" }}>
+                          {convo.other_user_id === 'pinned-demo' && <Pin size={12} style={{ color: T.accent }} />}
                           {isUnread && (
-                            <div style={{ 
-                              backgroundColor: T.unreadBadge,
-                              color: "#fff",
-                              borderRadius: "12px",
-                              minWidth: "20px",
-                              height: "20px",
-                              padding: "0 6px",
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              boxShadow: "0 1px 2px rgba(0,0,0,0.1)"
-                            }}>
+                            <motion.div 
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              style={{ 
+                                backgroundColor: T.unreadBadge,
+                                color: "#fff",
+                                borderRadius: "8px",
+                                minWidth: "18px",
+                                height: "18px",
+                                padding: "0 5px",
+                                fontSize: "0.7rem",
+                                fontWeight: 800,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                boxShadow: "0 2px 4px rgba(255,109,31,0.3)"
+                              }}>
                               {convo.unread_count}
-                            </div>
+                            </motion.div>
                           )}
                         </div>
                       </div>
@@ -597,50 +647,70 @@ export default function MessagesPage() {
         {selectedChat ? (
           <>
             <div style={{ 
-              padding: "0.8rem 1.5rem", 
+              padding: "1rem 1.5rem", 
               borderBottom: `1px solid ${T.border}`, 
               display: "flex", 
               alignItems: "center", 
               justifyContent: "space-between",
               backgroundColor: T.glass,
-              backdropFilter: "saturate(180%) blur(20px)",
-              WebkitBackdropFilter: "saturate(180%) blur(20px)",
+              backdropFilter: "saturate(200%) blur(25px)",
+              WebkitBackdropFilter: "saturate(200%) blur(25px)",
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
               zIndex: 20
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
-                <button 
+              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <motion.button 
                   onClick={() => setSelectedChat(null)}
-                  style={{ display: "flex", alignItems: "center", background: "none", border: "none", color: T.accent, cursor: "pointer", padding: "0 0.5rem 0 0", fontSize: "1rem", fontWeight: 500 }}
+                  whileHover={{ x: -2 }}
+                  style={{ display: "flex", alignItems: "center", background: "none", border: "none", color: T.accent, cursor: "pointer", padding: "0 0.2rem 0 0", fontWeight: 600 }}
                   className="mobile-back"
                 >
-                  <ArrowLeft size={22} style={{ marginRight: "0.2rem" }} />
-                </button>
-                <div style={{ 
-                  width: "34px", 
-                  height: "34px", 
-                  borderRadius: "50%", 
-                  backgroundColor: T.accentSoft,
-                  backgroundImage: selectedChat.other_user_avatar ? `url(${selectedChat.other_user_avatar})` : "none",
-                  backgroundSize: "cover",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: T.accent,
-                  fontWeight: 600
-                }}>
-                  {!selectedChat.other_user_avatar && selectedChat.other_user_name.charAt(0)}
+                  <ArrowLeft size={24} />
+                </motion.button>
+                <div style={{ position: "relative" }}>
+                   <div style={{ 
+                     width: "38px", 
+                     height: "38px", 
+                     borderRadius: "12px", 
+                     backgroundColor: T.accent,
+                     backgroundImage: selectedChat.other_user_avatar ? `url(${selectedChat.other_user_avatar})` : "none",
+                     backgroundSize: "cover",
+                     display: "flex",
+                     alignItems: "center",
+                     justifyContent: "center",
+                     color: "#fff",
+                     fontWeight: 700,
+                     fontSize: "0.9rem"
+                   }}>
+                     {!selectedChat.other_user_avatar && selectedChat.other_user_name.charAt(0)}
+                   </div>
+                   <div style={{
+                     position: "absolute",
+                     bottom: "-2px",
+                     right: "-2px",
+                     width: "12px",
+                     height: "12px",
+                     borderRadius: "50%",
+                     backgroundColor: "#34C759",
+                     border: `2px solid ${T.panel}`
+                   }} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <p style={{ fontWeight: 600, margin: 0, fontSize: "0.9rem", letterSpacing: "-0.01em" }}>{selectedChat.other_user_name}</p>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <p style={{ fontWeight: 700, margin: 0, fontSize: "1rem", letterSpacing: "-0.01em", color: T.text }}>{selectedChat.other_user_name}</p>
+                  <p style={{ margin: 0, fontSize: "0.7rem", color: "#34C759", fontWeight: 600 }}>Online</p>
                 </div>
               </div>
-              <button style={{ background: "none", border: "none", color: T.accent, cursor: "pointer", padding: "0.4rem", borderRadius: "50%" }}>
-                <MoreVertical size={20} />
-              </button>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                 <motion.button whileHover={{ scale: 1.1 }} style={{ background: "none", border: "none", color: T.dim, cursor: "pointer", padding: "0.5rem" }}>
+                   <ImageIcon size={20} />
+                 </motion.button>
+                 <motion.button whileHover={{ scale: 1.1 }} style={{ background: "none", border: "none", color: T.dim, cursor: "pointer", padding: "0.5rem" }}>
+                   <MoreVertical size={20} />
+                 </motion.button>
+              </div>
             </div>
 
             {/* Chat History */}
@@ -656,57 +726,78 @@ export default function MessagesPage() {
                 {messages.map((m, i) => {
                   const isMine = m.sender_id === user.id;
                   const prev = messages[i - 1];
-                  const isConsecutive = prev && prev.sender_id === m.sender_id;
+                  const next = messages[i + 1];
+                  const isConsecutivePrev = prev && prev.sender_id === m.sender_id;
+                  const isConsecutiveNext = next && next.sender_id === m.sender_id;
                   
+                  // Organic Variable Radii
+                  const borderRadius = isMine 
+                    ? `${isConsecutivePrev ? '12px' : '22px'} 22px ${isConsecutiveNext ? '12px' : '4px'} ${isConsecutivePrev ? '12px' : '22px'}`
+                    : `22px ${isConsecutivePrev ? '12px' : '22px'} ${isConsecutivePrev ? '12px' : '22px'} ${isConsecutiveNext ? '12px' : '4px'}`;
+
                   return (
                     <motion.div 
                       key={m.id}
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      initial={{ opacity: 0, y: 15, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ type: "spring", stiffness: 450, damping: 30, mass: 1 }}
                       style={{
                         alignSelf: isMine ? "flex-end" : "flex-start",
-                        maxWidth: "80%",
+                        maxWidth: "75%",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: isMine ? "flex-end" : "flex-start",
-                        marginTop: isConsecutive ? "2px" : "12px"
+                        marginTop: isConsecutivePrev ? "2px" : "1rem",
+                        position: "relative"
                       }}
                     >
                       {m.image_url && (
-                        <div style={{ marginBottom: "0.4rem" }}>
+                        <motion.div 
+                          whileHover={{ scale: 1.02 }}
+                          style={{ marginBottom: "6px", cursor: "pointer" }}
+                        >
                           <img 
                             src={m.image_url} 
                             alt="Attached" 
                             style={{ 
-                              maxWidth: "100%", 
-                              maxHeight: "300px", 
-                              borderRadius: "12px",
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                              maxWidth: "280px", 
+                              maxHeight: "340px", 
+                              borderRadius: "18px",
+                              boxShadow: T.shadow,
+                              border: `1px solid ${T.border}`,
+                              objectFit: "cover"
                             }} 
                           />
-                        </div>
+                        </motion.div>
                       )}
                       {m.content && m.content !== "Sent an image" && (
                         <div style={{
-                          padding: "0.6rem 1rem",
-                          borderRadius: isMine 
-                            ? `16px 16px 4px 16px` 
-                            : `16px 16px 16px 4px`,
+                          padding: "0.75rem 1.1rem",
+                          borderRadius: borderRadius,
                           backgroundColor: isMine ? T.accent : T.input,
                           color: isMine ? "#FFF" : T.text,
-                          fontSize: "0.9rem",
-                          lineHeight: 1.4,
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                          fontSize: "0.95rem",
+                          lineHeight: 1.45,
+                          boxShadow: T.bubbleShadow,
+                          border: isMine ? "none" : `1px solid ${T.border}`,
+                          fontWeight: 450,
+                          letterSpacing: "-0.005em"
                         }}>
                           {m.content}
                         </div>
                       )}
-                      {!messages[i+1] || messages[i+1].sender_id !== m.sender_id ? (
-                        <span style={{ fontSize: "0.65rem", color: T.dim, margin: "4px 4px 0 4px" }}>
-                          {timeAgo(m.created_at)}
-                        </span>
-                      ) : null}
+                      {!isConsecutiveNext && (
+                         <span style={{ 
+                           fontSize: "0.65rem", 
+                           color: T.muted, 
+                           marginTop: "4px",
+                           fontWeight: 600,
+                           textTransform: "uppercase",
+                           padding: "0 4px"
+                         }}>
+                           {timeAgo(m.created_at)}
+                         </span>
+                      )}
                     </motion.div>
                   );
                 })}
@@ -715,27 +806,30 @@ export default function MessagesPage() {
 
             {/* Input Area */}
             <div style={{ 
+              padding: "1rem 1.5rem 1.5rem 1.5rem", 
+              backgroundColor: "transparent",
               position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
-              padding: "0.8rem 1.5rem 1.5rem 1.5rem", 
-              backgroundColor: T.glass,
-              backdropFilter: "saturate(180%) blur(20px)",
-              WebkitBackdropFilter: "saturate(180%) blur(20px)",
-              borderTop: `1px solid ${T.border}`,
-              zIndex: 20
+              zIndex: 30
             }}>
               {pendingImage && (
-                <div style={{ marginBottom: "0.8rem", position: "relative", width: "fit-content" }}>
-                  <img src={pendingImage} alt="Preview" style={{ height: "60px", borderRadius: "8px", border: `1px solid ${T.border}` }} />
-                  <button 
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{ marginBottom: "0.8rem", position: "relative", width: "fit-content" }}
+                >
+                  <img src={pendingImage} alt="Preview" style={{ height: "64px", borderRadius: "12px", border: `1px solid ${T.border}`, boxShadow: T.shadow }} />
+                  <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => setPendingImage(null)}
-                    style={{ position: "absolute", top: -8, right: -8, backgroundColor: T.accent, color: "#fff", borderRadius: "50%", padding: "2px", border: "none", cursor: "pointer" }}
+                    style={{ position: "absolute", top: -8, right: -8, backgroundColor: T.accent, color: "#fff", borderRadius: "50%", padding: "4px", border: "none", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}
                   >
-                    <X size={14} />
-                  </button>
-                </div>
+                    <X size={12} />
+                  </motion.button>
+                </motion.div>
               )}
 
               <div style={{ position: "relative" }}>
@@ -744,33 +838,35 @@ export default function MessagesPage() {
                     <motion.div 
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      exit={{ opacity: 0, y: 20, scale: 0.95 }}
                       style={{
                         position: "absolute",
-                        bottom: "100%",
+                        bottom: "calc(100% + 12px)",
                         left: 0,
                         backgroundColor: T.panel,
                         border: `1px solid ${T.border}`,
-                        borderRadius: "16px",
-                        padding: "0.8rem",
-                        marginBottom: "0.8rem",
+                        borderRadius: "20px",
+                        padding: "1rem",
                         display: "grid",
                         gridTemplateColumns: "repeat(8, 1fr)",
-                        gap: "0.4rem",
-                        boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-                        zIndex: 30
+                        gap: "0.5rem",
+                        boxShadow: T.shadow,
+                        zIndex: 40,
+                        backdropFilter: "blur(20px)"
                       }}
                     >
                       {EMOJIS.map(e => (
-                        <button 
+                        <motion.button 
                           key={e} 
+                          whileHover={{ scale: 1.2, backgroundColor: T.accentSoft }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => {
                             setNewMessage(prev => prev + e);
                           }}
-                          style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", padding: "0.2rem" }}
+                          style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", padding: "0.4rem", borderRadius: "10px", transition: "all 0.1s ease" }}
                         >
                           {e}
-                        </button>
+                        </motion.button>
                       ))}
                     </motion.div>
                   )}
@@ -779,21 +875,26 @@ export default function MessagesPage() {
                 <div style={{ 
                   display: "flex", 
                   alignItems: "flex-end", 
-                  gap: "0.6rem",
-                  backgroundColor: T.pageBg,
-                  borderRadius: "24px",
-                  padding: "0.4rem 0.6rem 0.4rem 0.8rem",
+                  gap: "0.8rem",
+                  backgroundColor: theme === 'dark' ? "rgba(28, 28, 30, 0.9)" : "rgba(255, 255, 255, 0.9)",
+                  backdropFilter: "blur(30px) saturate(190%)",
+                  borderRadius: "26px",
+                  padding: "0.5rem 0.8rem",
                   border: `1px solid ${T.border}`,
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.02)"
+                  boxShadow: T.shadow
                 }}>
-                  <button 
+                  <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => setShowEmojis(!showEmojis)}
-                    style={{ background: "none", border: "none", color: showEmojis ? T.accent : T.dim, cursor: "pointer", padding: "0.4rem" }}
+                    style={{ background: "none", border: "none", color: showEmojis ? T.accent : T.dim, cursor: "pointer", padding: "0.5rem" }}
                   >
-                    <Smile size={20} />
-                  </button>
-                  <label style={{ display: "flex", alignItems: "center", cursor: "pointer", padding: "0.4rem", color: T.dim }}>
-                    <Paperclip size={20} />
+                    <Smile size={24} />
+                  </motion.button>
+                  <label style={{ display: "flex", alignItems: "center", cursor: "pointer", padding: "0.5rem", color: T.dim }}>
+                    <motion.div whileHover={{ scale: 1.1, color: T.accent }} whileTap={{ scale: 0.9 }}>
+                      <Paperclip size={24} />
+                    </motion.div>
                     <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: "none" }} />
                   </label>
                   
@@ -802,7 +903,7 @@ export default function MessagesPage() {
                     onChange={(e) => {
                       setNewMessage(e.target.value);
                       e.target.style.height = 'auto';
-                      e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -810,55 +911,79 @@ export default function MessagesPage() {
                         sendMessage();
                       }
                     }}
-                    placeholder="Type a message..."
+                    placeholder="Message..."
                     rows={1}
                     style={{
                       flex: 1,
                       background: "none",
                       border: "none",
                       color: T.text,
-                      fontSize: "0.95rem",
-                      padding: "0.4rem 0",
+                      fontSize: "1rem",
+                      padding: "0.6rem 0",
                       outline: "none",
                       resize: "none",
-                      maxHeight: "120px",
-                      minHeight: "24px",
-                      lineHeight: 1.4,
-                      overflowY: "auto"
+                      maxHeight: "160px",
+                      minHeight: "26px",
+                      lineHeight: 1.5,
+                      overflowY: "auto",
+                      fontFamily: "inherit"
                     }}
                     className="hide-scroll"
                   />
                   <motion.button 
                     onClick={sendMessage}
                     disabled={(!newMessage.trim() && !pendingImage) || sending || uploadingImage}
-                    whileTap={{ scale: 0.9 }}
+                    whileHover={{ scale: (newMessage.trim() || pendingImage) ? 1.1 : 1 }}
+                    whileTap={{ scale: (newMessage.trim() || pendingImage) ? 0.9 : 1 }}
                     style={{
-                      backgroundColor: (newMessage.trim() || pendingImage) ? T.accent : T.input,
+                      backgroundColor: (newMessage.trim() || pendingImage) ? T.accent : "transparent",
                       color: (newMessage.trim() || pendingImage) ? "#fff" : T.dim,
                       border: "none",
                       borderRadius: "50%",
-                      width: "32px",
-                      height: "32px",
+                      width: "36px",
+                      height: "36px",
                       cursor: (newMessage.trim() || pendingImage) ? "pointer" : "default",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
-                      transition: "all 0.2s ease",
-                      marginBottom: "2px"
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      boxShadow: (newMessage.trim() || pendingImage) ? "0 4px 12px rgba(255,109,31,0.3)" : "none",
+                      marginBottom: "4px"
                     }}
                   >
-                    {uploadingImage ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: "16px", height: "16px", border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%" }} /> : <Send size={16} />}
+                    {uploadingImage ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} style={{ width: "18px", height: "18px", border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%" }} /> : <Send size={18} />}
                   </motion.button>
                 </div>
               </div>
             </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: T.dim }}>
-            <MessageSquare size={48} style={{ strokeWidth: 1, marginBottom: "1rem", opacity: 0.5 }} />
-            <p style={{ fontSize: "1.1rem", fontWeight: 500 }}>Select a Conversation</p>
-          </div>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: T.dim }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                style={{ textAlign: "center" }}
+              >
+                <div style={{ 
+                  width: "120px", 
+                  height: "120px", 
+                  borderRadius: "32px", 
+                  backgroundColor: T.pageBg, 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  margin: "0 auto 2rem auto",
+                  boxShadow: T.shadow,
+                  border: `1px solid ${T.border}`
+                }}>
+                  <MessageSquare size={56} style={{ strokeWidth: 1, opacity: 0.2, color: T.accent }} />
+                </div>
+                <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: T.text, margin: "0 0 0.5rem 0", letterSpacing: "-0.02em" }}>Select a Conversation</h2>
+                <p style={{ fontSize: "0.95rem", color: T.muted, maxWidth: "260px", margin: "0 auto" }}>Choose a thread from the sidebar to start collaborating with other creatives.</p>
+              </motion.div>
+            </div>
         )}
       </div>
 
@@ -867,8 +992,22 @@ export default function MessagesPage() {
           display: none;
         }
         .hide-scroll {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        /* Custom Premium Scrollbar */
+        *::-webkit-scrollbar {
+          width: 5px;
+        }
+        *::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        *::-webkit-scrollbar-thumb {
+          background: ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
+          border-radius: 10px;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+          background: ${theme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};
         }
         .mobile-back {
           display: none !important;
