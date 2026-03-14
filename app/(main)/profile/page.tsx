@@ -413,6 +413,38 @@ export default function ProfilePage() {
                   </div>
                 </motion.div>
               )}
+
+              {activeTab === "Compensation" && (
+                <motion.div
+                  key="compensation"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  style={{ background: C.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${C.border}`, textAlign: "center" }}
+                >
+                  <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: C.accentSoft, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+                    <CreditCard size={32} />
+                  </div>
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Compensation & Benefits</h3>
+                  <p style={{ color: C.muted, fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto" }}>This section is currently under review for your account. Please check back later for full details.</p>
+                </motion.div>
+              )}
+
+              {activeTab === "Security" && (
+                <motion.div
+                  key="security"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  style={{ background: C.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${C.border}`, textAlign: "center" }}
+                >
+                  <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: C.accentSoft, color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+                    <Plus size={32} />
+                  </div>
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Security Settings</h3>
+                  <p style={{ color: C.muted, fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto" }}>Manage your password, multi-factor authentication, and active sessions from this panel.</p>
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
 
