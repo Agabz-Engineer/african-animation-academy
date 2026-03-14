@@ -222,7 +222,11 @@ export default function MessagesPage() {
         }
       }
 
-      setConversations(Array.from(convosMap.values()));
+      setConversations(
+        Array.from(convosMap.values())
+          .filter(c => c.other_user_id !== userId)
+          .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+      );
     } catch (err) {
       console.error("Error fetching conversations:", err);
     } finally {

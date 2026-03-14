@@ -1559,12 +1559,14 @@ function PostCard({
              <p style={{ margin: 0, fontSize: "0.65rem", color: T.dim }}>{post.profiles?.total_platform_likes || 0} likes</p>
            </div>
            
-           <button 
-              onClick={(e) => { e.stopPropagation(); setIsMsgOpen(true); }}
-              style={{ background: T.accentSoft, border: "none", color: T.accent, padding: "0.35rem", borderRadius: "8px", cursor: "pointer" }}
-           >
-              <MessageSquare size={13} />
-           </button>
+           {user?.id !== post.userId && (
+             <button 
+                onClick={(e) => { e.stopPropagation(); setIsMsgOpen(true); }}
+                style={{ background: T.accentSoft, border: "none", color: T.accent, padding: "0.35rem", borderRadius: "8px", cursor: "pointer" }}
+             >
+                <MessageSquare size={13} />
+             </button>
+           )}
            <FollowButton targetUserId={post.userId as string} onUpdate={() => onFollowUpdate?.(post.userId as string)} />
         </div>
       </div>

@@ -23,7 +23,7 @@ export default function MessageModal({ isOpen, onClose, receiverId, receiverName
     setSending(true);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    if (!user || user.id === receiverId) {
       setSending(false);
       return;
     }

@@ -72,7 +72,7 @@ const LIGHT = {
 const CATEGORIES = ["All", "Following", "2D Animation", "3D Animation", "Character Design", "Motion Graphics", "VFX"];
 
 // ─── Components ──────────────────────────────────────────
-function ProjectCard({ project, theme, viewMode, onFollowUpdate }: { project: PortfolioProject, theme: any, viewMode: "grid" | "list", onFollowUpdate: (userId: string) => void }) {
+function ProjectCard({ project, theme, viewMode, onFollowUpdate, currentUserId }: { project: PortfolioProject, theme: any, viewMode: "grid" | "list", onFollowUpdate: (userId: string) => void, currentUserId?: string }) {
   const isGrid = viewMode === "grid";
   const [isMsgOpen, setIsMsgOpen] = useState(false);
   
@@ -130,12 +130,14 @@ function ProjectCard({ project, theme, viewMode, onFollowUpdate }: { project: Po
           </h3>
           <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
              {/* Messaging action */}
-             <button 
-                onClick={(e) => { e.stopPropagation(); setIsMsgOpen(true); }}
-                style={{ background: theme.accentSoft, border: "none", color: theme.accent, padding: "0.4rem", borderRadius: "8px", cursor: "pointer" }}
-             >
-                <MessageSquare size={14} />
-             </button>
+             {currentUserId !== project.user_id && (
+               <button 
+                  onClick={(e) => { e.stopPropagation(); setIsMsgOpen(true); }}
+                  style={{ background: theme.accentSoft, border: "none", color: theme.accent, padding: "0.4rem", borderRadius: "8px", cursor: "pointer" }}
+               >
+                  <MessageSquare size={14} />
+               </button>
+             )}
              <FollowButton targetUserId={project.user_id} onUpdate={() => onFollowUpdate(project.user_id)} />
           </div>
         </div>
@@ -216,6 +218,7 @@ export default function ExplorePortfoliosPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
   const PAGE_SIZE = 12;
 
   const refreshFollowersCount = async (targetUserId: string) => {
@@ -256,6 +259,7 @@ export default function ExplorePortfoliosPage() {
       if (pageNum === 1) {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          setCurrentUserId(session.user.id);
           const { data: followData } = await supabase
             .from("user_follows")
             .select("following_id")
@@ -449,7 +453,7 @@ export default function ExplorePortfoliosPage() {
         >
           <AnimatePresence>
             {filteredProjects.map(project => (
-              <ProjectCard key={project.id} project={project} theme={theme} viewMode={viewMode} onFollowUpdate={refreshFollowersCount} />
+              <ProjectCard key={project.id} project={project} theme={theme} viewMode={viewMode} onFollowUpdate={refreshFollowersCount} currentUserId={currentUserId} />
             ))}
           </AnimatePresence>
         </motion.div>
