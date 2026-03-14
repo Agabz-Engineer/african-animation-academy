@@ -39,35 +39,37 @@ type Conversation = {
 };
 
 const DARK = {
-  pageBg: "#010101", // Deeper black for high contrast
-  panel: "#0D0D0D",  // Slightly lighter panel
-  border: "rgba(255,255,255,0.06)",
+  pageBg: "#050505", // True studio black
+  panel: "rgba(18, 18, 18, 0.7)",  // Translucent panel
+  border: "rgba(255,255,255,0.08)",
   text: "#FFFFFF",
-  muted: "#A0A0A5",
+  muted: "#8A8A8E",
   dim: "#636366",
   accent: "#FF6D1F",
-  accentSoft: "rgba(255,109,31,0.14)",
-  input: "#1C1C1E",
+  accentSoft: "rgba(255,109,31,0.18)",
+  input: "rgba(28, 28, 30, 0.8)",
   glass: "rgba(10,10,10,0.7)",
-  unreadBadge: "#FF6D1F", // Using brand orange for unreads in premium mode
-  shadow: "0 4px 24px -1px rgba(0, 0, 0, 0.4), 0 2px 8px -1px rgba(0, 0, 0, 0.2)",
-  bubbleShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+  unreadBadge: "#FF6D1F",
+  shadow: "0 8px 32px rgba(0,0,0,0.5)",
+  bubbleShadow: "0 4px 12px rgba(0,0,0,0.2)",
+  meshGradient: "radial-gradient(at 0% 0%, rgba(255, 109, 31, 0.1) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(255, 109, 31, 0.05) 0px, transparent 50%)",
 };
 
 const LIGHT = {
   pageBg: "#F2F2F7",
-  panel: "#FFFFFF",
+  panel: "rgba(255, 255, 255, 0.8)",
   border: "rgba(0,0,0,0.05)",
   text: "#000000",
   muted: "#8E8E93",
-  dim: "#C7C7CC",
+  dim: "#AEAEB2",
   accent: "#FF6D1F",
-  accentSoft: "rgba(255,109,31,0.06)",
-  input: "#E9E9EB",
+  accentSoft: "rgba(255,109,31,0.08)",
+  input: "rgba(255, 255, 255, 0.9)",
   glass: "rgba(255,255,255,0.7)",
   unreadBadge: "#FF6D1F",
-  shadow: "0 4px 24px -1px rgba(0, 0, 0, 0.08), 0 2px 8px -1px rgba(0, 0, 0, 0.04)",
-  bubbleShadow: "0 1px 4px rgba(0, 0, 0, 0.05)",
+  shadow: "0 8px 32px rgba(0,0,0,0.06)",
+  bubbleShadow: "0 2px 8px rgba(0,0,0,0.04)",
+  meshGradient: "radial-gradient(at 0% 0%, rgba(255, 109, 31, 0.05) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(255, 109, 31, 0.02) 0px, transparent 50%)",
 };
 
 const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️", "📍", "🎨", "🎬", "💎"];
@@ -283,11 +285,27 @@ export default function MessagesPage() {
 
       if (error) {
         console.error("Supabase insert error:", error);
-        alert(`Failed to send: ${error.message}`);
-        throw error;
+        // Silently fallback if column doesn't exist yet but user is sending
+        if (error.code === '42703') {
+           const fallbackPayload = { 
+             sender_id: user.id, 
+             receiver_id: selectedChat.other_user_id, 
+             content: newMessage.trim() || "Sent an image" 
+           };
+           const { data: fbData, error: fbError } = await supabase
+             .from("direct_messages")
+             .insert(fallbackPayload)
+             .select("*")
+             .single();
+           if (fbError) throw fbError;
+           setMessages(prev => [...prev, fbData]);
+        } else {
+          alert(`Failed to send: ${error.message}`);
+          throw error;
+        }
+      } else {
+        setMessages(prev => [...prev, data]);
       }
-
-      setMessages(prev => [...prev, data]);
       setNewMessage("");
       setPendingImage(null);
       setShowEmojis(false);
@@ -418,21 +436,40 @@ export default function MessagesPage() {
 
   return (
     <div style={{ 
-      height: "calc(100vh - 80px)", 
       display: "flex", 
+      height: "calc(100vh - 64px)", 
       backgroundColor: T.pageBg,
+      backgroundImage: T.meshGradient,
       color: T.text,
-      fontFamily: "var(--font-geist-sans), 'General Sans', sans-serif",
-      overflow: "hidden"
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      overflow: "hidden",
+      position: "relative"
     }}>
-      {/* Sidebar: Conversation List */}
+      {/* Mesh Gradient Background Layer */}
+      <div style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: theme === 'dark' ? 0.3 : 0.6,
+        pointerEvents: "none",
+        zIndex: 0
+      }}>
+        <div style={{ position: "absolute", top: "10%", left: "10%", width: "40vw", height: "40vw", background: "radial-gradient(circle, rgba(255, 109, 31, 0.15) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "30vw", height: "30vw", background: "radial-gradient(circle, rgba(255, 109, 31, 0.1) 0%, transparent 70%)", filter: "blur(50px)" }} />
+      </div>
+
+      {/* Sidebar: Global Conversation List */}
       <div style={{ 
         width: selectedChat ? "350px" : "100%", 
         maxWidth: "400px",
         borderRight: `1px solid ${T.border}`,
         display: selectedChat ? "none" : "flex",
         flexDirection: "column",
-        backgroundColor: T.pageBg,
+        backgroundColor: T.panel,
+        backdropFilter: "blur(30px) saturate(190%)",
+        WebkitBackdropFilter: "blur(30px) saturate(190%)",
         position: "relative",
         zIndex: 10
       }}>
@@ -641,8 +678,9 @@ export default function MessagesPage() {
         flex: 1, 
         display: selectedChat ? "flex" : "none", 
         flexDirection: "column",
-        backgroundColor: T.panel,
-        position: "relative"
+        backgroundColor: "transparent",
+        position: "relative",
+        zIndex: 5
       }}>
         {selectedChat ? (
           <>
@@ -653,13 +691,14 @@ export default function MessagesPage() {
               alignItems: "center", 
               justifyContent: "space-between",
               backgroundColor: T.glass,
-              backdropFilter: "saturate(200%) blur(25px)",
-              WebkitBackdropFilter: "saturate(200%) blur(25px)",
+              backdropFilter: "saturate(210%) blur(40px)",
+              WebkitBackdropFilter: "saturate(210%) blur(40px)",
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
-              zIndex: 20
+              zIndex: 20,
+              boxShadow: "0 1px 0 rgba(0,0,0,0.02)"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                 <motion.button 
