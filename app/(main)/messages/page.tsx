@@ -7,8 +7,7 @@ import {
   MessageSquare, 
   Send, 
   MoreVertical,
-  ArrowLeft,
-  Sparkles
+  ArrowLeft
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -85,53 +84,7 @@ export default function MessagesPage() {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
 
-  // Real-time listener for new messages
-  useEffect(() => {
-    if (!supabase || !user) return;
-
-    const channel = supabase
-      .channel('chat_updates')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'direct_messages' },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          
-          if (newMsg.sender_id === user.id || newMsg.receiver_id === user.id) {
-            const activeChat = selectedChatRef.current;
-            
-            // If the message belongs to the currently active chat
-            if (activeChat && (
-              (newMsg.sender_id === activeChat.other_user_id) || 
-              (newMsg.receiver_id === activeChat.other_user_id)
-            )) {
-                setMessages((prev) => {
-                  if (!prev.find(m => m.id === newMsg.id)) {
-                    return [...prev, newMsg];
-                  }
-                  return prev;
-                });
-                
-                // Mark as read immediately if chat is openly active
-                if (newMsg.receiver_id === user.id) {
-                   supabase?.from("direct_messages")
-                     .update({ read: true })
-                     .eq("id", newMsg.id)
-                     .then();
-                }
-            }
-            // Always refresh sidebar conversation list
-            fetchConversations(user.id);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase?.removeChannel(channel);
-    };
-  }, [user]);
-
+  // Auth and Session initialization
   useEffect(() => {
     if (!supabase) return;
     const client = supabase;
@@ -169,7 +122,6 @@ export default function MessagesPage() {
     };
   }, []);
 
-
   async function fetchConversations(userId: string) {
     if (!supabase) return;
     try {
@@ -191,8 +143,8 @@ export default function MessagesPage() {
         if (!convosMap.has(otherId)) {
           convosMap.set(otherId, {
             other_user_id: otherId,
-            other_user_name: "User",
-            other_user_handle: "animator",
+            other_user_name: "Creative",
+            other_user_handle: "creative",
             other_user_avatar: null,
             last_message: m.content,
             last_message_at: m.created_at,
@@ -283,7 +235,11 @@ export default function MessagesPage() {
         const idx = prev.findIndex(c => c.other_user_id === selectedChat.other_user_id);
         if (idx > -1) {
           const updated = [...prev];
-          updated[idx] = { ...updated[idx], last_message: data.content, last_message_at: data.created_at };
+          updated[idx] = { 
+            ...updated[idx], 
+            last_message: data.content, 
+            last_message_at: data.created_at 
+          };
           const [moved] = updated.splice(idx, 1);
           return [moved, ...updated];
         }
@@ -296,6 +252,7 @@ export default function MessagesPage() {
     }
   }
 
+  // Real-time synchronization
   useEffect(() => {
     if (!user || !supabase) return;
     const client = supabase;
@@ -308,6 +265,7 @@ export default function MessagesPage() {
       setConversations(prev => {
         const idx = prev.findIndex(c => c.other_user_id === otherId);
         const unreadInc = isIncoming && !isActiveChat ? 1 : 0;
+        
         if (idx === -1) {
           needsProfile = true;
           return prev;
@@ -334,8 +292,8 @@ export default function MessagesPage() {
           if (prev.some(c => c.other_user_id === otherId)) return prev;
           return [{
             other_user_id: otherId,
-            other_user_name: profile?.full_name || "Unknown",
-            other_user_handle: profile?.user_name || "unknown",
+            other_user_name: profile?.full_name || "Creative",
+            other_user_handle: profile?.user_name || "creative",
             other_user_avatar: profile?.avatar_url || null,
             last_message: msg.content,
             last_message_at: msg.created_at,
@@ -360,13 +318,9 @@ export default function MessagesPage() {
           return next;
         });
         if (msg.receiver_id === user.id) {
-          void client
-            .from("direct_messages")
-            .update({ is_read: true })
-            .eq("id", msg.id);
+          void client.from("direct_messages").update({ is_read: true }).eq("id", msg.id);
         }
       }
-
       await upsertConversation(msg, activeChat);
     };
 
@@ -381,13 +335,14 @@ export default function MessagesPage() {
     };
   }, [user?.id]);
 
+  // Polling fallback
   useEffect(() => {
     if (!user || !supabase) return;
     const interval = setInterval(() => {
       fetchConversations(user.id);
       const current = selectedChatRef.current;
       if (current) fetchMessages(current.other_user_id);
-    }, 8000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [user?.id]);
 
@@ -482,9 +437,9 @@ export default function MessagesPage() {
                     whileHover={{ backgroundColor: isActive ? T.input : T.panel }}
                     whileTap={{ scale: 0.98 }}
                     style={{
-                      padding: "0.8rem 1rem",
-                      margin: "0.2rem 0.5rem",
-                      borderRadius: "14px",
+                      padding: "0.6rem 0.8rem",
+                      margin: "0.1rem 0.5rem",
+                      borderRadius: "12px",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
@@ -494,8 +449,8 @@ export default function MessagesPage() {
                     }}
                   >
                     <div style={{ 
-                      width: "48px", 
-                      height: "48px", 
+                      width: "42px", 
+                      height: "42px", 
                       borderRadius: "50%", 
                       backgroundColor: T.accentSoft,
                       backgroundImage: convo.other_user_avatar ? `url(${convo.other_user_avatar})` : "none",
@@ -514,25 +469,25 @@ export default function MessagesPage() {
                           position: "absolute", 
                           top: -2, 
                           right: -2, 
-                          width: "14px", 
-                          height: "14px", 
+                          width: "12px", 
+                          height: "12px", 
                           borderRadius: "50%", 
-                          backgroundColor: "#007AFF", // Apple blue notification dot
+                          backgroundColor: T.accent,
                           border: `2px solid ${isActive ? T.input : T.pageBg}`
                         }} />
                       )}
                     </div>
                     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
-                        <span style={{ fontWeight: 600, fontSize: "0.95rem", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.1rem" }}>
+                        <span style={{ fontWeight: 600, fontSize: "0.9rem", letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {convo.other_user_name}
                         </span>
-                        <span style={{ fontSize: "0.75rem", color: convo.unread_count > 0 ? "#007AFF" : T.dim, fontWeight: convo.unread_count > 0 ? 600 : 400 }}>
+                        <span style={{ fontSize: "0.7rem", color: convo.unread_count > 0 ? T.accent : T.dim, fontWeight: convo.unread_count > 0 ? 600 : 400 }}>
                           {timeAgo(convo.last_message_at)}
                         </span>
                       </div>
                       <p style={{ 
-                        fontSize: "0.85rem", 
+                        fontSize: "0.80rem", 
                         color: convo.unread_count > 0 ? T.text : T.muted, 
                         margin: 0,
                         whiteSpace: "nowrap",
@@ -562,7 +517,7 @@ export default function MessagesPage() {
         {selectedChat ? (
           <>
             <div style={{ 
-              padding: "1rem 1.5rem", 
+              padding: "0.8rem 1.5rem", 
               borderBottom: `1px solid ${T.border}`, 
               display: "flex", 
               alignItems: "center", 
@@ -585,8 +540,8 @@ export default function MessagesPage() {
                   <ArrowLeft size={22} style={{ marginRight: "0.2rem" }} />
                 </button>
                 <div style={{ 
-                  width: "36px", 
-                  height: "36px", 
+                  width: "34px", 
+                  height: "34px", 
                   borderRadius: "50%", 
                   backgroundColor: T.accentSoft,
                   backgroundImage: selectedChat.other_user_avatar ? `url(${selectedChat.other_user_avatar})` : "none",
@@ -600,7 +555,7 @@ export default function MessagesPage() {
                   {!selectedChat.other_user_avatar && selectedChat.other_user_name.charAt(0)}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <p style={{ fontWeight: 600, margin: 0, fontSize: "0.95rem", letterSpacing: "-0.01em" }}>{selectedChat.other_user_name}</p>
+                  <p style={{ fontWeight: 600, margin: 0, fontSize: "0.9rem", letterSpacing: "-0.01em" }}>{selectedChat.other_user_name}</p>
                 </div>
               </div>
               <button style={{ background: "none", border: "none", color: T.accent, cursor: "pointer", padding: "0.4rem", borderRadius: "50%" }}>
@@ -612,7 +567,7 @@ export default function MessagesPage() {
             <div style={{ 
               flex: 1, 
               overflowY: "auto", 
-              padding: "5rem 1.5rem 6rem 1.5rem", 
+              padding: "5rem 1.5rem 6.5rem 1.5rem", 
               display: "flex", 
               flexDirection: "column", 
               gap: "0.4rem" 
@@ -631,7 +586,7 @@ export default function MessagesPage() {
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                       style={{
                         alignSelf: isMine ? "flex-end" : "flex-start",
-                        maxWidth: "75%",
+                        maxWidth: "80%",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: isMine ? "flex-end" : "flex-start",
@@ -639,13 +594,13 @@ export default function MessagesPage() {
                       }}
                     >
                       <div style={{
-                        padding: "0.65rem 1rem",
+                        padding: "0.6rem 1rem",
                         borderRadius: isMine 
-                          ? `18px ${isConsecutive ? '4px' : '18px'} 18px 18px` 
-                          : `${isConsecutive ? '4px' : '18px'} 18px 18px 18px`,
-                        backgroundColor: isMine ? "#007AFF" : T.input, // iMessage Blue
+                          ? `16px 16px 4px 16px` 
+                          : `16px 16px 16px 4px`,
+                        backgroundColor: isMine ? T.accent : T.input,
                         color: isMine ? "#FFF" : T.text,
-                        fontSize: "0.95rem",
+                        fontSize: "0.9rem",
                         lineHeight: 1.4,
                         boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
                       }}>
@@ -698,7 +653,7 @@ export default function MessagesPage() {
                       sendMessage();
                     }
                   }}
-                  placeholder="iMessage"
+                  placeholder="Type a message..."
                   rows={1}
                   style={{
                     flex: 1,
@@ -721,7 +676,7 @@ export default function MessagesPage() {
                   disabled={!newMessage.trim() || sending}
                   whileTap={{ scale: 0.9 }}
                   style={{
-                    backgroundColor: newMessage.trim() ? "#007AFF" : T.input,
+                    backgroundColor: newMessage.trim() ? T.accent : T.input,
                     color: newMessage.trim() ? "#fff" : T.dim,
                     border: "none",
                     borderRadius: "50%",
@@ -770,7 +725,7 @@ export default function MessagesPage() {
         }
         @media (max-width: 767px) {
           .mobile-back {
-            display: flex !important;
+             display: flex !important;
           }
         }
       `}</style>
