@@ -285,7 +285,7 @@ export default function MessagesPage() {
 
       if (error) {
         console.error("Supabase insert error:", error);
-        // Silently fallback if column doesn't exist yet but user is sending
+        // Fallback for missing image_url column
         if (error.code === '42703') {
            const fallbackPayload = { 
              sender_id: user.id, 
@@ -299,16 +299,19 @@ export default function MessagesPage() {
              .single();
            if (fbError) throw fbError;
            setMessages(prev => [...prev, fbData]);
+           setNewMessage("");
+           setPendingImage(null);
+           setShowEmojis(false);
         } else {
           alert(`Failed to send: ${error.message}`);
           throw error;
         }
       } else {
         setMessages(prev => [...prev, data]);
+        setNewMessage("");
+        setPendingImage(null);
+        setShowEmojis(false);
       }
-      setNewMessage("");
-      setPendingImage(null);
-      setShowEmojis(false);
       
       setConversations(prev => {
         const idx = prev.findIndex(c => c.other_user_id === selectedChat.other_user_id);
