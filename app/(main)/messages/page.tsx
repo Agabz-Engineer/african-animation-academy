@@ -8,10 +8,7 @@ import {
   Send, 
   MoreVertical,
   ArrowLeft,
-  Paperclip,
-  Smile,
   X,
-  Image as ImageIcon,
   Pin
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -23,7 +20,6 @@ type Message = {
   sender_id: string;
   receiver_id: string;
   content: string;
-  image_url?: string;
   created_at: string;
   is_read: boolean;
 };
@@ -72,7 +68,7 @@ const LIGHT = {
   meshGradient: "radial-gradient(at 0% 0%, rgba(255, 109, 31, 0.05) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(255, 109, 31, 0.02) 0px, transparent 50%)",
 };
 
-const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️", "📍", "🎨", "🎬", "💎"];
+// ─── Helpers ────────────────────────────────────────────────
 
 const timeAgo = (isoDate: string) => {
   const mins = Math.floor((Date.now() - new Date(isoDate).getTime()) / 60000);
@@ -95,10 +91,6 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [showEmojis, setShowEmojis] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [pendingImage, setPendingImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     selectedChatRef.current = selectedChat;
@@ -233,38 +225,9 @@ export default function MessagesPage() {
     }
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !user || !supabase) return;
-
-    setUploadingImage(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `attachments/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('message-attachments')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('message-attachments')
-        .getPublicUrl(filePath);
-
-      setPendingImage(publicUrl);
-    } catch (err) {
-      console.error("Error uploading image:", err);
-      alert("Failed to upload image. Please try again.");
-    } finally {
-      setUploadingImage(false);
-    }
-  }
 
   async function sendMessage() {
-    if (!user || !selectedChat || (!newMessage.trim() && !pendingImage) || sending || !supabase) {
-      console.log("Send blocked:", { user: !!user, selectedChat: !!selectedChat, hasContent: !!newMessage.trim(), hasImage: !!pendingImage, sending, hasSupabase: !!supabase });
+    if (!user || !selectedChat || !newMessage.trim() || sending || !supabase) {
       return;
     }
     
@@ -273,8 +236,7 @@ export default function MessagesPage() {
       const payload = {
         sender_id: user.id,
         receiver_id: selectedChat.other_user_id,
-        content: newMessage.trim() || (pendingImage ? "Sent an image" : ""),
-        image_url: pendingImage
+        content: newMessage.trim()
       };
 
       const { data, error } = await supabase
@@ -284,34 +246,11 @@ export default function MessagesPage() {
         .single();
 
       if (error) {
-        console.error("Supabase insert error:", error);
-        // Fallback for missing image_url column
-        if (error.code === '42703') {
-           const fallbackPayload = { 
-             sender_id: user.id, 
-             receiver_id: selectedChat.other_user_id, 
-             content: newMessage.trim() || "Sent an image" 
-           };
-           const { data: fbData, error: fbError } = await supabase
-             .from("direct_messages")
-             .insert(fallbackPayload)
-             .select("*")
-             .single();
-           if (fbError) throw fbError;
-           setMessages(prev => [...prev, fbData]);
-           setNewMessage("");
-           setPendingImage(null);
-           setShowEmojis(false);
-        } else {
-          alert(`Failed to send: ${error.message}`);
-          throw error;
-        }
-      } else {
-        setMessages(prev => [...prev, data]);
-        setNewMessage("");
-        setPendingImage(null);
-        setShowEmojis(false);
+        throw error;
       }
+      
+      setMessages(prev => [...prev, data]);
+      setNewMessage("");
       
       setConversations(prev => {
         const idx = prev.findIndex(c => c.other_user_id === selectedChat.other_user_id);
@@ -329,7 +268,6 @@ export default function MessagesPage() {
       });
     } catch (err) {
       console.error("Critical error in sendMessage:", err);
-      // alert("An unexpected error occurred. Please check your connection.");
     } finally {
       setSending(false);
     }
@@ -745,17 +683,11 @@ export default function MessagesPage() {
                   <p style={{ margin: 0, fontSize: "0.7rem", color: "#34C759", fontWeight: 600 }}>Online</p>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                 <motion.button whileHover={{ scale: 1.1 }} style={{ background: "none", border: "none", color: T.dim, cursor: "pointer", padding: "0.5rem" }}>
-                   <ImageIcon size={20} />
-                 </motion.button>
-                 <motion.button whileHover={{ scale: 1.1 }} style={{ background: "none", border: "none", color: T.dim, cursor: "pointer", padding: "0.5rem" }}>
-                   <MoreVertical size={20} />
-                 </motion.button>
-              </div>
+              <motion.button whileHover={{ scale: 1.1 }} style={{ background: "none", border: "none", color: T.dim, cursor: "pointer", padding: "0.5rem" }}>
+                <MoreVertical size={20} />
+              </motion.button>
             </div>
 
-            {/* Chat History */}
             <div style={{ 
               flex: 1, 
               overflowY: "auto", 
@@ -771,8 +703,6 @@ export default function MessagesPage() {
                   const next = messages[i + 1];
                   const isConsecutivePrev = prev && prev.sender_id === m.sender_id;
                   const isConsecutiveNext = next && next.sender_id === m.sender_id;
-                  
-                  // Organic Variable Radii
                   const borderRadius = isMine 
                     ? `${isConsecutivePrev ? '12px' : '22px'} 22px ${isConsecutiveNext ? '12px' : '4px'} ${isConsecutivePrev ? '12px' : '22px'}`
                     : `22px ${isConsecutivePrev ? '12px' : '22px'} ${isConsecutivePrev ? '12px' : '22px'} ${isConsecutiveNext ? '12px' : '4px'}`;
@@ -793,26 +723,7 @@ export default function MessagesPage() {
                         position: "relative"
                       }}
                     >
-                      {m.image_url && (
-                        <motion.div 
-                          whileHover={{ scale: 1.02 }}
-                          style={{ marginBottom: "6px", cursor: "pointer" }}
-                        >
-                          <img 
-                            src={m.image_url} 
-                            alt="Attached" 
-                            style={{ 
-                              maxWidth: "280px", 
-                              maxHeight: "340px", 
-                              borderRadius: "18px",
-                              boxShadow: T.shadow,
-                              border: `1px solid ${T.border}`,
-                              objectFit: "cover"
-                            }} 
-                          />
-                        </motion.div>
-                      )}
-                      {m.content && m.content !== "Sent an image" && (
+                      {m.content && (
                         <div style={{
                           padding: "0.75rem 1.1rem",
                           borderRadius: borderRadius,
@@ -846,7 +757,6 @@ export default function MessagesPage() {
               </AnimatePresence>
             </div>
 
-            {/* Input Area */}
             <div style={{ 
               padding: "1rem 1.5rem 1.5rem 1.5rem", 
               backgroundColor: "transparent",
@@ -856,176 +766,103 @@ export default function MessagesPage() {
               right: 0,
               zIndex: 30
             }}>
-              {pendingImage && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  style={{ marginBottom: "0.8rem", position: "relative", width: "fit-content" }}
+              <div style={{ 
+                display: "flex", 
+                alignItems: "flex-end", 
+                gap: "0.8rem",
+                backgroundColor: theme === 'dark' ? "rgba(28, 28, 30, 0.9)" : "rgba(255, 255, 255, 0.9)",
+                backdropFilter: "blur(30px) saturate(190%)",
+                borderRadius: "26px",
+                padding: "0.5rem 0.8rem",
+                border: `1px solid ${T.border}`,
+                boxShadow: T.shadow
+              }}>
+                <div style={{ padding: "0.5rem" }} />
+                <textarea 
+                  value={newMessage}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                  placeholder="Message..."
+                  rows={1}
+                  style={{
+                    flex: 1,
+                    background: "none",
+                    border: "none",
+                    color: T.text,
+                    fontSize: "1rem",
+                    padding: "0.6rem 0",
+                    outline: "none",
+                    resize: "none",
+                    maxHeight: "160px",
+                    minHeight: "26px",
+                    lineHeight: 1.5,
+                    overflowY: "auto",
+                    fontFamily: "inherit"
+                  }}
+                  className="hide-scroll"
+                />
+                <motion.button 
+                  onClick={sendMessage}
+                  disabled={!newMessage.trim() || sending}
+                  whileHover={{ scale: newMessage.trim() ? 1.1 : 1 }}
+                  whileTap={{ scale: newMessage.trim() ? 0.9 : 1 }}
+                  style={{
+                    backgroundColor: newMessage.trim() ? T.accent : "transparent",
+                    color: newMessage.trim() ? "#fff" : T.dim,
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "36px",
+                    height: "36px",
+                    cursor: newMessage.trim() ? "pointer" : "default",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    boxShadow: newMessage.trim() ? "0 4px 12px rgba(255,109,31,0.3)" : "none",
+                    marginBottom: "4px"
+                  }}
                 >
-                  <img src={pendingImage} alt="Preview" style={{ height: "64px", borderRadius: "12px", border: `1px solid ${T.border}`, boxShadow: T.shadow }} />
-                  <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setPendingImage(null)}
-                    style={{ position: "absolute", top: -8, right: -8, backgroundColor: T.accent, color: "#fff", borderRadius: "50%", padding: "4px", border: "none", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}
-                  >
-                    <X size={12} />
-                  </motion.button>
-                </motion.div>
-              )}
-
-              <div style={{ position: "relative" }}>
-                <AnimatePresence>
-                  {showEmojis && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                      style={{
-                        position: "absolute",
-                        bottom: "calc(100% + 12px)",
-                        left: 0,
-                        backgroundColor: T.panel,
-                        border: `1px solid ${T.border}`,
-                        borderRadius: "20px",
-                        padding: "1rem",
-                        display: "grid",
-                        gridTemplateColumns: "repeat(8, 1fr)",
-                        gap: "0.5rem",
-                        boxShadow: T.shadow,
-                        zIndex: 40,
-                        backdropFilter: "blur(20px)"
-                      }}
-                    >
-                      {EMOJIS.map(e => (
-                        <motion.button 
-                          key={e} 
-                          whileHover={{ scale: 1.2, backgroundColor: T.accentSoft }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => {
-                            setNewMessage(prev => prev + e);
-                          }}
-                          style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", padding: "0.4rem", borderRadius: "10px", transition: "all 0.1s ease" }}
-                        >
-                          {e}
-                        </motion.button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div style={{ 
-                  display: "flex", 
-                  alignItems: "flex-end", 
-                  gap: "0.8rem",
-                  backgroundColor: theme === 'dark' ? "rgba(28, 28, 30, 0.9)" : "rgba(255, 255, 255, 0.9)",
-                  backdropFilter: "blur(30px) saturate(190%)",
-                  borderRadius: "26px",
-                  padding: "0.5rem 0.8rem",
-                  border: `1px solid ${T.border}`,
-                  boxShadow: T.shadow
-                }}>
-                  <motion.button 
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setShowEmojis(!showEmojis)}
-                    style={{ background: "none", border: "none", color: showEmojis ? T.accent : T.dim, cursor: "pointer", padding: "0.5rem" }}
-                  >
-                    <Smile size={24} />
-                  </motion.button>
-                  <label style={{ display: "flex", alignItems: "center", cursor: "pointer", padding: "0.5rem", color: T.dim }}>
-                    <motion.div whileHover={{ scale: 1.1, color: T.accent }} whileTap={{ scale: 0.9 }}>
-                      <Paperclip size={24} />
-                    </motion.div>
-                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: "none" }} />
-                  </label>
-                  
-                  <textarea 
-                    value={newMessage}
-                    onChange={(e) => {
-                      setNewMessage(e.target.value);
-                      e.target.style.height = 'auto';
-                      e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                    placeholder="Message..."
-                    rows={1}
-                    style={{
-                      flex: 1,
-                      background: "none",
-                      border: "none",
-                      color: T.text,
-                      fontSize: "1rem",
-                      padding: "0.6rem 0",
-                      outline: "none",
-                      resize: "none",
-                      maxHeight: "160px",
-                      minHeight: "26px",
-                      lineHeight: 1.5,
-                      overflowY: "auto",
-                      fontFamily: "inherit"
-                    }}
-                    className="hide-scroll"
-                  />
-                  <motion.button 
-                    onClick={sendMessage}
-                    disabled={(!newMessage.trim() && !pendingImage) || sending || uploadingImage}
-                    whileHover={{ scale: (newMessage.trim() || pendingImage) ? 1.1 : 1 }}
-                    whileTap={{ scale: (newMessage.trim() || pendingImage) ? 0.9 : 1 }}
-                    style={{
-                      backgroundColor: (newMessage.trim() || pendingImage) ? T.accent : "transparent",
-                      color: (newMessage.trim() || pendingImage) ? "#fff" : T.dim,
-                      border: "none",
-                      borderRadius: "50%",
-                      width: "36px",
-                      height: "36px",
-                      cursor: (newMessage.trim() || pendingImage) ? "pointer" : "default",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      boxShadow: (newMessage.trim() || pendingImage) ? "0 4px 12px rgba(255,109,31,0.3)" : "none",
-                      marginBottom: "4px"
-                    }}
-                  >
-                    {uploadingImage ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} style={{ width: "18px", height: "18px", border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%" }} /> : <Send size={18} />}
-                  </motion.button>
-                </div>
+                  <Send size={18} />
+                </motion.button>
               </div>
             </div>
           </>
         ) : (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: T.dim }}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                style={{ textAlign: "center" }}
-              >
-                <div style={{ 
-                  width: "120px", 
-                  height: "120px", 
-                  borderRadius: "32px", 
-                  backgroundColor: T.pageBg, 
-                  display: "flex", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  margin: "0 auto 2rem auto",
-                  boxShadow: T.shadow,
-                  border: `1px solid ${T.border}`
-                }}>
-                  <MessageSquare size={56} style={{ strokeWidth: 1, opacity: 0.2, color: T.accent }} />
-                </div>
-                <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: T.text, margin: "0 0 0.5rem 0", letterSpacing: "-0.02em" }}>Select a Conversation</h2>
-                <p style={{ fontSize: "0.95rem", color: T.muted, maxWidth: "260px", margin: "0 auto" }}>Choose a thread from the sidebar to start collaborating with other creatives.</p>
-              </motion.div>
-            </div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: T.dim }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              style={{ textAlign: "center" }}
+            >
+              <div style={{ 
+                width: "120px", 
+                height: "120px", 
+                borderRadius: "32px", 
+                backgroundColor: T.pageBg, 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                margin: "0 auto 2rem auto",
+                boxShadow: T.shadow,
+                border: `1px solid ${T.border}`
+              }}>
+                <MessageSquare size={56} style={{ strokeWidth: 1, opacity: 0.2, color: T.accent }} />
+              </div>
+              <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: T.text, margin: "0 0 0.5rem 0", letterSpacing: "-0.02em" }}>Select a Conversation</h2>
+              <p style={{ fontSize: "0.95rem", color: T.muted, maxWidth: "260px", margin: "0 auto" }}>Choose a thread from the sidebar to start collaborating with other creatives.</p>
+            </motion.div>
+          </div>
         )}
       </div>
 
