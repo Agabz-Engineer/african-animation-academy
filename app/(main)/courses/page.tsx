@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Clock, Camera, X, Lock, Play } from "lucide-react";
@@ -71,7 +72,9 @@ export default function CoursesPage() {
   const [theme, setTheme]       = useState<"dark"|"light">(getInitialTheme);
   const [search, setSearch]     = useState("");
   const [skillLevel, setSkill]  = useState("beginner");
-  const [subscriptionTier, setSubscriptionTier] = useState<"free" | "pro" | "team">("free");
+  const [hasProAccess, setHasProAccess] = useState(false);
+  const [subscriptionEndsAt, setSubscriptionEndsAt] = useState<string | null>(null);
+  const [subscriptionExpired, setSubscriptionExpired] = useState(false);
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
@@ -85,14 +88,47 @@ export default function CoursesPage() {
       client.auth.getUser().then(async ({ data: { user } }) => {
         setSkill(user?.user_metadata?.skill_level || "beginner");
         if (user?.id) {
-          const { data } = await client
+          const { data: profile } = await client
             .from("profiles")
             .select("subscription_tier")
             .eq("id", user.id)
             .single();
-          if (data?.subscription_tier === "pro" || data?.subscription_tier === "team") {
-            setSubscriptionTier(data.subscription_tier);
+          const profileHasPro =
+            profile?.subscription_tier === "pro" || profile?.subscription_tier === "team";
+
+          let nextHasPro = profileHasPro;
+          let nextEndsAt: string | null = null;
+          let nextExpired = false;
+
+          const { data: subscription } = await client
+            .from("subscriptions")
+            .select("plan, status, ends_at, created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (subscription && (subscription.plan === "pro" || subscription.plan === "team")) {
+            nextEndsAt = subscription.ends_at ?? null;
+            if (subscription.status !== "active") {
+              nextHasPro = false;
+              nextExpired = true;
+            } else if (subscription.ends_at) {
+              const endsAtDate = new Date(subscription.ends_at);
+              if (!Number.isNaN(endsAtDate.getTime())) {
+                nextHasPro = endsAtDate > new Date();
+                nextExpired = !nextHasPro;
+              } else {
+                nextHasPro = true;
+              }
+            } else {
+              nextHasPro = true;
+            }
           }
+
+          setHasProAccess(nextHasPro);
+          setSubscriptionEndsAt(nextEndsAt);
+          setSubscriptionExpired(nextExpired);
         }
         setLoading(false);
       });
@@ -113,7 +149,10 @@ export default function CoursesPage() {
     c.title.toLowerCase().includes(search.toLowerCase()) ||
     c.instructor.toLowerCase().includes(search.toLowerCase())
   );
-  const hasPro     = subscriptionTier === "pro" || subscriptionTier === "team";
+  const hasPro     = hasProAccess;
+  const expiryLabel = subscriptionEndsAt && !Number.isNaN(new Date(subscriptionEndsAt).getTime())
+    ? new Date(subscriptionEndsAt).toLocaleDateString()
+    : null;
   const isLocked   = (course: Course) => {
     const levelLocked = !accessible.includes(course.level);
     const proLocked = (course.access ?? "free") === "pro" && !hasPro;
@@ -160,6 +199,23 @@ export default function CoursesPage() {
               · {accessible.join(" + ")} unlocked
             </span>
           </div>
+
+          {subscriptionExpired && (
+            <div style={{ marginTop: "1rem", padding: "0.7rem 0.9rem", borderRadius: "12px", border: `1px solid ${T.border}`, backgroundColor: T.surface, display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+              <div style={{ width: "30px", height: "30px", borderRadius: "10px", backgroundColor: T.accentSoft, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}` }}>
+                <Lock style={{ width: "14px", height: "14px", color: T.accent }} />
+              </div>
+              <div style={{ fontSize: "0.8rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>
+                Your Pro access expired{expiryLabel ? ` on ${expiryLabel}` : ""}. Renew to unlock Pro courses.
+              </div>
+              <Link
+                href="/pricing"
+                style={{ marginLeft: "auto", padding: "0.45rem 0.9rem", borderRadius: "8px", border: `1px solid ${T.accent}`, color: T.accent, textDecoration: "none", fontSize: "0.75rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, whiteSpace: "nowrap" }}
+              >
+                Renew Pro
+              </Link>
+            </div>
+          )}
         </motion.div>
       </div>
 
