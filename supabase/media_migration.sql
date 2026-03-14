@@ -1,8 +1,9 @@
 -- Migration: Add image support to direct messages
 -- Run this in Supabase SQL Editor
 
--- 1. Add image_url column
+-- 1. Add image_url and is_pinned column
 alter table public.direct_messages add column if not exists image_url text;
+alter table public.direct_messages add column if not exists is_pinned boolean default false;
 
 -- 2. Create storage bucket for message attachments
 -- Note: This is usually done via the UI, but here are the policies.

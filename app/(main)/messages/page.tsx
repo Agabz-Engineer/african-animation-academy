@@ -11,7 +11,8 @@ import {
   Paperclip,
   Smile,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Pin
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -38,16 +39,17 @@ type Conversation = {
 };
 
 const DARK = {
-  pageBg: "#000000",
-  panel: "#1C1C1E",
-  border: "rgba(255,255,255,0.08)",
-  text: "#F5F5F7",
-  muted: "#86868B",
-  dim: "#666666",
+  pageBg: "#0B141A", // WhatsApp-like dark background
+  panel: "#111B21",  // Lighter sidebar/panel
+  border: "rgba(255,255,255,0.05)",
+  text: "#E9EDEF",
+  muted: "#8696A0",
+  dim: "#667781",
   accent: "#FF6D1F",
-  accentSoft: "rgba(255,109,31,0.15)",
-  input: "#2C2C2E",
-  glass: "rgba(28,28,30,0.8)",
+  accentSoft: "rgba(255,109,31,0.12)",
+  input: "#2A3942",
+  glass: "rgba(11,20,26,0.9)",
+  unreadBadge: "#00A884", // WhatsApp green
 };
 
 const LIGHT = {
@@ -61,6 +63,7 @@ const LIGHT = {
   accentSoft: "rgba(255,109,31,0.08)",
   input: "#E5E5EA",
   glass: "rgba(255,255,255,0.8)",
+  unreadBadge: "#00A884",
 };
 
 const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️", "📍", "🎨", "🎬", "💎"];
@@ -254,21 +257,32 @@ export default function MessagesPage() {
   }
 
   async function sendMessage() {
-    if (!user || !selectedChat || (!newMessage.trim() && !pendingImage) || sending || !supabase) return;
+    if (!user || !selectedChat || (!newMessage.trim() && !pendingImage) || sending || !supabase) {
+      console.log("Send blocked:", { user: !!user, selectedChat: !!selectedChat, hasContent: !!newMessage.trim(), hasImage: !!pendingImage, sending, hasSupabase: !!supabase });
+      return;
+    }
+    
     setSending(true);
     try {
+      const payload = {
+        sender_id: user.id,
+        receiver_id: selectedChat.other_user_id,
+        content: newMessage.trim() || (pendingImage ? "Sent an image" : ""),
+        image_url: pendingImage
+      };
+
       const { data, error } = await supabase
         .from("direct_messages")
-        .insert({
-          sender_id: user.id,
-          receiver_id: selectedChat.other_user_id,
-          content: newMessage.trim() || "Sent an image",
-          image_url: pendingImage
-        })
+        .insert(payload)
         .select("*")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error:", error);
+        alert(`Failed to send: ${error.message}`);
+        throw error;
+      }
+
       setMessages(prev => [...prev, data]);
       setNewMessage("");
       setPendingImage(null);
@@ -289,7 +303,8 @@ export default function MessagesPage() {
         return prev;
       });
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.error("Critical error in sendMessage:", err);
+      // alert("An unexpected error occurred. Please check your connection.");
     } finally {
       setSending(false);
     }
@@ -418,38 +433,34 @@ export default function MessagesPage() {
         zIndex: 10
       }}>
         <div style={{ 
-          padding: "1.5rem 1rem", 
-          borderBottom: `1px solid ${T.border}`,
-          position: "sticky",
-          top: 0,
-          backgroundColor: T.glass,
-          backdropFilter: "saturate(180%) blur(20px)",
-          WebkitBackdropFilter: "saturate(180%) blur(20px)",
-          zIndex: 10
+          padding: "1rem", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "space-between",
+          backgroundColor: T.panel
         }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.2rem", padding: "0 0.5rem" }}>
-            <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>Messages</h1>
-            <div style={{ padding: "0.5rem", borderRadius: "50%", backgroundColor: T.accentSoft, cursor: "pointer" }}>
-               <MessageSquare size={18} color={T.accent} />
-            </div>
+          <h1 style={{ fontSize: "1.4rem", fontWeight: 700, margin: 0, color: T.text }}>Chats</h1>
+          <div style={{ display: "flex", gap: "1rem" }}>
+             <MessageSquare size={20} color={T.dim} style={{ cursor: "pointer" }} />
+             <MoreVertical size={20} color={T.dim} style={{ cursor: "pointer" }} />
           </div>
-          <div style={{ position: "relative", padding: "0 0.5rem" }}>
-            <Search style={{ position: "absolute", left: "1.2rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: T.dim }} />
+        </div>
+
+        <div style={{ padding: "0.5rem 1rem", backgroundColor: T.panel }}>
+          <div style={{ position: "relative" }}>
+            <Search style={{ position: "absolute", left: "0.8rem", top: "50%", transform: "translateY(-50%)", width: "16px", height: "16px", color: T.dim }} />
             <input 
-              placeholder="Search..."
+              placeholder="Search or start new chat"
               style={{
                 width: "100%",
-                padding: "0.6rem 0.6rem 0.6rem 2.5rem",
-                borderRadius: "12px",
+                padding: "0.5rem 0.5rem 0.5rem 2.5rem",
+                borderRadius: "8px",
                 border: "none",
                 backgroundColor: T.input,
                 color: T.text,
-                fontSize: "0.95rem",
+                fontSize: "0.85rem",
                 outline: "none",
-                transition: "box-shadow 0.2s ease"
               }}
-              onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px ${T.accentSoft}`}
-              onBlur={(e) => e.target.style.boxShadow = "none"}
             />
           </div>
         </div>
@@ -468,36 +479,33 @@ export default function MessagesPage() {
             <AnimatePresence>
               {conversations.map(convo => {
                 const isActive = selectedChat?.other_user_id === convo.other_user_id;
+                const isUnread = convo.unread_count > 0;
+                
                 return (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     key={convo.other_user_id}
                     onClick={() => {
                       setSelectedChat(convo);
                       fetchMessages(convo.other_user_id);
                     }}
-                    whileHover={{ scale: 1.02, backgroundColor: isActive ? T.accentSoft : T.input }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ backgroundColor: isActive ? T.accentSoft : T.input }}
                     style={{
-                      height: "56px",
-                      margin: "0.5rem 0.8rem",
-                      borderRadius: "28px",
+                      padding: "0.8rem 1rem",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
-                      gap: "0.8rem",
-                      padding: "0 1rem",
-                      border: isActive ? `1.5px solid ${T.accent}` : `1px solid ${T.border}`,
-                      backgroundColor: isActive ? T.accentSoft : theme === 'dark' ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
-                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                      position: "relative",
-                      overflow: "hidden"
+                      gap: "0.9rem",
+                      backgroundColor: isActive ? T.accentSoft : "transparent",
+                      borderBottom: `1px solid ${T.border}`,
+                      transition: "background-color 0.2s ease",
+                      position: "relative"
                     }}
                   >
                     <div style={{ 
-                      width: "36px", 
-                      height: "36px", 
+                      width: "48px", 
+                      height: "48px", 
                       borderRadius: "50%", 
                       backgroundColor: T.accent,
                       backgroundImage: convo.other_user_avatar ? `url(${convo.other_user_avatar})` : "none",
@@ -511,34 +519,65 @@ export default function MessagesPage() {
                     }}>
                       {!convo.other_user_avatar && convo.other_user_name.charAt(0)}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ 
-                        fontWeight: 600, 
-                        fontSize: "0.85rem", 
-                        margin: 0, 
-                        color: T.text,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis"
-                      }}>{convo.other_user_name}</p>
-                      <p style={{ 
-                        fontSize: "0.75rem", 
-                        margin: 0, 
-                        color: T.muted,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis"
-                      }}>{convo.last_message}</p>
+                    
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: "40px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "2px" }}>
+                        <h3 style={{ 
+                          fontSize: "1rem", 
+                          fontWeight: 600, 
+                          color: T.text, 
+                          margin: 0,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis"
+                        }}>
+                          {convo.other_user_name}
+                        </h3>
+                        <span style={{ 
+                          fontSize: "0.75rem", 
+                          color: isUnread ? T.unreadBadge : T.dim, 
+                          fontWeight: isUnread ? 600 : 400 
+                        }}>
+                          {timeAgo(convo.last_message_at)}
+                        </span>
+                      </div>
+                      
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <p style={{ 
+                          fontSize: "0.85rem", 
+                          color: isUnread ? T.text : T.muted, 
+                          margin: 0,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          fontWeight: isUnread ? 500 : 400
+                        }}>
+                          {convo.last_message}
+                        </p>
+                        
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          {convo.other_user_id === 'pinned-demo' && <Pin size={14} style={{ color: T.dim, transform: "rotate(45deg)" }} />}
+                          {isUnread && (
+                            <div style={{ 
+                              backgroundColor: T.unreadBadge,
+                              color: "#fff",
+                              borderRadius: "12px",
+                              minWidth: "20px",
+                              height: "20px",
+                              padding: "0 6px",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              boxShadow: "0 1px 2px rgba(0,0,0,0.1)"
+                            }}>
+                              {convo.unread_count}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    {convo.unread_count > 0 && (
-                      <div style={{ 
-                        width: "8px", 
-                        height: "8px", 
-                        borderRadius: "50%", 
-                        backgroundColor: T.accent,
-                        flexShrink: 0
-                      }} />
-                    )}
                   </motion.div>
                 );
               })}
