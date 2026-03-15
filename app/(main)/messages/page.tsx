@@ -96,6 +96,7 @@ const timeAgo = (isoDate: string) => {
 export default function MessagesPage() {
   const theme = useThemeMode();
   const T = theme === "dark" ? DARK : LIGHT;
+  const [isMobile, setIsMobile] = useState(false);
   const [user, setUser] = useState<SessionUser | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
@@ -108,6 +109,18 @@ export default function MessagesPage() {
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncViewport = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
 
   // Auth and Session initialization
   const fetchConversations = useCallback(async (userId: string) => {
@@ -387,6 +400,7 @@ export default function MessagesPage() {
   return (
     <div style={{ 
       display: "flex", 
+      justifyContent: "center",
       height: "calc(100vh - 64px)", 
       backgroundColor: T.pageBg,
       backgroundImage: T.meshGradient,
@@ -410,18 +424,34 @@ export default function MessagesPage() {
         <div style={{ position: "absolute", bottom: "10%", right: "10%", width: "30vw", height: "30vw", background: "radial-gradient(circle, rgba(255, 109, 31, 0.1) 0%, transparent 70%)", filter: "blur(50px)" }} />
       </div>
 
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1380px",
+          display: "flex",
+          gap: isMobile ? 0 : "1.25rem",
+          padding: isMobile ? 0 : "1rem",
+          position: "relative",
+          zIndex: 5,
+        }}
+      >
       {/* Sidebar: Global Conversation List */}
       <div style={{ 
-        width: selectedChat ? "350px" : "100%", 
-        maxWidth: "400px",
-        borderRight: `1px solid ${T.border}`,
-        display: selectedChat ? "none" : "flex",
+        width: isMobile ? "100%" : "360px",
+        minWidth: isMobile ? "auto" : "320px",
+        maxWidth: isMobile ? "100%" : "380px",
+        borderRight: isMobile ? `1px solid ${T.border}` : "none",
+        border: isMobile ? "none" : `1px solid ${T.border}`,
+        borderRadius: isMobile ? 0 : "28px",
+        display: isMobile ? (selectedChat ? "none" : "flex") : "flex",
         flexDirection: "column",
         backgroundColor: T.panel,
         backdropFilter: "blur(30px) saturate(190%)",
         WebkitBackdropFilter: "blur(30px) saturate(190%)",
         position: "relative",
-        zIndex: 10
+        overflow: "hidden",
+        zIndex: 10,
+        boxShadow: isMobile ? "none" : T.shadow,
       }}>
         <div style={{ 
           padding: "1.2rem 1rem 0.5rem 1rem", 
@@ -626,11 +656,18 @@ export default function MessagesPage() {
       {/* Main Content: Chat View */}
       <div style={{ 
         flex: 1, 
-        display: selectedChat ? "flex" : "none", 
+        minWidth: 0,
+        display: isMobile ? (selectedChat ? "flex" : "none") : "flex", 
         flexDirection: "column",
-        backgroundColor: "transparent",
+        backgroundColor: isMobile ? "transparent" : T.panel,
+        backdropFilter: isMobile ? "none" : "blur(30px) saturate(190%)",
+        WebkitBackdropFilter: isMobile ? "none" : "blur(30px) saturate(190%)",
         position: "relative",
-        zIndex: 5
+        zIndex: 5,
+        border: isMobile ? "none" : `1px solid ${T.border}`,
+        borderRadius: isMobile ? 0 : "28px",
+        overflow: "hidden",
+        boxShadow: isMobile ? "none" : T.shadow,
       }}>
         {selectedChat ? (
           <>
@@ -640,7 +677,7 @@ export default function MessagesPage() {
               display: "flex", 
               alignItems: "center", 
               justifyContent: "space-between",
-              backgroundColor: T.glass,
+              backgroundColor: isMobile ? T.glass : T.panel,
               backdropFilter: "saturate(210%) blur(40px)",
               WebkitBackdropFilter: "saturate(210%) blur(40px)",
               position: "absolute",
@@ -703,7 +740,10 @@ export default function MessagesPage() {
               padding: "5rem 1.5rem 8.5rem 1.5rem", 
               display: "flex", 
               flexDirection: "column", 
-              gap: "0.4rem" 
+              gap: "0.4rem",
+              maxWidth: isMobile ? "100%" : "980px",
+              width: "100%",
+              margin: "0 auto",
             }}>
               <AnimatePresence initial={false}>
                 {messages.map((m, i) => {
@@ -785,6 +825,9 @@ export default function MessagesPage() {
                 padding: "0.5rem 0.8rem",
                 border: `1px solid ${T.border}`,
                 boxShadow: T.shadow
+              ,
+                maxWidth: isMobile ? "100%" : "980px",
+                margin: "0 auto",
               }}>
                 <div style={{ padding: "0.5rem" }} />
                 <textarea 
@@ -846,7 +889,7 @@ export default function MessagesPage() {
               </div>
             </div>
           </>
-        ) : (
+          ) : (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: T.dim }}>
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -874,6 +917,7 @@ export default function MessagesPage() {
           </div>
         )}
       </div>
+      </div>
 
       <style jsx>{`
         .hide-scroll::-webkit-scrollbar {
@@ -899,14 +943,6 @@ export default function MessagesPage() {
         }
         .mobile-back {
           display: none !important;
-        }
-        @media (min-width: 768px) {
-           div[style*="width: 350px"] {
-             display: flex !important;
-           }
-           div[style*="flex: 1"] {
-             display: flex !important;
-           }
         }
         @media (max-width: 767px) {
           .mobile-back {
