@@ -14,7 +14,7 @@ import {
   UserPlus,
   RefreshCw
 } from "lucide-react";
-import { banUser, unbanUser, createAdminUser, deleteUser, getAdminUsers, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
+import { banUser, unbanUser, createAdminUser, deleteUser, getAdminUsers, grantUserProAccess, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -125,6 +125,9 @@ export default function UserManagement() {
           break;
         case 'remove_admin':
           await setUserRole(userId, 'user');
+          break;
+        case 'grant_pro':
+          await grantUserProAccess({ userId });
           break;
       }
       
@@ -261,6 +264,31 @@ export default function UserManagement() {
       }}>
         <Shield style={{ width: '12px', height: '12px' }} />
         {role.charAt(0).toUpperCase() + role.slice(1)}
+      </span>
+    );
+  };
+
+  const getSubscriptionBadge = (tier?: string | null) => {
+    const value = tier || "free";
+    const colors = {
+      free: UI.textMuted,
+      pro: UI.accent,
+      team: UI.success,
+    } as const;
+    const color = colors[value as keyof typeof colors] || UI.textMuted;
+
+    return (
+      <span style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "0.25rem 0.75rem",
+        borderRadius: "9999px",
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        backgroundColor: `${color}20`,
+        color,
+      }}>
+        {value.charAt(0).toUpperCase() + value.slice(1)}
       </span>
     );
   };
@@ -576,6 +604,9 @@ export default function UserManagement() {
                   Skill Level
                 </th>
                 <th style={{ padding: "1rem", textAlign: "left", color: UI.textMuted, fontSize: "0.875rem", fontWeight: 600 }}>
+                  Plan
+                </th>
+                <th style={{ padding: "1rem", textAlign: "left", color: UI.textMuted, fontSize: "0.875rem", fontWeight: 600 }}>
                   Joined
                 </th>
                 <th style={{ padding: "1rem", textAlign: "left", color: UI.textMuted, fontSize: "0.875rem", fontWeight: 600 }}>
@@ -627,6 +658,9 @@ export default function UserManagement() {
                     }}>
                       {user.skill_level || 'Not set'}
                     </span>
+                  </td>
+                  <td style={{ padding: "1rem" }}>
+                    {getSubscriptionBadge(user.subscription_tier)}
                   </td>
                   <td style={{ padding: "1rem" }}>
                     <div style={{ color: UI.textMuted, fontSize: "0.875rem" }}>
@@ -723,6 +757,11 @@ export default function UserManagement() {
             await handleUserAction(selectedUser.status === "banned" ? "unban" : "ban", selectedUser.id);
             await fetchUsers();
           }}
+          onGrantPro={async () => {
+            if (!selectedUser) return;
+            await handleUserAction("grant_pro", selectedUser.id);
+            await fetchUsers();
+          }}
           UI={UI}
         />
       )}
@@ -744,6 +783,7 @@ function UserModal({
   onCreate,
   onToggleRole,
   onToggleStatus,
+  onGrantPro,
   UI,
 }: {
   user: User | null;
@@ -758,6 +798,7 @@ function UserModal({
   }) => Promise<void>;
   onToggleRole: () => Promise<void>;
   onToggleStatus: () => Promise<void>;
+  onGrantPro: () => Promise<void>;
   UI: typeof DARK_UI;
 }) {
   const [email, setEmail] = useState("");
@@ -789,6 +830,10 @@ function UserModal({
               <div style={{ color: UI.textMuted, fontSize: "0.78rem" }}>Email</div>
               <div style={{ color: UI.text }}>{user.email}</div>
             </div>
+            <div>
+              <div style={{ color: UI.textMuted, fontSize: "0.78rem" }}>Subscription</div>
+              <div style={{ color: UI.text, fontWeight: 600 }}>{user.subscription_tier || "free"}</div>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem" }}>
               <button onClick={() => void onToggleRole()} style={{ padding: "0.7rem", borderRadius: "8px", border: "none", backgroundColor: UI.info, color: "#fff", cursor: "pointer" }}>
                 {user.role === "admin" ? "Remove Admin" : "Make Admin"}
@@ -797,6 +842,9 @@ function UserModal({
                 {user.status === "banned" ? "Unban User" : "Ban User"}
               </button>
             </div>
+            <button onClick={() => void onGrantPro()} style={{ padding: "0.7rem", borderRadius: "8px", border: "none", backgroundColor: UI.accent, color: "#fff", cursor: "pointer" }}>
+              {user.subscription_tier === "pro" ? "Refresh Pro Access" : "Grant Pro Access"}
+            </button>
           </div>
         ) : (
           <div style={{ display: "grid", gap: "0.75rem" }}>

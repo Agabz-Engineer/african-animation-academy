@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   User,
 } from "lucide-react";
-import { getAdminPayments } from "@/app/admin/actions";
+import { getAdminPayments, grantUserProAccess } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -52,6 +52,8 @@ interface Payment {
   completed_at: string | null;
   user_email?: string;
   user_name?: string | null;
+  user_subscription_tier?: string | null;
+  user_role?: string;
 }
 
 export default function PaymentsPage() {
@@ -60,6 +62,7 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [actionLoadingFor, setActionLoadingFor] = useState<string | null>(null);
 
   const UI = theme === "dark" ? DARK_UI : LIGHT_UI;
 
@@ -145,6 +148,19 @@ export default function PaymentsPage() {
         {info.label}
       </span>
     );
+  };
+
+  const handleGrantPro = async (payment: Payment) => {
+    setActionLoadingFor(payment.id);
+    try {
+      await grantUserProAccess({ userId: payment.user_id, paymentId: payment.id });
+      await fetchPayments();
+    } catch (error) {
+      console.error("Error granting pro access:", error);
+      alert(error instanceof Error ? error.message : "Failed to grant pro access.");
+    } finally {
+      setActionLoadingFor(null);
+    }
   };
 
   if (loading) {
@@ -366,6 +382,29 @@ export default function PaymentsPage() {
                 </div>
 
                 <div>{statusChip(payment.status)}</div>
+                <button
+                  onClick={() => void handleGrantPro(payment)}
+                  disabled={payment.status !== "completed" || actionLoadingFor === payment.id}
+                  style={{
+                    padding: "0.5rem 0.8rem",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor:
+                      payment.status === "completed" && actionLoadingFor !== payment.id ? UI.accent : UI.border,
+                    color:
+                      payment.status === "completed" && actionLoadingFor !== payment.id ? "#FFFFFF" : UI.textMuted,
+                    cursor:
+                      payment.status === "completed" && actionLoadingFor !== payment.id ? "pointer" : "not-allowed",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {actionLoadingFor === payment.id
+                    ? "Granting..."
+                    : payment.user_subscription_tier === "pro"
+                      ? "Refresh Pro"
+                      : "Grant Pro"}
+                </button>
               </div>
             ))}
           </div>

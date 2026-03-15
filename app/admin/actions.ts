@@ -25,6 +25,9 @@ type PaymentRow = {
   currency: string | null;
   status: "pending" | "completed" | "failed" | "refunded";
   payment_method: string | null;
+  provider?: string | null;
+  provider_reference?: string | null;
+  term_months?: number | null;
   created_at: string;
   completed_at: string | null;
 };
@@ -388,16 +391,18 @@ export async function getAdminCommunityPosts() {
 export async function getAdminPayments() {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
 
-  const [{ data: payments, error }, authUsers] = await Promise.all([
+  const [{ data: payments, error }, authUsers, { data: profiles, error: profilesError }] = await Promise.all([
     supabaseAdmin
       .from("payments")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(200),
     listAllAuthUsers(),
+    supabaseAdmin.from("profiles").select("id, subscription_tier, role"),
   ]);
 
   if (error) throw error;
+  if (profilesError) throw profilesError;
 
   const userMap = new Map(
     authUsers.map((user) => [
@@ -409,18 +414,27 @@ export async function getAdminPayments() {
           (user.user_metadata?.name as string | undefined) ||
           user.email ||
           "Unknown",
-      },
+        },
+    ])
+  );
+  const profileMap = new Map(
+    (profiles || []).map((profile: { id: string; subscription_tier: string | null; role: string | null }) => [
+      profile.id,
+      profile,
     ])
   );
 
   return (payments || []).map((payment: PaymentRow) => {
     const userInfo = userMap.get(payment.user_id);
+    const profileInfo = profileMap.get(payment.user_id);
     return {
       ...payment,
       amount: payment.amount ?? 0,
       currency: payment.currency || "USD",
       user_email: userInfo?.email || "unknown",
       user_name: userInfo?.name || null,
+      user_subscription_tier: profileInfo?.subscription_tier || null,
+      user_role: profileInfo?.role || "user",
     };
   });
 }
@@ -449,10 +463,98 @@ export async function unbanUser(userId: string) {
 
 export async function setUserRole(userId: string, role: string) {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+  const { data: authUserData, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+  if (authUserError) throw authUserError;
+
   const { error } = await supabaseAdmin
     .from('profiles')
     .upsert({ id: userId, role }, { onConflict: 'id' });
   if (error) throw error;
+
+  const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    app_metadata: {
+      ...(authUserData.user?.app_metadata || {}),
+      role,
+    },
+  });
+  if (authUpdateError) throw authUpdateError;
+
+  return { success: true };
+}
+
+export async function grantUserProAccess(input: { userId: string; paymentId?: string }) {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  let payment: PaymentRow | null = null;
+
+  if (input.paymentId) {
+    const { data, error } = await supabaseAdmin
+      .from("payments")
+      .select("id, user_id, amount, currency, status, payment_method, provider, provider_reference, term_months, created_at, completed_at")
+      .eq("id", input.paymentId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error("Payment record not found.");
+
+    payment = data as PaymentRow;
+
+    if (payment.user_id !== input.userId) {
+      throw new Error("Payment does not belong to the selected user.");
+    }
+
+    if (payment.status !== "completed") {
+      throw new Error("Only completed payments can grant Pro access.");
+    }
+  }
+
+  const termMonths = Math.max(1, payment?.term_months || 1);
+  const billingCycle = termMonths === 1 ? "monthly" : "annual";
+  const startedAt = payment?.completed_at || payment?.created_at || new Date().toISOString();
+  const endsAt = new Date(startedAt);
+  endsAt.setMonth(endsAt.getMonth() + termMonths);
+
+  const { data: existingSubscription, error: subscriptionLookupError } = await supabaseAdmin
+    .from("subscriptions")
+    .select("id")
+    .eq("user_id", input.userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (subscriptionLookupError) throw subscriptionLookupError;
+
+  const subscriptionPayload = {
+    user_id: input.userId,
+    plan: "pro",
+    status: "active",
+    price: Number(payment?.amount || 0),
+    billing_cycle: billingCycle,
+    term_months: termMonths,
+    started_at: startedAt,
+    ends_at: endsAt.toISOString(),
+    provider: payment?.provider || "manual-admin",
+    provider_reference: payment?.provider_reference || payment?.id || "manual-admin-grant",
+  };
+
+  if (existingSubscription?.id) {
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update(subscriptionPayload)
+      .eq("id", existingSubscription.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .insert(subscriptionPayload);
+    if (error) throw error;
+  }
+
+  const { error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .upsert({ id: input.userId, subscription_tier: "pro" }, { onConflict: "id" });
+  if (profileError) throw profileError;
+
   return { success: true };
 }
 
