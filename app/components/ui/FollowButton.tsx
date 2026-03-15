@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { UserPlus, UserMinus, Loader2 } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface FollowButtonProps {
   targetUserId: string;
@@ -15,7 +16,7 @@ export default function FollowButton({ targetUserId, onUpdate, variant = "primar
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     async function checkFollowStatus() {

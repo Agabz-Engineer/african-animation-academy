@@ -5,15 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, 
   Mail, 
-  Phone, 
   MapPin, 
-  Calendar, 
-  IdCard, 
-  Briefcase, 
   Plus,
   MoreHorizontal,
   CreditCard,
-  Clock,
   Heart,
   MessageCircle,
   GraduationCap,
@@ -314,7 +309,7 @@ export default function ProfilePage() {
 
   const handleSaveExperience = async () => {
     if (!profile || !selectedExp) return;
-    let newExperience = [...(profile.experience || [])];
+    const newExperience = [...(profile.experience || [])];
     if (expIndex !== null) {
       newExperience[expIndex] = selectedExp;
     } else {
@@ -334,7 +329,7 @@ export default function ProfilePage() {
 
   const handleSaveEducation = async () => {
     if (!profile || !selectedEdu) return;
-    let newEducation = [...(profile.education || [])];
+    const newEducation = [...(profile.education || [])];
     if (eduIndex !== null) {
       newEducation[eduIndex] = selectedEdu;
     } else {
@@ -565,7 +560,7 @@ export default function ProfilePage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
                   <div style={{ width: "80px", height: "80px", borderRadius: "24px", background: "linear-gradient(135deg, #FF6D1F, #E04D00)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={profile.avatar_url} alt={`${profile.full_name || "Profile"} avatar`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <User size={40} color="#fff" />
                     )}
@@ -777,7 +772,7 @@ export default function ProfilePage() {
                         >
                           <div style={{ height: "160px", background: "#111", position: "relative", overflow: "hidden" }}>
                             {project.thumbnail_url ? (
-                              <img src={project.thumbnail_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              <img src={project.thumbnail_url} alt={`${project.title} thumbnail`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             ) : (
                               <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: T.accentSoft }}>
                                 <Play size={40} />

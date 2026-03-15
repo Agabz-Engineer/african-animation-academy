@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
@@ -8,9 +8,9 @@ import {
   Send, 
   MoreVertical,
   ArrowLeft,
-  X,
   Pin
 } from "lucide-react";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
 
@@ -32,6 +32,19 @@ type Conversation = {
   last_message: string;
   last_message_at: string;
   unread_count: number;
+};
+
+type SessionUser = Pick<User, "id" | "user_metadata">;
+
+type ProfilePreview = {
+  id: string;
+  full_name: string | null;
+  user_name: string | null;
+  avatar_url: string | null;
+};
+
+type RealtimeInsertPayload = {
+  new: Message;
 };
 
 const DARK = {
@@ -83,7 +96,7 @@ const timeAgo = (isoDate: string) => {
 export default function MessagesPage() {
   const theme = useThemeMode();
   const T = theme === "dark" ? DARK : LIGHT;
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
   const selectedChatRef = useRef<Conversation | null>(null);
@@ -97,44 +110,7 @@ export default function MessagesPage() {
   }, [selectedChat]);
 
   // Auth and Session initialization
-  useEffect(() => {
-    if (!supabase) return;
-    const client = supabase;
-    let active = true;
-
-    const handleSession = (session: any) => {
-      if (!active) return;
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          name: session.user.user_metadata.full_name || "User",
-          handle: session.user.user_metadata.user_name || "user"
-        });
-        fetchConversations(session.user.id);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    };
-
-    const init = async () => {
-      const { data: { session } } = await client.auth.getSession();
-      handleSession(session);
-    };
-
-    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
-      handleSession(session);
-    });
-
-    init();
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function fetchConversations(userId: string) {
+  const fetchConversations = useCallback(async (userId: string) => {
     if (!supabase) return;
     try {
       const { data: msgs, error } = await supabase
@@ -148,7 +124,7 @@ export default function MessagesPage() {
       const convosMap = new Map<string, Conversation>();
       const otherUserIds = new Set<string>();
 
-      msgs?.forEach((m: any) => {
+      msgs?.forEach((m: Message) => {
         const otherId = m.sender_id === userId ? m.receiver_id : m.sender_id;
         otherUserIds.add(otherId);
         
@@ -175,7 +151,7 @@ export default function MessagesPage() {
           .in("id", Array.from(otherUserIds));
           
         if (!profileErr && profiles) {
-          profiles.forEach(p => {
+          profiles.forEach((p: ProfilePreview) => {
              const convo = convosMap.get(p.id);
              if (convo) {
                convo.other_user_name = p.full_name || "Creative";
@@ -196,9 +172,9 @@ export default function MessagesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  async function fetchMessages(otherId: string) {
+  const fetchMessages = useCallback(async (otherId: string) => {
     if (!user || !supabase) return;
     try {
       const { data, error } = await supabase
@@ -223,7 +199,40 @@ export default function MessagesPage() {
     } catch (err) {
       console.error("Error fetching messages:", err);
     }
-  }
+  }, [user]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const client = supabase;
+    let active = true;
+
+    const handleSession = (session: Session | null) => {
+      if (!active) return;
+      if (session?.user) {
+        setUser(session.user);
+        void fetchConversations(session.user.id);
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
+    };
+
+    const init = async () => {
+      const { data: { session } } = await client.auth.getSession();
+      handleSession(session);
+    };
+
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+      handleSession(session);
+    });
+
+    void init();
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchConversations]);
 
 
   async function sendMessage() {
@@ -324,8 +333,8 @@ export default function MessagesPage() {
       }
     };
 
-    const handleInsert = async (payload: any) => {
-      const msg = payload.new as Message;
+    const handleInsert = async (payload: RealtimeInsertPayload) => {
+      const msg = payload.new;
       if (msg.sender_id !== user.id && msg.receiver_id !== user.id) return;
 
       const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
@@ -354,7 +363,7 @@ export default function MessagesPage() {
     return () => {
       client.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user, fetchConversations]);
 
   // Polling fallback
   useEffect(() => {
@@ -365,7 +374,7 @@ export default function MessagesPage() {
       if (current) fetchMessages(current.other_user_id);
     }, 20000);
     return () => clearInterval(interval);
-  }, [user?.id]);
+  }, [fetchConversations, fetchMessages, user]);
 
   if (!user && !loading) {
     return (
@@ -698,7 +707,7 @@ export default function MessagesPage() {
             }}>
               <AnimatePresence initial={false}>
                 {messages.map((m, i) => {
-                  const isMine = m.sender_id === user.id;
+                  const isMine = m.sender_id === user?.id;
                   const prev = messages[i - 1];
                   const next = messages[i + 1];
                   const isConsecutivePrev = prev && prev.sender_id === m.sender_id;

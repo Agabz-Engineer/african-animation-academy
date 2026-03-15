@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Settings, Shield, Bell, Database, CheckCircle } from "lucide-react";
+import { useState } from "react";
+import { Settings, Shield, Database, CheckCircle } from "lucide-react";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -49,22 +49,19 @@ const DEFAULT_SETTINGS: AdminSettingsState = {
 
 export default function AdminSettingsPage() {
   const [theme] = useState<"dark" | "light">("dark");
-  const [settings, setSettings] = useState<AdminSettingsState>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<AdminSettingsState>(() => {
+    if (typeof window === "undefined") return DEFAULT_SETTINGS;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS;
+    } catch (error) {
+      console.warn("Failed to load admin settings:", error);
+      return DEFAULT_SETTINGS;
+    }
+  });
   const [saved, setSaved] = useState(false);
 
   const UI = theme === "dark" ? DARK_UI : LIGHT_UI;
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(stored) });
-      }
-    } catch (error) {
-      console.warn("Failed to load admin settings:", error);
-    }
-  }, []);
 
   const toggleSetting = (key: keyof AdminSettingsState) => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
