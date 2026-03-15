@@ -7,6 +7,7 @@ import { Search, Clock, Camera, X, Lock, Play } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Course = {
+  id?: string;
   title: string;
   instructor: string;
   level: string;
@@ -17,7 +18,20 @@ type Course = {
   access?: "free" | "pro";
 };
 
-const COURSES: Course[] = [
+type DbCourse = {
+  id: string;
+  title: string;
+  instructor: string;
+  level: string;
+  duration: number;
+  description: string;
+  video_path?: string | null;
+  thumbnail_url?: string | null;
+  price: number | string;
+  status: "published" | "draft" | "archived";
+};
+
+const FALLBACK_COURSES: Course[] = [
   { title: "Quick Poses for Strong Silhouettes", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", access: "free" },
   { title: "Expressive Walk Cycles: The Gathering Place Study", instructor: "TBA", level: "Beginner", duration: "TBD", desc: "Study rhythm, weight, and personality in walk cycles using a lively gathering‑place scene.", videoUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", enrollUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", access: "free" },
   { title: "Bouncing Ball with Tail — Moho Tutorial", instructor: "TBA", level: "Intermediate", duration: "TBD", desc: "Practice follow-through and overlap by animating a bouncing ball with a tail in Moho.", videoUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", enrollUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", access: "pro" },
@@ -76,6 +90,16 @@ export default function CoursesPage() {
   const [subscriptionEndsAt, setSubscriptionEndsAt] = useState<string | null>(null);
   const [subscriptionExpired, setSubscriptionExpired] = useState(false);
   const [loading, setLoading]   = useState(true);
+  const [courses, setCourses]   = useState<Course[]>(FALLBACK_COURSES);
+
+  const minutesToLabel = (minutes: number) => {
+    if (!Number.isFinite(minutes) || minutes <= 0) return "TBD";
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hrs === 0) return `${mins}m`;
+    if (mins === 0) return `${hrs}h`;
+    return `${hrs}h ${mins}m`;
+  };
 
   useEffect(() => {
     const obs = new MutationObserver(() => {
@@ -132,6 +156,29 @@ export default function CoursesPage() {
         }
         setLoading(false);
       });
+
+      client
+        .from("courses")
+        .select("id,title,instructor,level,duration,description,video_path,thumbnail_url,price,status")
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .then(({ data, error }) => {
+          if (error || !data || data.length === 0) return;
+
+          const liveCourses = (data as DbCourse[]).map((course) => ({
+            id: course.id,
+            title: course.title,
+            instructor: course.instructor,
+            level: course.level,
+            duration: minutesToLabel(course.duration),
+            desc: course.description,
+            videoUrl: course.video_path || undefined,
+            enrollUrl: course.video_path || undefined,
+            access: Number(course.price || 0) > 0 ? ("pro" as const) : ("free" as const),
+          }));
+
+          setCourses(liveCourses);
+        });
     } else {
       // Small delay to avoid synchronous state update in effect
       const timer = setTimeout(() => setLoading(false), 0);
@@ -145,7 +192,7 @@ export default function CoursesPage() {
 
   const T          = theme === "dark" ? DARK : LIGHT;
   const accessible = ACCESSIBLE[skillLevel] || ["Beginner"];
-  const filtered   = COURSES.filter(c =>
+  const filtered   = courses.filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase()) ||
     c.instructor.toLowerCase().includes(search.toLowerCase())
   );

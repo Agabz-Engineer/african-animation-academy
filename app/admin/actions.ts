@@ -1,10 +1,61 @@
 "use server";
 
+import nodemailer from "nodemailer";
+import { DEFAULT_ADMIN_SETTINGS, getAdminSettings as loadAdminSettings, saveAdminSettingsRecord, type AdminSettings } from "@/lib/adminSettings";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { User } from "@supabase/supabase-js";
 
 const AUTH_USERS_PAGE_SIZE = 1000;
 const PROFILE_SYNC_BATCH_SIZE = 500;
+
+type ProfileRow = {
+  id: string;
+  full_name: string | null;
+  role: string | null;
+  status: string | null;
+  created_at: string | null;
+  skill_level?: string | null;
+  subscription_tier?: string | null;
+};
+
+type PaymentRow = {
+  id: string;
+  user_id: string;
+  amount: string | number | null;
+  currency: string | null;
+  status: "pending" | "completed" | "failed" | "refunded";
+  payment_method: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+type CourseInput = {
+  title: string;
+  description: string;
+  instructor: string;
+  level: string;
+  duration: number | string;
+  lessons: number;
+  price: string | number;
+  rating?: number;
+  thumbnail_url?: string | null;
+  video_path?: string | null;
+  status: string;
+};
+
+type EmailCampaign = {
+  id: string;
+  title: string;
+  audience: string;
+  status: "draft" | "scheduled" | "sent" | "paused";
+  send_date: string | null;
+  subject: string;
+  message: string;
+  sent_to: string[] | null;
+  open_rate: number | null;
+  click_rate: number | null;
+  created_at: string;
+};
 
 const listAllAuthUsers = async (): Promise<User[]> => {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
@@ -236,7 +287,7 @@ export async function getAdminUsers() {
     console.warn("Failed to load profiles for admin users list:", profilesError.message || profilesError);
   }
 
-  const profileMap = new Map((profiles || []).map((profile: any) => [profile.id, profile]));
+  const profileMap = new Map((profiles || []).map((profile: ProfileRow) => [profile.id, profile]));
 
   const users = authUsers.map((user) => {
     const profile = profileMap.get(user.id);
@@ -362,10 +413,12 @@ export async function getAdminPayments() {
     ])
   );
 
-  return (payments || []).map((payment: any) => {
+  return (payments || []).map((payment: PaymentRow) => {
     const userInfo = userMap.get(payment.user_id);
     return {
       ...payment,
+      amount: payment.amount ?? 0,
+      currency: payment.currency || "USD",
       user_email: userInfo?.email || "unknown",
       user_name: userInfo?.name || null,
     };
@@ -421,6 +474,54 @@ export async function deleteUser(userId: string) {
   return { success: true };
 }
 
+export async function createAdminUser(input: {
+  email: string;
+  password: string;
+  fullName?: string;
+  role?: "user" | "admin" | "moderator";
+  status?: "active" | "inactive" | "banned";
+}) {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const email = input.email.trim().toLowerCase();
+  const password = input.password.trim();
+  const fullName = input.fullName?.trim() || null;
+  const role = input.role || "user";
+  const status = input.status || "active";
+
+  if (!email) throw new Error("Email is required.");
+  if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+    },
+    app_metadata: {
+      role,
+    },
+  });
+
+  if (error) throw error;
+  if (!data.user?.id) throw new Error("User could not be created.");
+
+  const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
+    {
+      id: data.user.id,
+      full_name: fullName,
+      role,
+      status,
+    },
+    { onConflict: "id" }
+  );
+
+  if (profileError) throw profileError;
+
+  return { success: true, userId: data.user.id };
+}
+
 
 // ==========================================
 // Course Management Actions
@@ -466,19 +567,49 @@ export async function deleteCourse(courseId: string) {
   return { success: true };
 }
 
-export async function saveCourse(courseData: any, isEditing: boolean, courseId?: string) {
+export async function saveCourse(courseData: Partial<CourseInput>, isEditing: boolean, courseId?: string) {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
-  
+
+  if (!courseData.title || !courseData.description || !courseData.instructor || !courseData.level || courseData.duration === undefined || courseData.lessons === undefined || courseData.price === undefined || !courseData.status) {
+    throw new Error("Course title, description, instructor, level, duration, lessons, price, and status are required.");
+  }
+
+  const normalizedDuration =
+    typeof courseData.duration === "number"
+      ? courseData.duration
+      : parseInt(String(courseData.duration).replace(/[^\d]/g, ""), 10);
+  const normalizedPrice =
+    typeof courseData.price === "number"
+      ? courseData.price
+      : parseFloat(String(courseData.price).replace(/[^\d.]/g, ""));
+
+  if (!Number.isFinite(normalizedDuration) || normalizedDuration <= 0) {
+    throw new Error("Course duration must be a positive number of minutes.");
+  }
+
+  if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+    throw new Error("Course price must be zero or greater.");
+  }
+
+  const payload = {
+    ...courseData,
+    duration: normalizedDuration,
+    price: normalizedPrice.toFixed(2),
+    rating: courseData.rating ?? 0,
+    thumbnail_url: courseData.thumbnail_url || null,
+    video_path: courseData.video_path || null,
+  };
+
   if (isEditing && courseId) {
     const { error } = await supabaseAdmin
       .from('courses')
-      .update(courseData)
+      .update(payload)
       .eq('id', courseId);
     if (error) throw error;
   } else {
     const { error } = await supabaseAdmin
       .from('courses')
-      .insert([courseData]);
+      .insert([payload]);
     if (error) throw error;
   }
   
@@ -558,4 +689,102 @@ export async function bulkDeletePosts(postIds: string[]) {
     .in('id', postIds);
   if (error) throw error;
   return { success: true };
+}
+
+export async function getAdminSettings() {
+  return loadAdminSettings();
+}
+
+export async function saveAdminSettings(settings: AdminSettings) {
+  const nextSettings = {
+    ...DEFAULT_ADMIN_SETTINGS,
+    ...settings,
+  };
+
+  await saveAdminSettingsRecord(nextSettings);
+  return nextSettings;
+}
+
+export async function getAdminEmailCampaigns() {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const { data, error } = await supabaseAdmin
+    .from("admin_email_campaigns")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map((campaign: EmailCampaign) => ({
+    id: campaign.id,
+    title: campaign.title,
+    audience: campaign.audience,
+    status: campaign.status,
+    sendDate: campaign.send_date ? new Date(campaign.send_date).toISOString().slice(0, 10) : "Not scheduled",
+    openRate: campaign.open_rate || 0,
+    clickRate: campaign.click_rate || 0,
+    subject: campaign.subject,
+    message: campaign.message,
+    createdAt: campaign.created_at,
+    sentTo: campaign.sent_to || [],
+  }));
+}
+
+export async function sendAdminTestEmail(input: {
+  title: string;
+  audience: string;
+  subject: string;
+  message: string;
+}) {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = Number(process.env.SMTP_PORT || 587);
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpFrom = process.env.SMTP_FROM || smtpUser;
+  const adminRecipients = (process.env.ADMIN_NOTIFY_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim())
+    .filter(Boolean);
+
+  if (!smtpHost || !smtpUser || !smtpPass || !smtpFrom) {
+    throw new Error("SMTP is not configured.");
+  }
+
+  if (adminRecipients.length === 0) {
+    throw new Error("ADMIN_NOTIFY_EMAILS is not configured.");
+  }
+
+  const transport = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: String(process.env.SMTP_SECURE).toLowerCase() === "true",
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+
+  await transport.sendMail({
+    from: smtpFrom,
+    to: adminRecipients,
+    subject: input.subject,
+    text: input.message,
+    html: `<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>${input.subject}</h2><p>${input.message.replace(/\n/g, "<br />")}</p></div>`,
+  });
+
+  const { error } = await supabaseAdmin.from("admin_email_campaigns").insert({
+    title: input.title.trim() || input.subject.trim(),
+    audience: input.audience.trim() || "Admin test audience",
+    status: "sent",
+    send_date: new Date().toISOString(),
+    subject: input.subject.trim(),
+    message: input.message.trim(),
+    sent_to: adminRecipients,
+  });
+
+  if (error) throw error;
+
+  return { success: true, sentTo: adminRecipients.length };
 }

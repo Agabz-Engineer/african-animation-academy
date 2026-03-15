@@ -96,6 +96,14 @@ type DbLike = {
 
 type UserSummary = { id: string; name: string; handle: string };
 
+type PublicAdminSettings = {
+  maintenanceMode: boolean;
+  allowSignups: boolean;
+  postModeration: boolean;
+  paymentSandbox: boolean;
+  notificationAlerts: boolean;
+};
+
 const groupCommentsByPost = (comments: CommunityComment[]) => {
   return comments.reduce<Record<string, CommunityComment[]>>((acc, comment) => {
     if (!acc[comment.postId]) acc[comment.postId] = [];
@@ -170,7 +178,7 @@ const parseTags = (value: string) =>
     .filter(Boolean)
     .slice(0, 4);
 
-const normalizePost = (row: any, followedIds: Set<string>): CommunityPost => ({
+const normalizePost = (row: DbPost, followedIds: Set<string>): CommunityPost => ({
   id: row.id,
   userId: row.user_id,
   userName: row.user_name || "Animator",
@@ -180,7 +188,7 @@ const normalizePost = (row: any, followedIds: Set<string>): CommunityPost => ({
   likesCount: Math.max(0, row.likes_count || 0),
   commentsCount: Math.max(0, row.comments_count || 0),
   createdAt: row.created_at,
-  isFollowing: followedIds.has(row.user_id),
+  isFollowing: typeof row.user_id === "string" ? followedIds.has(row.user_id) : false,
   profiles: Array.isArray(row.profiles) ? row.profiles[0] ?? null : row.profiles
 });
 
@@ -248,6 +256,7 @@ export default function CommunityPage() {
   const [openCommentFor, setOpenCommentFor] = useState<string | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+  const [publicSettings, setPublicSettings] = useState<PublicAdminSettings | null>(null);
 
   const refreshFollowersCount = async (targetUserId: string) => {
     if (!supabase) return;
@@ -301,6 +310,27 @@ export default function CommunityPage() {
   }, [user, liked, commentsByPost, followedIds]);
 
   useEffect(() => {
+    let active = true;
+
+    const loadPublicSettings = async () => {
+      try {
+        const response = await fetch("/api/public/settings");
+        if (!response.ok) return;
+        const data = (await response.json()) as PublicAdminSettings;
+        if (active) setPublicSettings(data);
+      } catch (error) {
+        console.warn("Failed to load public admin settings:", error);
+      }
+    };
+
+    void loadPublicSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
     let channel: RealtimeChannel | null = null;
     const client = supabase;
@@ -321,11 +351,20 @@ export default function CommunityPage() {
         { data: commentData, error: commentError },
       ] = await Promise.all([
         client.auth.getUser(),
-        client
-          .from("community_posts")
-          .select("id, user_id, user_name, user_handle, content, tags, likes_count, comments_count, created_at, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
-          .order("created_at", { ascending: false })
-          .limit(40),
+        (() => {
+          let query = client
+            .from("community_posts")
+            .select("id, user_id, user_name, user_handle, content, tags, likes_count, comments_count, created_at, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
+            .order("created_at", { ascending: false })
+            .limit(40)
+            .neq("status", "rejected");
+
+          if (publicSettings?.postModeration) {
+            query = query.eq("status", "approved");
+          }
+
+          return query;
+        })(),
         client
           .from("community_post_comments")
           .select("id,post_id,user_id,user_name,user_handle,content,created_at")
@@ -653,7 +692,7 @@ export default function CommunityPage() {
         client.removeChannel(channel);
       }
     };
-  }, []);
+  }, [publicSettings?.postModeration]);
 
   const filteredPosts = useMemo(() => {
     let next = [...posts];
@@ -792,6 +831,11 @@ export default function CommunityPage() {
       return;
     }
 
+    if (publicSettings?.maintenanceMode) {
+      setSubmitError("Community posting is temporarily paused during maintenance.");
+      return;
+    }
+
     const tags = parseTags(postTags);
 
     if (setupNeeded) {
@@ -813,6 +857,7 @@ export default function CommunityPage() {
         user_handle: user.handle,
         content,
         tags,
+        status: publicSettings?.postModeration ? "pending" : "approved",
       })
       .select("*, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
       .single();
@@ -828,10 +873,12 @@ export default function CommunityPage() {
       return;
     }
 
-    setPosts((prev) => mergePosts([normalizePost(data as any, followedIds)], prev));
+    if (!publicSettings?.postModeration) {
+      setPosts((prev) => mergePosts([normalizePost(data as DbPost, followedIds)], prev));
+    }
     setFilter("Latest");
     setPostText("");
-    setSubmitInfo("Posted to live community.");
+    setSubmitInfo(publicSettings?.postModeration ? "Post submitted for admin review." : "Posted to live community.");
     recordAction("post");
   };
 
@@ -1504,12 +1551,39 @@ export default function CommunityPage() {
 }
 
 // ─── Post Card Component ──────────────────────────────────
+type CommunityTheme = typeof DARK;
+
+type PostCardProps = {
+  post: CommunityPost;
+  index: number;
+  hasLiked: boolean;
+  postComments: CommunityComment[];
+  commentOpen: boolean;
+  visibleCommentCount: number;
+  T: CommunityTheme;
+  user: UserSummary | null;
+  setOpenCommentFor: React.Dispatch<React.SetStateAction<string | null>>;
+  toggleLike: (postId: string) => void;
+  likePendingFor: string | null;
+  commentDrafts: Record<string, string>;
+  setCommentDrafts: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  commentPendingFor: string | null;
+  submitComment: (postId: string) => Promise<void>;
+  commentErrorByPost: Record<string, string>;
+  commentInfoByPost: Record<string, string>;
+  commentsSetupNeeded: boolean;
+  commentsAuthNeeded: boolean;
+  timeAgo: (isoDate: string) => string;
+  setSearch: React.Dispatch<React.SetStateAction<string>>;
+  onFollowUpdate?: (targetUserId: string) => void;
+};
+
 function PostCard({ 
   post, index, hasLiked, postComments, commentOpen, visibleCommentCount, T, user, 
   setOpenCommentFor, toggleLike, likePendingFor, commentDrafts, setCommentDrafts, 
   commentPendingFor, submitComment, commentErrorByPost, commentInfoByPost, 
   commentsSetupNeeded, commentsAuthNeeded, timeAgo, setSearch, onFollowUpdate 
-}: any) {
+}: PostCardProps) {
   const [isMsgOpen, setIsMsgOpen] = useState(false);
 
   return (
@@ -1618,7 +1692,7 @@ function PostCard({
           </button>
           <button
             onClick={() =>
-              setOpenCommentFor((prev: any) => (prev === post.id ? null : post.id))
+              setOpenCommentFor((prev) => (prev === post.id ? null : post.id))
             }
             style={{
               borderRadius: "999px",
@@ -1651,7 +1725,7 @@ function PostCard({
         >
           {postComments.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", marginBottom: "0.58rem" }}>
-              {postComments.map((comment: any) => (
+              {postComments.map((comment) => (
                 <div
                   key={comment.id}
                   style={{
@@ -1676,7 +1750,7 @@ function PostCard({
                 <input
                   value={commentDrafts[post.id] || ""}
                   onChange={(event) =>
-                    setCommentDrafts((prev: any) => ({
+                    setCommentDrafts((prev) => ({
                       ...prev,
                       [post.id]: event.target.value,
                     }))
@@ -1738,13 +1812,15 @@ function PostCard({
         </div>
       )}
 
-      <MessageModal
-        isOpen={isMsgOpen}
-        onClose={() => setIsMsgOpen(false)}
-        receiverId={post.userId}
-        receiverName={post.userName}
-        contextTitle={post.content.substring(0, 30) + "..."}
-      />
+      {post.userId && (
+        <MessageModal
+          isOpen={isMsgOpen}
+          onClose={() => setIsMsgOpen(false)}
+          receiverId={post.userId}
+          receiverName={post.userName}
+          contextTitle={post.content.substring(0, 30) + "..."}
+        />
+      )}
     </motion.article>
   );
 }

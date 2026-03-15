@@ -2,25 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Users, 
   Search, 
-  Filter, 
   Download, 
-  Mail, 
   Shield, 
   Ban,
   CheckCircle,
   XCircle,
   Clock,
-  Calendar,
-  Edit,
   Trash2,
   Eye,
-  MoreVertical,
   UserPlus,
   RefreshCw
 } from "lucide-react";
-import { banUser, unbanUser, deleteUser, getAdminUsers, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
+import { banUser, unbanUser, createAdminUser, deleteUser, getAdminUsers, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -57,11 +51,11 @@ interface User {
   created_at: string;
   last_sign_in?: string | null;
   subscription_tier?: string | null;
-  status: 'active' | 'inactive' | 'banned';
+  status: string;
 }
 
 export default function UserManagement() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme] = useState<"dark" | "light">("dark");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncingProfiles, setSyncingProfiles] = useState(false);
@@ -71,6 +65,8 @@ export default function UserManagement() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showUserModal, setShowUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [userError, setUserError] = useState("");
 
   const UI = theme === "dark" ? DARK_UI : LIGHT_UI;
 
@@ -114,26 +110,29 @@ export default function UserManagement() {
 
   const handleUserAction = async (action: string, userId: string) => {
     try {
-      let result;
       switch (action) {
         case 'ban':
-          result = await banUser(userId);
+          await banUser(userId);
           break;
         case 'unban':
-          result = await unbanUser(userId);
+          await unbanUser(userId);
           break;
         case 'delete':
-          result = await deleteUser(userId);
+          await deleteUser(userId);
           break;
         case 'make_admin':
-          result = await setUserRole(userId, 'admin');
+          await setUserRole(userId, 'admin');
           break;
         case 'remove_admin':
-          result = await setUserRole(userId, 'user');
+          await setUserRole(userId, 'user');
           break;
       }
       
       await fetchUsers();
+      if (selectedUser?.id === userId) {
+        const nextSelected = users.find((user) => user.id === userId) || null;
+        setSelectedUser(nextSelected);
+      }
     } catch (error) {
       console.error('Error performing user action:', error);
       alert('Failed to perform user action. Please check console for details.');
@@ -182,6 +181,27 @@ export default function UserManagement() {
       }
     } catch (error) {
       console.error('Error performing bulk action:', error);
+    }
+  };
+
+  const handleCreateUser = async (input: {
+    email: string;
+    password: string;
+    fullName: string;
+    role: "user" | "admin" | "moderator";
+  }) => {
+    setCreatingUser(true);
+    setUserError("");
+
+    try {
+      await createAdminUser(input);
+      await fetchUsers();
+      setShowUserModal(false);
+      setSelectedUser(null);
+    } catch (error) {
+      setUserError(error instanceof Error ? error.message : "Failed to create user.");
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -680,13 +700,136 @@ export default function UserManagement() {
             </tbody>
           </table>
         </div>
-      </div>
+	      </div>
 
-      <style jsx>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      {showUserModal && (
+        <UserModal
+          user={selectedUser}
+          creating={creatingUser}
+          error={userError}
+          onClose={() => {
+            setShowUserModal(false);
+            setSelectedUser(null);
+            setUserError("");
+          }}
+          onCreate={handleCreateUser}
+          onToggleRole={async () => {
+            if (!selectedUser) return;
+            await handleUserAction(selectedUser.role === "admin" ? "remove_admin" : "make_admin", selectedUser.id);
+            await fetchUsers();
+          }}
+          onToggleStatus={async () => {
+            if (!selectedUser) return;
+            await handleUserAction(selectedUser.status === "banned" ? "unban" : "ban", selectedUser.id);
+            await fetchUsers();
+          }}
+          UI={UI}
+        />
+      )}
+
+	      <style jsx>{`
+	        @keyframes spin {
+	          to { transform: rotate(360deg); }
+	        }
+	      `}</style>
+	    </div>
+	  );
+}
+
+function UserModal({
+  user,
+  creating,
+  error,
+  onClose,
+  onCreate,
+  onToggleRole,
+  onToggleStatus,
+  UI,
+}: {
+  user: User | null;
+  creating: boolean;
+  error: string;
+  onClose: () => void;
+  onCreate: (input: {
+    email: string;
+    password: string;
+    fullName: string;
+    role: "user" | "admin" | "moderator";
+  }) => Promise<void>;
+  onToggleRole: () => Promise<void>;
+  onToggleStatus: () => Promise<void>;
+  UI: typeof DARK_UI;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<"user" | "admin" | "moderator">("user");
+
+  return (
+    <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", zIndex: 1000 }}>
+      <div style={{ width: "100%", maxWidth: "520px", backgroundColor: UI.card, border: `1px solid ${UI.border}`, borderRadius: "16px", padding: "1.25rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <h2 style={{ margin: 0, color: UI.text, fontSize: "1.2rem" }}>{user ? "User Details" : "Create User"}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: UI.textMuted, cursor: "pointer" }}>Close</button>
+        </div>
+
+        {error && (
+          <div style={{ marginBottom: "1rem", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${UI.danger}55`, backgroundColor: `${UI.danger}12`, color: UI.danger }}>
+            {error}
+          </div>
+        )}
+
+        {user ? (
+          <div style={{ display: "grid", gap: "0.9rem" }}>
+            <div>
+              <div style={{ color: UI.textMuted, fontSize: "0.78rem" }}>Name</div>
+              <div style={{ color: UI.text, fontWeight: 600 }}>{user.full_name || "Unknown User"}</div>
+            </div>
+            <div>
+              <div style={{ color: UI.textMuted, fontSize: "0.78rem" }}>Email</div>
+              <div style={{ color: UI.text }}>{user.email}</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem" }}>
+              <button onClick={() => void onToggleRole()} style={{ padding: "0.7rem", borderRadius: "8px", border: "none", backgroundColor: UI.info, color: "#fff", cursor: "pointer" }}>
+                {user.role === "admin" ? "Remove Admin" : "Make Admin"}
+              </button>
+              <button onClick={() => void onToggleStatus()} style={{ padding: "0.7rem", borderRadius: "8px", border: "none", backgroundColor: user.status === "banned" ? UI.success : UI.warning, color: "#fff", cursor: "pointer" }}>
+                {user.status === "banned" ? "Unban User" : "Ban User"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gap: "0.75rem" }}>
+            <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Full name" style={modalInput(UI)} />
+            <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" type="email" style={modalInput(UI)} />
+            <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" type="password" style={modalInput(UI)} />
+            <select value={role} onChange={(event) => setRole(event.target.value as "user" | "admin" | "moderator")} style={modalInput(UI)}>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+              <option value="moderator">Moderator</option>
+            </select>
+            <button
+              onClick={() => void onCreate({ email, password, fullName, role })}
+              disabled={creating}
+              style={{ padding: "0.8rem", borderRadius: "8px", border: "none", backgroundColor: UI.success, color: "#fff", cursor: creating ? "wait" : "pointer", opacity: creating ? 0.7 : 1 }}
+            >
+              {creating ? "Creating..." : "Create User"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+function modalInput(UI: typeof DARK_UI) {
+  return {
+    width: "100%",
+    padding: "0.75rem",
+    borderRadius: "8px",
+    border: `1px solid ${UI.border}`,
+    backgroundColor: UI.bg,
+    color: UI.text,
+    fontSize: "0.9rem",
+  };
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAdminSettings } from "@/lib/adminSettings";
 
 type SignupBody = {
   email?: string;
@@ -25,6 +26,14 @@ const getSignupClient = () => {
 };
 
 export async function POST(request: Request) {
+  const settings = await getAdminSettings();
+  if (!settings.allow_signups) {
+    return NextResponse.json(
+      { error: "New signups are temporarily disabled by the admin." },
+      { status: 403 }
+    );
+  }
+
   const client = getSignupClient();
   if (!client) {
     return NextResponse.json(

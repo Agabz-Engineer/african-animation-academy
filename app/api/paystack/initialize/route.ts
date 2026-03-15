@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAdminSettings } from "@/lib/adminSettings";
 import {
   TERM_MONTHS,
   getProMonthlyRate,
@@ -6,14 +7,33 @@ import {
   type BillingTermMonths,
 } from "@/lib/pricing";
 
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.PAYSTACK_CALLBACK_BASE_URL;
+
+const getPaystackSecretKey = async () => {
+  const settings = await getAdminSettings();
+  const liveKey = process.env.PAYSTACK_LIVE_SECRET_KEY;
+  const testKey = process.env.PAYSTACK_TEST_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY;
+
+  if (settings.payment_sandbox) {
+    return {
+      key: testKey,
+      sandbox: true,
+    };
+  }
+
+  return {
+    key: liveKey || process.env.PAYSTACK_SECRET_KEY,
+    sandbox: false,
+  };
+};
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!PAYSTACK_SECRET_KEY) {
+    const { key: paystackSecretKey, sandbox } = await getPaystackSecretKey();
+
+    if (!paystackSecretKey) {
       return NextResponse.json({ error: "PAYSTACK_SECRET_KEY is not configured." }, { status: 500 });
     }
 
@@ -45,6 +65,7 @@ export async function POST(request: Request) {
         billing_cycle: "monthly",
         term_months: termMonths,
         payment_type: "topup",
+        payment_mode: sandbox ? "sandbox" : "live",
       },
       channels: ["card", "mobile_money", "bank_transfer", "bank", "ussd"],
     };
@@ -55,7 +76,7 @@ export async function POST(request: Request) {
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${paystackSecretKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),

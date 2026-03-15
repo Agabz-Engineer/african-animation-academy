@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { getAdminSettings } from "@/lib/adminSettings";
 import "./globals.css";
 
 const clashDisplay = localFont({
@@ -71,11 +72,13 @@ const themeBootScript = `
   })();
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const adminSettings = await getAdminSettings();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -85,6 +88,24 @@ export default function RootLayout({
         className={`${clashDisplay.variable} ${cabinetGrotesk.variable} ${satoshi.variable} ${generalSans.variable}`}
         suppressHydrationWarning
       >
+        {adminSettings.maintenance_mode && (
+          <div
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 9999,
+              background: "#FF6D1F",
+              color: "#FFFFFF",
+              padding: "0.7rem 1rem",
+              textAlign: "center",
+              fontFamily: "var(--font-general-sans), sans-serif",
+              fontSize: "0.9rem",
+              fontWeight: 700,
+            }}
+          >
+            Maintenance mode is active. Some actions may be temporarily restricted while updates are in progress.
+          </div>
+        )}
         {children}
       </body>
     </html>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Settings, Shield, Database, CheckCircle } from "lucide-react";
+import { getAdminSettings, saveAdminSettings } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -29,14 +30,13 @@ const LIGHT_UI = {
   info: "#3B82F6",
 };
 
-const STORAGE_KEY = "africafx-admin-settings";
-
 interface AdminSettingsState {
   maintenanceMode: boolean;
   allowSignups: boolean;
   postModeration: boolean;
   paymentSandbox: boolean;
   weeklyDigest: boolean;
+  notificationAlerts: boolean;
 }
 
 const DEFAULT_SETTINGS: AdminSettingsState = {
@@ -45,35 +45,79 @@ const DEFAULT_SETTINGS: AdminSettingsState = {
   postModeration: true,
   paymentSandbox: true,
   weeklyDigest: true,
+  notificationAlerts: true,
 };
 
 export default function AdminSettingsPage() {
   const [theme] = useState<"dark" | "light">("dark");
-  const [settings, setSettings] = useState<AdminSettingsState>(() => {
-    if (typeof window === "undefined") return DEFAULT_SETTINGS;
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS;
-    } catch (error) {
-      console.warn("Failed to load admin settings:", error);
-      return DEFAULT_SETTINGS;
-    }
-  });
+  const [settings, setSettings] = useState<AdminSettingsState>(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   const UI = theme === "dark" ? DARK_UI : LIGHT_UI;
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSettings = async () => {
+      try {
+        const data = await getAdminSettings();
+        if (!active) return;
+        setSettings({
+          maintenanceMode: data.maintenance_mode,
+          allowSignups: data.allow_signups,
+          postModeration: data.post_moderation,
+          paymentSandbox: data.payment_sandbox,
+          weeklyDigest: data.weekly_digest,
+          notificationAlerts: data.notification_alerts,
+        });
+      } catch (loadError) {
+        if (!active) return;
+        setError(loadError instanceof Error ? loadError.message : "Failed to load settings.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const toggleSetting = (key: keyof AdminSettingsState) => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const saveSettings = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setError("");
+
+    try {
+      await saveAdminSettings({
+        maintenance_mode: settings.maintenanceMode,
+        allow_signups: settings.allowSignups,
+        post_moderation: settings.postModeration,
+        payment_sandbox: settings.paymentSandbox,
+        weekly_digest: settings.weeklyDigest,
+        notification_alerts: settings.notificationAlerts,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Failed to save settings.");
+    } finally {
+      setSaving(false);
     }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
+
+  if (loading) {
+    return <div style={{ color: UI.textMuted, fontFamily: "Inter, sans-serif" }}>Loading settings...</div>;
+  }
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
@@ -84,26 +128,20 @@ export default function AdminSettingsPage() {
         </p>
       </div>
 
+      {error && (
+        <div style={{ marginBottom: "1rem", padding: "0.8rem 1rem", borderRadius: "10px", border: `1px solid ${UI.danger}55`, color: UI.danger, backgroundColor: `${UI.danger}12` }}>
+          {error}
+        </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <div style={{ backgroundColor: UI.card, border: `1px solid ${UI.border}`, borderRadius: "12px", padding: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
             <Shield style={{ width: "18px", height: "18px", color: UI.accent }} />
             <h3 style={{ margin: 0, color: UI.text, fontSize: "1rem", fontWeight: 600 }}>Platform Controls</h3>
           </div>
-          <ToggleRow
-            label="Maintenance mode"
-            description="Put the site into read-only mode for visitors."
-            checked={settings.maintenanceMode}
-            onToggle={() => toggleSetting("maintenanceMode")}
-            UI={UI}
-          />
-          <ToggleRow
-            label="Allow new signups"
-            description="Enable or disable new account creation."
-            checked={settings.allowSignups}
-            onToggle={() => toggleSetting("allowSignups")}
-            UI={UI}
-          />
+          <ToggleRow label="Maintenance mode" description="Show a maintenance banner and block restricted flows like checkout and community posting." checked={settings.maintenanceMode} onToggle={() => toggleSetting("maintenanceMode")} UI={UI} />
+          <ToggleRow label="Allow new signups" description="Enable or disable new account creation." checked={settings.allowSignups} onToggle={() => toggleSetting("allowSignups")} UI={UI} />
         </div>
 
         <div style={{ backgroundColor: UI.card, border: `1px solid ${UI.border}`, borderRadius: "12px", padding: "1rem" }}>
@@ -111,20 +149,8 @@ export default function AdminSettingsPage() {
             <Settings style={{ width: "18px", height: "18px", color: UI.info }} />
             <h3 style={{ margin: 0, color: UI.text, fontSize: "1rem", fontWeight: 600 }}>Content Governance</h3>
           </div>
-          <ToggleRow
-            label="Require post approval"
-            description="Moderate community posts before they go live."
-            checked={settings.postModeration}
-            onToggle={() => toggleSetting("postModeration")}
-            UI={UI}
-          />
-          <ToggleRow
-            label="Weekly admin digest"
-            description="Receive a weekly activity summary by email."
-            checked={settings.weeklyDigest}
-            onToggle={() => toggleSetting("weeklyDigest")}
-            UI={UI}
-          />
+          <ToggleRow label="Require post approval" description="New community posts enter admin review before appearing publicly." checked={settings.postModeration} onToggle={() => toggleSetting("postModeration")} UI={UI} />
+          <ToggleRow label="Weekly admin digest" description="Keep weekly digest delivery enabled for admin updates." checked={settings.weeklyDigest} onToggle={() => toggleSetting("weeklyDigest")} UI={UI} />
         </div>
 
         <div style={{ backgroundColor: UI.card, border: `1px solid ${UI.border}`, borderRadius: "12px", padding: "1rem" }}>
@@ -132,40 +158,29 @@ export default function AdminSettingsPage() {
             <Database style={{ width: "18px", height: "18px", color: UI.warning }} />
             <h3 style={{ margin: 0, color: UI.text, fontSize: "1rem", fontWeight: 600 }}>Billing & Integrations</h3>
           </div>
-          <ToggleRow
-            label="Payment sandbox"
-            description="Use test payments only."
-            checked={settings.paymentSandbox}
-            onToggle={() => toggleSetting("paymentSandbox")}
-            UI={UI}
-          />
-          <ToggleRow
-            label="Notification alerts"
-            description="Send alerts for failed payments or fraud flags."
-            checked={true}
-            onToggle={() => {}}
-            UI={UI}
-            disabled
-          />
+          <ToggleRow label="Payment sandbox" description="Use sandbox/test payment credentials when available." checked={settings.paymentSandbox} onToggle={() => toggleSetting("paymentSandbox")} UI={UI} />
+          <ToggleRow label="Notification alerts" description="Keep admin alert messages enabled for payment or moderation issues." checked={settings.notificationAlerts} onToggle={() => toggleSetting("notificationAlerts")} UI={UI} />
         </div>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
         <button
-          onClick={saveSettings}
+          onClick={handleSave}
+          disabled={saving}
           style={{
             backgroundColor: UI.accent,
             border: "none",
             color: "#FFFFFF",
             padding: "0.6rem 1.1rem",
             borderRadius: "8px",
-            cursor: "pointer",
+            cursor: saving ? "wait" : "pointer",
+            opacity: saving ? 0.7 : 1,
             fontFamily: "Inter, sans-serif",
             fontSize: "0.85rem",
             fontWeight: 600,
           }}
         >
-          Save settings
+          {saving ? "Saving..." : "Save settings"}
         </button>
         {saved && (
           <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", color: UI.success, fontSize: "0.85rem", fontWeight: 600 }}>
@@ -184,14 +199,12 @@ function ToggleRow({
   checked,
   onToggle,
   UI,
-  disabled,
 }: {
   label: string;
   description: string;
   checked: boolean;
   onToggle: () => void;
   UI: typeof DARK_UI;
-  disabled?: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", padding: "0.75rem 0" }}>
@@ -201,7 +214,6 @@ function ToggleRow({
       </div>
       <button
         onClick={onToggle}
-        disabled={disabled}
         style={{
           width: "44px",
           height: "24px",
@@ -212,8 +224,7 @@ function ToggleRow({
           alignItems: "center",
           justifyContent: checked ? "flex-end" : "flex-start",
           padding: "3px",
-          cursor: disabled ? "not-allowed" : "pointer",
-          opacity: disabled ? 0.5 : 1,
+          cursor: "pointer",
         }}
       >
         <span style={{ width: "18px", height: "18px", borderRadius: "50%", backgroundColor: "#FFFFFF" }} />

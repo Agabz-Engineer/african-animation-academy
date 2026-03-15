@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence, Easing } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap, Film, Clapperboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -82,6 +82,30 @@ export default function SignupPage() {
   const [goal, setGoal] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [signupsDisabled, setSignupsDisabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSettings = async () => {
+      try {
+        const response = await fetch("/api/public/settings");
+        if (!response.ok) return;
+        const data = (await response.json()) as { allowSignups?: boolean };
+        if (!active || data.allowSignups !== false) return;
+        setSignupsDisabled(true);
+        setError("New signups are temporarily disabled by the admin.");
+      } catch (loadError) {
+        console.warn("Failed to load signup availability:", loadError);
+      }
+    };
+
+    void loadSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleStepOne = (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +118,7 @@ export default function SignupPage() {
   };
 
   const handleFinish = async () => {
-    if (!goal) return;
+    if (!goal || signupsDisabled) return;
     setLoading(true);
     setError("");
 

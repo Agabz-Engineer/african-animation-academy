@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BadgeCheck,
   Check,
@@ -156,6 +156,34 @@ export default function PricingPage() {
   const termMonths: BillingTermMonths = 1;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
+  const [paymentSandbox, setPaymentSandbox] = useState(true);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSettings = async () => {
+      try {
+        const response = await fetch("/api/public/settings");
+        if (!response.ok) return;
+        const data = (await response.json()) as {
+          paymentSandbox?: boolean;
+          maintenanceMode?: boolean;
+        };
+        if (!active) return;
+        setPaymentSandbox(Boolean(data.paymentSandbox));
+        setMaintenanceMode(Boolean(data.maintenanceMode));
+      } catch (error) {
+        console.warn("Failed to load public settings for pricing:", error);
+      }
+    };
+
+    void loadSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const planPricing = PLANS.map((plan) => {
     if (plan.monthlyPrice === 0) {
@@ -181,6 +209,12 @@ export default function PricingPage() {
 
     setCheckoutError("");
     setCheckoutLoading(true);
+
+    if (maintenanceMode) {
+      setCheckoutError("Payments are temporarily paused during maintenance.");
+      setCheckoutLoading(false);
+      return;
+    }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -350,6 +384,23 @@ export default function PricingPage() {
           }}
         >
           {checkoutError}
+        </div>
+      )}
+
+      {paymentSandbox && (
+        <div
+          style={{
+            marginBottom: "1rem",
+            borderRadius: "12px",
+            border: `1px solid ${T.border}`,
+            background: T.panel,
+            padding: "0.75rem 0.9rem",
+            color: T.muted,
+            fontFamily: "General Sans, sans-serif",
+            fontSize: "0.85rem",
+          }}
+        >
+          Admin payment sandbox is enabled. Checkout currently runs in test mode.
         </div>
       )}
 
