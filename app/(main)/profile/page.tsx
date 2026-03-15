@@ -80,6 +80,7 @@ const TABS = ["Overview", "Portfolio", "Compensation", "Security"];
 const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️"];
 
 export default function ProfilePage() {
+  const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -213,6 +214,18 @@ export default function ProfilePage() {
       setUploading(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncViewport = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -404,13 +417,13 @@ export default function ProfilePage() {
   return (
     <>
       <DashboardLayout>
-        <div style={{ padding: "1.5rem", color: T.text, fontFamily: "'General Sans', sans-serif" }}>
+        <div style={{ padding: isMobile ? "1rem" : "1.5rem", color: T.text, fontFamily: "'General Sans', sans-serif" }}>
           
           {/* Cover Photo Area */}
-          <div style={{ position: "relative", marginBottom: "3rem" }}>
+          <div style={{ position: "relative", marginBottom: isMobile ? "1.5rem" : "3rem" }}>
             <div style={{ 
-              height: "220px", 
-              borderRadius: "32px", 
+              height: isMobile ? "180px" : "220px", 
+              borderRadius: isMobile ? "24px" : "32px", 
               background: profile?.cover_url ? `url(${profile.cover_url}) center/cover` : "linear-gradient(45deg, #FF6D1F, #FFAC71)",
               boxShadow: T.shadow,
               overflow: "hidden",
@@ -425,14 +438,14 @@ export default function ProfilePage() {
                 htmlFor="cover-upload"
                 style={{ 
                   position: "absolute", 
-                  bottom: "1.5rem", 
-                  right: "1.5rem", 
+                  bottom: isMobile ? "1rem" : "1.5rem", 
+                  right: isMobile ? "1rem" : "1.5rem", 
                   background: "rgba(0,0,0,0.5)", 
                   backdropFilter: "blur(10px)",
                   color: "#fff",
-                  padding: "0.6rem 1.25rem",
+                  padding: isMobile ? "0.55rem 0.9rem" : "0.6rem 1.25rem",
                   borderRadius: "12px",
-                  fontSize: "0.8rem",
+                  fontSize: isMobile ? "0.72rem" : "0.8rem",
                   fontWeight: 700,
                   cursor: "pointer",
                   display: "flex",
@@ -448,13 +461,16 @@ export default function ProfilePage() {
             
             {/* Presence Stats Overlay */}
             <div style={{ 
-              position: "absolute", 
-              bottom: "-1.5rem", 
-              left: "2rem", 
+              position: isMobile ? "relative" : "absolute", 
+              bottom: isMobile ? "auto" : "-1.5rem", 
+              left: isMobile ? "auto" : "2rem", 
+              marginTop: isMobile ? "0.85rem" : 0,
+              width: isMobile ? "100%" : "auto",
               display: "flex", 
-              gap: "1rem", 
+              justifyContent: isMobile ? "space-between" : "flex-start",
+              gap: isMobile ? "0.75rem" : "1rem", 
               background: T.cardBg, 
-              padding: "0.75rem 1.5rem", 
+              padding: isMobile ? "0.75rem 1rem" : "0.75rem 1.5rem", 
               borderRadius: "18px", 
               boxShadow: T.shadow,
               border: `1px solid ${T.border}`
@@ -472,12 +488,12 @@ export default function ProfilePage() {
           </div>
 
           {/* Header Section */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem" }}>
+          <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-end", gap: isMobile ? "1rem" : 0, marginBottom: "2rem" }}>
             <div>
               <div style={{ fontSize: "0.85rem", color: T.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>Creator Dashboard</div>
-              <h1 style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "'Clash Display', sans-serif", letterSpacing: "-0.03em" }}>My Profile</h1>
+              <h1 style={{ fontSize: isMobile ? "2rem" : "2.5rem", fontWeight: 800, fontFamily: "'Clash Display', sans-serif", letterSpacing: "-0.03em" }}>My Profile</h1>
             </div>
-            <div style={{ display: "flex", gap: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1rem", width: isMobile ? "100%" : "auto" }}>
               <button style={{ 
                 background: T.bg, 
                 color: T.text,
@@ -489,7 +505,9 @@ export default function ProfilePage() {
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "0.5rem"
+                justifyContent: "center",
+                gap: "0.5rem",
+                width: isMobile ? "100%" : "auto"
               }}>
                 <Share2 size={18} /> Public View
               </button>
@@ -504,8 +522,10 @@ export default function ProfilePage() {
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "0.5rem",
-                boxShadow: `0 8px 20px ${T.accent}33`
+                boxShadow: `0 8px 20px ${T.accent}33`,
+                width: isMobile ? "100%" : "auto"
               }}>
                 <Settings size={18} /> Settings
               </button>
@@ -702,7 +722,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Awards & Education Grid */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "2rem" }}>
                       {/* Education */}
                       <div style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
@@ -741,7 +761,7 @@ export default function ProfilePage() {
                       {/* Stats/Metrics */}
                       <div style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}>
                         <h3 style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: "1.5rem" }}>Quick Stats</h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1rem" }}>
                           <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
                             <div style={{ fontSize: "1.5rem", fontWeight: 800, color: T.accent }}>{projects.length}</div>
                             <div style={{ fontSize: "0.7rem", color: T.muted, textTransform: "uppercase", fontWeight: 600 }}>Projects</div>
@@ -871,7 +891,7 @@ export default function ProfilePage() {
       
       <AnimatePresence>
         {isEditing && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "1rem" : "1.5rem" }}>
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -888,7 +908,7 @@ export default function ProfilePage() {
                 maxWidth: "600px", 
                 maxHeight: "90vh",
                 background: T.cardBg, 
-                borderRadius: "32px", 
+                borderRadius: isMobile ? "24px" : "32px", 
                 border: `1px solid ${T.border}`, 
                 boxShadow: "0 24px 48px rgba(0,0,0,0.5)",
                 position: "relative",
@@ -897,7 +917,7 @@ export default function ProfilePage() {
                 overflow: "hidden"
               }}
             >
-              <div style={{ padding: "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+              <div style={{ padding: isMobile ? "1.1rem 1.25rem" : "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
                 <h3 style={{ fontWeight: 800, fontSize: "1.25rem" }}>Edit Profile</h3>
                 <button 
                   onClick={() => setIsEditing(false)}
@@ -908,12 +928,12 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              <div style={{ padding: "2rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "2rem" }} className="hide-scroll">
+              <div style={{ padding: isMobile ? "1.25rem" : "2rem", overflowY: "auto", display: "flex", flexDirection: "column", gap: "2rem" }} className="hide-scroll">
                 
                 {/* Basic Identity */}
                 <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                   <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, fontWeight: 800 }}>Identity</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1rem" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Full Name</label>
                       <input 
@@ -960,7 +980,7 @@ export default function ProfilePage() {
 
                 <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                   <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, fontWeight: 800 }}>Social Links</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1rem" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Website</label>
                       <input 
@@ -1001,7 +1021,7 @@ export default function ProfilePage() {
                 </section>
               </div>
 
-              <div style={{ padding: "1.5rem 2rem", background: T.bg, borderTop: `1px solid ${T.border}`, display: "flex", gap: "1rem", flexShrink: 0 }}>
+              <div style={{ padding: isMobile ? "1.1rem 1.25rem" : "1.5rem 2rem", background: T.bg, borderTop: `1px solid ${T.border}`, display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1rem", flexShrink: 0 }}>
                 <button 
                   onClick={() => setIsEditing(false)}
                   style={{ flex: 1, padding: "1rem", borderRadius: "16px", background: "none", border: `1px solid ${T.border}`, color: T.text, fontWeight: 700, cursor: "pointer" }}
@@ -1023,7 +1043,7 @@ export default function ProfilePage() {
 
       <AnimatePresence>
         {showAddModal && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "1rem" : "1.5rem" }}>
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1039,14 +1059,14 @@ export default function ProfilePage() {
                 width: "100%", 
                 maxWidth: "500px", 
                 background: T.cardBg, 
-                borderRadius: "32px", 
+                borderRadius: isMobile ? "24px" : "32px", 
                 border: `1px solid ${T.border}`, 
                 boxShadow: "0 24px 48px rgba(0,0,0,0.5)",
                 position: "relative",
                 overflow: "hidden"
               }}
             >
-              <div style={{ padding: "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ padding: isMobile ? "1.1rem 1.25rem" : "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h3 style={{ fontWeight: 800, fontSize: "1.25rem" }}>Add New Work</h3>
                 <button 
                   onClick={() => setShowAddModal(false)}
@@ -1057,7 +1077,7 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ padding: isMobile ? "1.25rem" : "2rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 <div style={{ textAlign: "center" }}>
                   <input 
                     type="file" 
