@@ -14,10 +14,10 @@ import { useGamification } from "@/lib/useGamification";
 const FILTER_TABS = ["Hot", "New", "Event"];
 
 const SHOWCASE_CARDS = [
-  { title: "Character Design", category: "Colorimetry", price: "99",  tag: "Hot"   },
-  { title: "Background Art",   category: "Background",  price: "199", tag: "New"   },
-  { title: "Texture: Afro",    category: "Texturing",   price: "249", tag: "Hot"   },
-  { title: "Clothing Design",  category: "Clothing",    price: "149", tag: "Event" },
+  { title: "Character Design", category: "Colorimetry", note: "Included in your learning path", tag: "Hot", image: "/images/bg-desktop.jpg", imagePosition: "center 22%" },
+  { title: "Background Art",   category: "Background",  note: "Studio-ready visual worldbuilding", tag: "New", image: "/images/community-bg-dark.webp", imagePosition: "center center" },
+  { title: "Texture: Afro",    category: "Texturing",   note: "Build richer surfaces and detail", tag: "Hot", image: "/images/bg-mobile.jpg", imagePosition: "center 40%" },
+  { title: "Clothing Design",  category: "Clothing",    note: "Live critique and styling workshop", tag: "Event", image: "/images/bg-desktop.jpg", imagePosition: "center 72%" },
 ];
 
 /* ══════════════════════════════════════════════
@@ -470,35 +470,45 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="dash-hero"
-          style={{ width: "100%", height: "230px", borderRadius: "20px", backgroundColor: T.imgBg, border: `2px dashed ${T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginBottom: "1.25rem", position: "relative", overflow: "hidden", cursor: "pointer" }}
+          style={{ width: "100%", height: "230px", borderRadius: "20px", border: `1px solid ${T.border}`, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", marginBottom: "1.25rem", position: "relative", overflow: "hidden", cursor: "pointer", backgroundImage: `linear-gradient(135deg, rgba(12,10,8,0.18), rgba(12,10,8,0.72)), url('/images/bg-desktop.jpg')`, backgroundSize: "cover", backgroundPosition: "center 38%" }}
         >
+          <div style={{ position: "absolute", inset: 0, background: theme === "dark" ? "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(10,8,6,0.70) 100%)" : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(34,34,34,0.58) 100%)" }} />
           {/* Corner markers */}
           {([[true,true],[true,false],[false,true],[false,false]] as [boolean,boolean][]).map(([top,left],i) => (
             <div key={i} style={{ position: "absolute", top: top ? "12px" : "auto", bottom: top ? "auto" : "12px", left: left ? "12px" : "auto", right: left ? "auto" : "12px", width: "18px", height: "18px", borderTop: top ? `2px solid ${T.accent}` : "none", borderBottom: top ? "none" : `2px solid ${T.accent}`, borderLeft: left ? `2px solid ${T.accent}` : "none", borderRight: left ? "none" : `2px solid ${T.accent}` }} />
           ))}
 
-          <div style={{ width: "52px", height: "52px", borderRadius: "14px", backgroundColor: T.accentSoft, border: `1px solid ${T.accent}33`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "0.75rem" }}>
-            <Camera style={{ width: "22px", height: "22px", color: T.accent }} />
+          <div style={{ position: "relative", zIndex: 1, padding: "1.2rem 1.25rem 1.15rem", maxWidth: "420px" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", borderRadius: "999px", backgroundColor: "rgba(12,10,8,0.56)", border: "1px solid rgba(255,255,255,0.16)", color: "#FAF3E1", padding: "0.34rem 0.65rem", fontSize: "0.68rem", fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, marginBottom: "0.7rem", backdropFilter: "blur(10px)" }}>
+              <Camera style={{ width: "12px", height: "12px", color: T.accent }} />
+              Featured Spotlight
+            </div>
+            <p style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "1.45rem", lineHeight: 1.02, color: "#FAF3E1", margin: 0 }}>
+              Visual storytelling workshop for African worldbuilders
+            </p>
+            <p style={{ fontSize: "0.77rem", color: "rgba(250,243,225,0.86)", fontFamily: "'Satoshi',sans-serif", marginTop: "0.42rem", lineHeight: 1.5 }}>
+              Explore scene composition, lighting mood, and cinematic pacing through artist-led sessions.
+            </p>
           </div>
           <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text, marginBottom: "3px" }}>Featured Banner</p>
           <p style={{ fontSize: "0.72rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>Recommended: 1200 × 400px</p>
 
           {/* Play button */}
-          <div style={{ position: "absolute", right: "1.25rem", bottom: "1.25rem", width: "40px", height: "40px", borderRadius: "50%", backgroundColor: T.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
+          <div style={{ position: "absolute", right: "1.25rem", bottom: "1.25rem", width: "40px", height: "40px", borderRadius: "50%", backgroundColor: T.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.2)", zIndex: 1 }}>
             <Play style={{ width: "16px", height: "16px", color: T.accentText, marginLeft: "2px" }} />
           </div>
 
           {/* Date range */}
-          <div style={{ position: "absolute", left: "1.25rem", bottom: "1.25rem", display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ position: "absolute", left: "1.25rem", bottom: "1.25rem", display: "flex", alignItems: "center", gap: "6px", zIndex: 1 }}>
             {["25 July 2025", "29 July 2025"].map((d, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "5px 10px", borderRadius: "7px", backgroundColor: T.dateBg, border: `1px solid ${T.border}`, fontSize: "0.68rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif" }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "5px 10px", borderRadius: "7px", backgroundColor: "rgba(12,10,8,0.56)", border: "1px solid rgba(255,255,255,0.14)", fontSize: "0.68rem", color: "#FAF3E1", fontFamily: "'Satoshi',sans-serif", backdropFilter: "blur(10px)" }}>
                 <Calendar style={{ width: "10px", height: "10px" }} />{d}
               </div>
             ))}
           </div>
 
           {/* Pagination dots */}
-          <div style={{ position: "absolute", right: "1.25rem", top: "1.25rem", display: "flex", gap: "4px" }}>
+          <div style={{ position: "absolute", right: "1.25rem", top: "1.25rem", display: "flex", gap: "4px", zIndex: 1 }}>
             {[1,2,3].map((n) => (
               <div key={n} style={{ width: n===2 ? "18px" : "7px", height: "7px", borderRadius: "999px", backgroundColor: n===2 ? T.accent : T.border, transition: "all 0.3s" }} />
             ))}
@@ -537,12 +547,20 @@ export default function DashboardPage() {
                 style={{ backgroundColor: T.cardBg, border: `1px solid ${T.border}`, borderRadius: "16px", overflow: "hidden", cursor: "pointer", transition: "all 0.2s" }}
               >
                 {/* Image placeholder */}
-                <div style={{ width: "100%", height: "145px", backgroundColor: T.imgBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                  <Camera style={{ width: "22px", height: "22px", color: T.textDim, opacity: 0.5, marginBottom: "5px" }} />
+                <div style={{ width: "100%", height: "145px", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", position: "relative", backgroundImage: `linear-gradient(180deg, rgba(8,8,8,0.04) 0%, rgba(8,8,8,0.72) 100%), url('${card.image}')`, backgroundSize: "cover", backgroundPosition: card.imagePosition }}>
+                  <Camera style={{ width: "22px", height: "22px", color: "#FAF3E1", opacity: 0, marginBottom: "5px" }} />
                   <span style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>400 × 290px</span>
                   {/* FIX 1: tag uses tokenised colours */}
                   <div style={{ position: "absolute", top: "8px", left: "8px", padding: "2px 8px", borderRadius: "6px", fontSize: "0.6rem", fontFamily: "'Satoshi',sans-serif", fontWeight: 700, backgroundColor: ts.bg, color: ts.color }}>
                     {card.tag}
+                  </div>
+                  <div style={{ position: "absolute", left: "10px", right: "10px", bottom: "10px", zIndex: 1 }}>
+                    <p style={{ margin: 0, fontFamily: "'Cabinet Grotesk',sans-serif", fontSize: "0.82rem", fontWeight: 700, color: "#FAF3E1" }}>
+                      {card.title}
+                    </p>
+                    <p style={{ margin: "0.15rem 0 0", fontSize: "0.62rem", color: "rgba(250,243,225,0.78)", fontFamily: "'Satoshi',sans-serif" }}>
+                      {card.note}
+                    </p>
                   </div>
                 </div>
 
@@ -554,7 +572,7 @@ export default function DashboardPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "0.68rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>{card.category}</span>
-                    <span style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.85rem", color: T.accent }}>${card.price}</span>
+                    <span style={{ fontSize: "0.68rem", color: T.accent, fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700 }}>Included</span>
                   </div>
                 </div>
               </motion.div>
