@@ -48,6 +48,7 @@ interface Payment {
   currency: string;
   status: "pending" | "completed" | "failed" | "refunded";
   payment_method: string | null;
+  provider_reference?: string | null;
   created_at: string;
   completed_at: string | null;
   user_email?: string;
@@ -370,6 +371,11 @@ export default function PaymentsPage() {
                   <p style={{ margin: 0, color: UI.textMuted, fontSize: "0.75rem" }}>
                     {payment.payment_method || "Card"}
                   </p>
+                  {payment.provider_reference && (
+                    <p style={{ margin: "0.2rem 0 0", color: UI.textMuted, fontSize: "0.7rem", maxWidth: "220px", lineHeight: 1.35 }}>
+                      Ref: {payment.provider_reference}
+                    </p>
+                  )}
                 </div>
 
                 <div style={{ minWidth: "160px" }}>

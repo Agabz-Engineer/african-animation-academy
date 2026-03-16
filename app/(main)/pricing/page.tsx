@@ -7,6 +7,7 @@ import {
   Check,
   CreditCard,
   Lock,
+  Copy,
   ShieldCheck,
   Sparkles,
   X,
@@ -158,6 +159,16 @@ export default function PricingPage() {
   const [checkoutError, setCheckoutError] = useState("");
   const [paymentSandbox, setPaymentSandbox] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [showManualUpgrade, setShowManualUpgrade] = useState(false);
+  const [manualReference, setManualReference] = useState("");
+  const [manualNote, setManualNote] = useState("");
+  const [manualSubmitting, setManualSubmitting] = useState(false);
+  const [manualSuccess, setManualSuccess] = useState("");
+
+  const momoName = process.env.NEXT_PUBLIC_MOMO_NAME || "Platform Account";
+  const momoNumber = process.env.NEXT_PUBLIC_MOMO_NUMBER || "Not configured";
+  const momoNetwork = process.env.NEXT_PUBLIC_MOMO_NETWORK || "Mobile Money";
+  const momoNote = process.env.NEXT_PUBLIC_MOMO_NOTE || "Use your email or username as reference";
 
   useEffect(() => {
     let active = true;
@@ -203,16 +214,15 @@ export default function PricingPage() {
 
   const handleCheckout = async () => {
     if (!supabase) {
-      setCheckoutError("Payments are not configured yet.");
+      setCheckoutError("Sign in first, then use the manual upgrade flow.");
       return;
     }
 
     setCheckoutError("");
-    setCheckoutLoading(true);
+    setManualSuccess("");
 
     if (maintenanceMode) {
       setCheckoutError("Payments are temporarily paused during maintenance.");
-      setCheckoutLoading(false);
       return;
     }
 
@@ -222,33 +232,62 @@ export default function PricingPage() {
         window.location.href = "/login?next=%2Fpricing";
         return;
       }
+      setShowManualUpgrade(true);
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : "Checkout failed.");
+    }
+  };
 
-      const response = await fetch("/api/paystack/initialize", {
+  const handleManualUpgradeSubmit = async () => {
+    if (!supabase) {
+      setCheckoutError("Supabase is not configured.");
+      return;
+    }
+
+    setCheckoutError("");
+    setManualSuccess("");
+    setManualSubmitting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id || !user?.email) {
+        window.location.href = "/login?next=%2Fpricing";
+        return;
+      }
+
+      const response = await fetch("/api/payments/manual-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          planId: "pro",
-          termMonths,
           userId: user.id,
           email: user.email,
+          termMonths,
+          reference: manualReference,
+          note: manualNote,
         }),
       });
 
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload?.error || "Unable to start checkout.");
+        throw new Error(payload?.error || "Could not submit payment request.");
       }
 
-      if (payload?.authorization_url) {
-        window.location.href = payload.authorization_url;
-        return;
-      }
-
-      throw new Error("Checkout link missing.");
+      setManualSuccess("Payment request submitted. Admin can now verify it and activate Pro for you.");
+      setManualReference("");
+      setManualNote("");
     } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : "Checkout failed.");
+      setCheckoutError(error instanceof Error ? error.message : "Could not submit payment request.");
     } finally {
-      setCheckoutLoading(false);
+      setManualSubmitting(false);
+    }
+  };
+
+  const handleCopy = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setManualSuccess("Copied to clipboard.");
+    } catch {
+      setManualSuccess(`Copy this: ${value}`);
     }
   };
 
@@ -400,9 +439,39 @@ export default function PricingPage() {
             fontSize: "0.85rem",
           }}
         >
-          Admin payment sandbox is enabled. Checkout currently runs in test mode.
+                  Admin payment sandbox is enabled. Live checkout is off, so Pro upgrades use manual admin approval.
         </div>
       )}
+
+      <section className="comparison" style={{ border: `1px solid ${T.border}`, background: T.panel, marginBottom: "0.9rem" }}>
+        <h3 style={{ color: T.text }}>Manual Upgrade Option</h3>
+        <p style={{ color: T.muted, margin: "0.35rem 0 0.9rem" }}>
+          Perfect for starting out: users pay by Mobile Money, submit a reference, then admin verifies and upgrades them to Pro.
+        </p>
+        <div style={{ display: "grid", gap: "0.65rem" }}>
+          <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
+            <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>MoMo Name</div>
+            <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{momoName}</div>
+          </div>
+          <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+            <div>
+              <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>MoMo Number</div>
+              <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{momoNumber}</div>
+            </div>
+            <button type="button" onClick={() => void handleCopy(momoNumber)} style={{ border: `1px solid ${T.border}`, background: T.chip, color: T.text, borderRadius: "10px", padding: "0.55rem 0.7rem", cursor: "pointer" }}>
+              <Copy style={{ width: "15px", height: "15px" }} />
+            </button>
+          </div>
+          <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
+            <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Network</div>
+            <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{momoNetwork}</div>
+          </div>
+          <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
+            <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Payment Note</div>
+            <div style={{ color: T.muted, fontWeight: 600, marginTop: "0.2rem", lineHeight: 1.5 }}>{momoNote}</div>
+          </div>
+        </div>
+      </section>
 
       <section className="comparison" style={{ border: `1px solid ${T.border}`, background: T.panel }}>
         <h3 style={{ color: T.text }}>Core Feature Comparison</h3>
@@ -779,6 +848,139 @@ export default function PricingPage() {
           th,
           td {
             padding: 0.48rem 0.4rem;
+          }
+        }
+      `}</style>
+
+      {showManualUpgrade && (
+        <div className="manual-overlay">
+          <div className="manual-backdrop" onClick={() => !manualSubmitting && setShowManualUpgrade(false)} />
+          <div className="manual-modal" style={{ background: T.panel, border: `1px solid ${T.border}` }}>
+            <div className="manual-head" style={{ borderBottom: `1px solid ${T.border}` }}>
+              <div>
+                <h3 style={{ margin: 0, color: T.text, font: `700 1.1rem "Clash Display", sans-serif` }}>Manual Pro Upgrade</h3>
+                <p style={{ margin: "0.35rem 0 0", color: T.muted, font: `500 0.8rem "General Sans", sans-serif` }}>
+                  Pay with MoMo, then submit your transaction reference for admin approval.
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowManualUpgrade(false)} style={{ background: "none", border: "none", color: T.text, cursor: "pointer" }}>
+                <X style={{ width: "18px", height: "18px" }} />
+              </button>
+            </div>
+
+            <div className="manual-body">
+              <div className="manual-card" style={{ border: `1px solid ${T.border}`, background: T.card }}>
+                <strong style={{ color: T.text }}>Amount: GHS {getProMonthlyRate(termMonths).toFixed(2)}</strong>
+                <span style={{ color: T.muted }}>Send to {momoNetwork}: {momoNumber}</span>
+                <span style={{ color: T.muted }}>Name: {momoName}</span>
+              </div>
+
+              <label className="manual-label" style={{ color: T.muted }}>
+                Transaction reference
+                <input
+                  value={manualReference}
+                  onChange={(event) => setManualReference(event.target.value)}
+                  placeholder="Enter MoMo reference / sender reference"
+                  className="manual-input"
+                  style={{ border: `1px solid ${T.border}`, background: T.card, color: T.text }}
+                />
+              </label>
+
+              <label className="manual-label" style={{ color: T.muted }}>
+                Optional note
+                <textarea
+                  value={manualNote}
+                  onChange={(event) => setManualNote(event.target.value)}
+                  placeholder="Add the sender name or anything admin should know"
+                  rows={3}
+                  className="manual-input"
+                  style={{ border: `1px solid ${T.border}`, background: T.card, color: T.text, resize: "none" }}
+                />
+              </label>
+
+              <div className="manual-actions">
+                <button type="button" onClick={() => setShowManualUpgrade(false)} className="manual-secondary" style={{ border: `1px solid ${T.border}`, color: T.text }}>
+                  Close
+                </button>
+                <button type="button" onClick={handleManualUpgradeSubmit} disabled={manualSubmitting} className="manual-primary" style={{ background: T.accent, color: "#fff" }}>
+                  {manualSubmitting ? "Submitting..." : "I Have Paid"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        .manual-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+        }
+        .manual-backdrop {
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.66);
+          backdrop-filter: blur(8px);
+        }
+        .manual-modal {
+          position: relative;
+          width: min(100%, 520px);
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+        }
+        .manual-head {
+          padding: 1rem 1rem 0.9rem;
+          display: flex;
+          gap: 0.75rem;
+          align-items: flex-start;
+          justify-content: space-between;
+        }
+        .manual-body {
+          padding: 1rem;
+          display: grid;
+          gap: 0.9rem;
+        }
+        .manual-card {
+          border-radius: 14px;
+          padding: 0.85rem;
+          display: grid;
+          gap: 0.3rem;
+          font: 600 0.82rem "General Sans", sans-serif;
+        }
+        .manual-label {
+          display: grid;
+          gap: 0.4rem;
+          font: 600 0.8rem "General Sans", sans-serif;
+        }
+        .manual-input {
+          width: 100%;
+          border-radius: 12px;
+          padding: 0.8rem 0.9rem;
+          outline: none;
+          font: 500 0.85rem "General Sans", sans-serif;
+        }
+        .manual-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+        }
+        .manual-secondary,
+        .manual-primary {
+          border-radius: 12px;
+          padding: 0.8rem 0.9rem;
+          border: none;
+          cursor: pointer;
+          font: 700 0.85rem "General Sans", sans-serif;
+        }
+        @media (max-width: 767px) {
+          .manual-actions {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
