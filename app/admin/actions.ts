@@ -633,6 +633,31 @@ export async function grantUserProAccess(input: { userId: string; paymentId?: st
   return { success: true };
 }
 
+export async function revokeUserProAccess(userId: string) {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const now = new Date().toISOString();
+
+  const { error: subscriptionError } = await supabaseAdmin
+    .from("subscriptions")
+    .update({
+      status: "cancelled",
+      ends_at: now,
+    })
+    .eq("user_id", userId)
+    .eq("status", "active");
+
+  if (subscriptionError) throw subscriptionError;
+
+  const { error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .upsert({ id: userId, subscription_tier: "free" }, { onConflict: "id" });
+
+  if (profileError) throw profileError;
+
+  return { success: true };
+}
+
 export async function deleteUser(userId: string) {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
   

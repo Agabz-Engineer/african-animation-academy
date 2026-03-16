@@ -14,7 +14,7 @@ import {
   UserPlus,
   RefreshCw
 } from "lucide-react";
-import { banUser, unbanUser, createAdminUser, deleteUser, getAdminUsers, grantUserProAccess, setUserAccountType, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
+import { banUser, unbanUser, createAdminUser, deleteUser, getAdminUsers, grantUserProAccess, revokeUserProAccess, setUserAccountType, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -131,6 +131,9 @@ export default function UserManagement() {
           break;
         case 'grant_pro':
           await grantUserProAccess({ userId });
+          break;
+        case 'revoke_pro':
+          await revokeUserProAccess(userId);
           break;
       }
       
@@ -789,7 +792,7 @@ export default function UserManagement() {
           }}
           onGrantPro={async () => {
             if (!selectedUser) return;
-            await handleUserAction("grant_pro", selectedUser.id);
+            await handleUserAction(selectedUser.subscription_tier === "pro" ? "revoke_pro" : "grant_pro", selectedUser.id);
             await fetchUsers();
           }}
           onChangeAccountType={async (accountType) => {
@@ -894,8 +897,18 @@ function UserModal({
                 {user.status === "banned" ? "Unban User" : "Ban User"}
               </button>
             </div>
-            <button onClick={() => void onGrantPro()} style={{ padding: "0.7rem", borderRadius: "8px", border: "none", backgroundColor: UI.accent, color: "#fff", cursor: "pointer" }}>
-              {user.subscription_tier === "pro" ? "Refresh Pro Access" : "Grant Pro Access"}
+            <button
+              onClick={() => void onGrantPro()}
+              style={{
+                padding: "0.7rem",
+                borderRadius: "8px",
+                border: "none",
+                backgroundColor: user.subscription_tier === "pro" ? UI.danger : UI.accent,
+                color: "#fff",
+                cursor: "pointer"
+              }}
+            >
+              {user.subscription_tier === "pro" ? "Revoke Pro Access" : "Grant Pro Access"}
             </button>
           </div>
         ) : (
