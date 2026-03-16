@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
 import { supabase } from "@/lib/supabase";
+import { getMembershipAccess } from "@/lib/membership";
 
 // ─── Colour tokens ────────────────────────────────────────
 const DARK_UI = {
@@ -291,6 +293,12 @@ export default function PortfolioPage() {
   const [communityPosts, setCommunityPosts] = useState<any[]>([]);
   const [isTaggingMode, setIsTaggingMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [hasProAccess, setHasProAccess] = useState(false);
+  const [freeUploadsThisMonth, setFreeUploadsThisMonth] = useState(0);
+
+  const freeUploadLimit = 3;
+  const freeUploadsRemaining = Math.max(0, freeUploadLimit - freeUploadsThisMonth);
+  const canPublishProject = hasProAccess || freeUploadsRemaining > 0;
 
   useEffect(() => {
     async function init() {
@@ -300,6 +308,9 @@ export default function PortfolioPage() {
       setUser(user);
       
       if (user && supabase) {
+        const access = await getMembershipAccess(supabase, user.id);
+        setHasProAccess(access.hasPro);
+
         // Fetch projects
         const { data: projData } = await supabase
           .from("portfolio_projects")
@@ -307,7 +318,17 @@ export default function PortfolioPage() {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
         
-        if (projData) setProjects(projData);
+        if (projData) {
+          setProjects(projData);
+          const monthStart = new Date();
+          monthStart.setDate(1);
+          monthStart.setHours(0, 0, 0, 0);
+          const uploadsThisMonth = projData.filter((project) => {
+            const createdAt = new Date(project.created_at);
+            return !Number.isNaN(createdAt.getTime()) && createdAt >= monthStart;
+          }).length;
+          setFreeUploadsThisMonth(uploadsThisMonth);
+        }
         
         // Fetch community posts for tagging
         const { data: postData } = await supabase
@@ -318,6 +339,10 @@ export default function PortfolioPage() {
           
         if (postData) setCommunityPosts(postData);
       }
+      if (!user) {
+        setHasProAccess(false);
+        setFreeUploadsThisMonth(0);
+      }
       setLoading(false);
     }
     init();
@@ -325,6 +350,7 @@ export default function PortfolioPage() {
 
   const handleAddProject = async () => {
     if (!user || !newProject.title || !supabase) return;
+    if (!hasProAccess && freeUploadsRemaining <= 0) return;
     setSubmitting(true);
     
     const projectToSave = {
@@ -346,6 +372,9 @@ export default function PortfolioPage() {
 
     if (!error && data) {
       setProjects([data[0], ...projects]);
+      if (!hasProAccess) {
+        setFreeUploadsThisMonth((prev) => prev + 1);
+      }
       setIsModalOpen(false);
       setNewProject({ title: "", category: "2D Animation", description: "", tags: "", thumbnail_url: "", media_url: "" });
     }
@@ -397,9 +426,9 @@ export default function PortfolioPage() {
         </motion.div>
 
         <button 
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => canPublishProject && setIsModalOpen(true)}
           style={{
-            backgroundColor: "#FF6D1F",
+            backgroundColor: canPublishProject ? "#FF6D1F" : C.dim,
             color: "#fff",
             border: "none",
             borderRadius: "12px",
@@ -409,15 +438,31 @@ export default function PortfolioPage() {
             gap: "0.5rem",
             fontSize: "0.85rem",
             fontWeight: 700,
-            cursor: "pointer",
-            boxShadow: "0 4px 20px rgba(255,109,31,0.25)",
+            cursor: canPublishProject ? "pointer" : "not-allowed",
+            boxShadow: canPublishProject ? "0 4px 20px rgba(255,109,31,0.25)" : "none",
             fontFamily: "'General Sans', sans-serif"
           }}
         >
           <Plus style={{ width: "18px", height: "18px" }} />
-          Add Work
+          {hasProAccess ? "Add Work" : freeUploadsRemaining > 0 ? `Add Work (${freeUploadsRemaining} left)` : "Upgrade for more uploads"}
         </button>
       </div>
+
+      {!hasProAccess && (
+        <div style={{ marginBottom: "1.25rem", padding: "0.9rem 1rem", borderRadius: "16px", border: `1px solid ${C.cardBorder}`, backgroundColor: C.cardBg, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+          <div>
+            <p style={{ margin: 0, fontSize: "0.86rem", fontWeight: 700, color: C.text, fontFamily: "'Cabinet Grotesk', sans-serif" }}>
+              Free plan portfolio access
+            </p>
+            <p style={{ margin: "0.25rem 0 0", color: C.muted, fontSize: "0.8rem", fontFamily: "'General Sans', sans-serif" }}>
+              You can publish up to {freeUploadLimit} projects per month on Free. Messaging stays available for everyone.
+            </p>
+          </div>
+          <Link href="/pricing" style={{ color: "#FF6D1F", textDecoration: "none", fontWeight: 700, fontSize: "0.8rem", fontFamily: "'General Sans', sans-serif" }}>
+            Upgrade to Pro
+          </Link>
+        </div>
+      )}
 
       {/* ── Controls Row ────────────────────────────────── */}
       <div style={{
@@ -564,8 +609,16 @@ export default function PortfolioPage() {
                 Add New Project
               </h2>
               <p style={{ color: C.muted, fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-                Share your latest masterpiece with the community.
+                {hasProAccess
+                  ? "Share your latest masterpiece with the community."
+                  : `Share your latest masterpiece with the community. Free plan: ${freeUploadsRemaining} of ${freeUploadLimit} uploads left this month.`}
               </p>
+
+              {!hasProAccess && !canPublishProject && (
+                <div style={{ marginBottom: "1.25rem", padding: "0.85rem 0.95rem", borderRadius: "14px", border: `1px solid ${C.cardBorder}`, backgroundColor: C.hoverBg, color: C.text, fontSize: "0.82rem", fontFamily: "'General Sans', sans-serif", lineHeight: 1.5 }}>
+                  You have reached your free monthly portfolio limit. Upgrade to Pro for unlimited uploads.
+                </div>
+              )}
 
               {/* Tag from Community Banner */}
               <div 
@@ -616,7 +669,8 @@ export default function PortfolioPage() {
                     <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>Title</label>
                     <input 
                       value={newProject.title}
-                      onChange={e => setNewProject({...newProject, title: e.target.value})}
+                        onChange={e => setNewProject({...newProject, title: e.target.value})}
+                        disabled={!canPublishProject}
                       placeholder="My Animation Project"
                       style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text }}
                     />
@@ -628,6 +682,7 @@ export default function PortfolioPage() {
                       <select 
                         value={newProject.category}
                         onChange={e => setNewProject({...newProject, category: e.target.value})}
+                        disabled={!canPublishProject}
                         style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text }}
                       >
                         {CATEGORIES.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
@@ -638,6 +693,7 @@ export default function PortfolioPage() {
                       <input 
                         value={newProject.tags}
                         onChange={e => setNewProject({...newProject, tags: e.target.value})}
+                        disabled={!canPublishProject}
                         placeholder="2d, character, wip"
                         style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text }}
                       />
@@ -648,7 +704,8 @@ export default function PortfolioPage() {
                     <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>Description</label>
                     <textarea 
                       value={newProject.description}
-                      onChange={e => setNewProject({...newProject, description: e.target.value})}
+                        onChange={e => setNewProject({...newProject, description: e.target.value})}
+                        disabled={!canPublishProject}
                       rows={3}
                       placeholder="Tell us about your work..."
                       style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text, resize: "none" }}
@@ -659,32 +716,33 @@ export default function PortfolioPage() {
                     <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, marginBottom: "0.5rem" }}>Project URL (optional)</label>
                     <input 
                       value={newProject.media_url}
-                      onChange={e => setNewProject({...newProject, media_url: e.target.value})}
+                        onChange={e => setNewProject({...newProject, media_url: e.target.value})}
+                        disabled={!canPublishProject}
                       placeholder="vimeo.com/..."
                       style={{ width: "100%", padding: "0.75rem", borderRadius: "10px", border: `1px solid ${C.cardBorder}`, backgroundColor: "rgba(0,0,0,0.1)", color: C.text }}
                     />
                   </div>
 
                   <button 
-                    disabled={submitting || !newProject.title}
+                    disabled={submitting || !newProject.title || !canPublishProject}
                     onClick={handleAddProject}
                     style={{
                       marginTop: "0.5rem",
-                      backgroundColor: submitting ? C.dim : "#FF6D1F",
+                      backgroundColor: submitting || !canPublishProject ? C.dim : "#FF6D1F",
                       color: "#fff",
                       border: "none",
                       borderRadius: "12px",
                       padding: "1rem",
                       fontWeight: 700,
-                      cursor: submitting ? "not-allowed" : "pointer",
+                      cursor: submitting || !canPublishProject ? "not-allowed" : "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "0.5rem"
                     }}
                   >
-                    {submitting ? "Adding..." : "Publish to Portfolio"}
-                    {!submitting && <Check style={{ width: "18px", height: "18px" }} />}
+                    {submitting ? "Adding..." : canPublishProject ? "Publish to Portfolio" : "Upgrade to Pro"}
+                    {!submitting && canPublishProject && <Check style={{ width: "18px", height: "18px" }} />}
                   </button>
                 </div>
               )}

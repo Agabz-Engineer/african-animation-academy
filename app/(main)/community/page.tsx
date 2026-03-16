@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useGamification } from "@/lib/useGamification";
 import { useThemeMode } from "@/lib/useThemeMode";
+import { getMembershipAccess } from "@/lib/membership";
 import FollowButton from "@/app/components/ui/FollowButton";
 import MessageModal from "@/app/components/ui/MessageModal";
 
@@ -257,6 +258,7 @@ export default function CommunityPage() {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
   const [publicSettings, setPublicSettings] = useState<PublicAdminSettings | null>(null);
+  const [hasProAccess, setHasProAccess] = useState(false);
 
   const refreshFollowersCount = async (targetUserId: string) => {
     if (!supabase) return;
@@ -390,6 +392,8 @@ export default function CommunityPage() {
           .replace(/^_+|_+$/g, "")
           .slice(0, 20);
         setUser({ id: authUser.id, name, handle: handle || "creative" });
+        const access = await getMembershipAccess(client, authUser.id);
+        setHasProAccess(access.hasPro);
 
         const { data: followData } = await client
           .from("user_follows")
@@ -405,6 +409,7 @@ export default function CommunityPage() {
         followedIds.add(authUser.id);
       } else {
         setUser(null);
+        setHasProAccess(false);
       }
 
       const livePosts = Array.isArray(postData) ? (postData as DbPost[]).map(p => normalizePost(p, followedIds)) : [];
@@ -825,6 +830,11 @@ export default function CommunityPage() {
       return;
     }
 
+    if (!hasProAccess) {
+      setSubmitError("Upgrade to Pro to publish in the community feed.");
+      return;
+    }
+
     const content = postText.trim();
     if (content.length < 8) {
       setSubmitError("Write at least 8 characters.");
@@ -889,6 +899,10 @@ export default function CommunityPage() {
 
     if (!user) {
       setCommentErrorByPost((prev) => ({ ...prev, [postId]: "Sign in to comment." }));
+      return;
+    }
+    if (!hasProAccess) {
+      setCommentErrorByPost((prev) => ({ ...prev, [postId]: "Upgrade to Pro to join the conversation." }));
       return;
     }
     if (content.length < 2) {
@@ -1157,7 +1171,11 @@ export default function CommunityPage() {
                   <div>
                     <p style={{ color: T.text, fontSize: "0.92rem", fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 700 }}>Live Update</p>
                     <p style={{ color: T.muted, fontSize: "0.78rem", fontFamily: "'Satoshi', sans-serif" }}>
-                      {user ? `Posting as @${user.handle}` : "Sign in to publish to the feed"}
+                      {user
+                        ? hasProAccess
+                          ? `Posting as @${user.handle}`
+                          : "Free users can browse, like, follow, and message. Upgrade to Pro to post."
+                        : "Sign in to publish to the feed"}
                     </p>
                   </div>
                 </div>
@@ -1185,7 +1203,7 @@ export default function CommunityPage() {
                 value={postText}
                 onChange={(event) => setPostText(event.target.value)}
                 placeholder="Share what you are building..."
-                disabled={!user || submitPending}
+                disabled={!user || submitPending || !hasProAccess}
                 rows={4}
                 style={{
                   width: "100%",
@@ -1207,7 +1225,7 @@ export default function CommunityPage() {
                   <input
                     value={postTags}
                     onChange={(event) => setPostTags(event.target.value)}
-                    disabled={!user || submitPending}
+                    disabled={!user || submitPending || !hasProAccess}
                     placeholder="wip, character"
                     style={{
                       width: "100%",
@@ -1224,14 +1242,14 @@ export default function CommunityPage() {
                 </div>
                 <button
                   onClick={publishPost}
-                  disabled={!user || submitPending}
+                  disabled={!user || submitPending || !hasProAccess}
                   style={{
                     borderRadius: "10px",
                     border: "none",
-                    backgroundColor: user ? T.accent : T.chip,
-                    color: user ? "#FFFFFF" : T.dim,
+                    backgroundColor: user && hasProAccess ? T.accent : T.chip,
+                    color: user && hasProAccess ? "#FFFFFF" : T.dim,
                     fontWeight: 700,
-                    cursor: user ? "pointer" : "not-allowed",
+                    cursor: user && hasProAccess ? "pointer" : "not-allowed",
                     fontSize: "0.82rem",
                     display: "inline-flex",
                     alignItems: "center",
@@ -1241,7 +1259,7 @@ export default function CommunityPage() {
                   }}
                 >
                   <Send style={{ width: "13px", height: "13px" }} />
-                  {submitPending ? "Posting..." : "Post"}
+                  {submitPending ? "Posting..." : hasProAccess ? "Post" : "Pro only"}
                 </button>
               </div>
 
@@ -1253,7 +1271,11 @@ export default function CommunityPage() {
                   fontFamily: "'Satoshi', sans-serif",
                 }}
               >
-                {submitError || submitInfo || "Use tags to help people discover your post quickly."}
+                {submitError ||
+                  submitInfo ||
+                  (user && !hasProAccess
+                    ? "Upgrade to Pro to publish posts, comment, and unlock reward-eligible community participation."
+                    : "Use tags to help people discover your post quickly.")}
               </p>
             </div>
 
@@ -1323,7 +1345,7 @@ export default function CommunityPage() {
                   const postComments = commentsByPost[post.id] || [];
                   const commentOpen = openCommentFor === post.id;
                   const visibleCommentCount = getCommentCount(post);
-                  return <PostCard key={post.id} post={post} index={index} hasLiked={hasLiked} postComments={postComments} commentOpen={commentOpen} visibleCommentCount={visibleCommentCount} T={T} user={user} setOpenCommentFor={setOpenCommentFor} toggleLike={toggleLike} likePendingFor={likePendingFor} commentDrafts={commentDrafts} setCommentDrafts={setCommentDrafts} commentPendingFor={commentPendingFor} submitComment={submitComment} commentErrorByPost={commentErrorByPost} commentInfoByPost={commentInfoByPost} commentsSetupNeeded={commentsSetupNeeded} commentsAuthNeeded={commentsAuthNeeded} timeAgo={timeAgo} setSearch={setSearch} onFollowUpdate={refreshFollowersCount} />;
+                  return <PostCard key={post.id} post={post} index={index} hasLiked={hasLiked} postComments={postComments} commentOpen={commentOpen} visibleCommentCount={visibleCommentCount} T={T} user={user} hasProAccess={hasProAccess} setOpenCommentFor={setOpenCommentFor} toggleLike={toggleLike} likePendingFor={likePendingFor} commentDrafts={commentDrafts} setCommentDrafts={setCommentDrafts} commentPendingFor={commentPendingFor} submitComment={submitComment} commentErrorByPost={commentErrorByPost} commentInfoByPost={commentInfoByPost} commentsSetupNeeded={commentsSetupNeeded} commentsAuthNeeded={commentsAuthNeeded} timeAgo={timeAgo} setSearch={setSearch} onFollowUpdate={refreshFollowersCount} />;
                 })}
               </AnimatePresence>
             )}
@@ -1562,6 +1584,7 @@ type PostCardProps = {
   visibleCommentCount: number;
   T: CommunityTheme;
   user: UserSummary | null;
+  hasProAccess: boolean;
   setOpenCommentFor: React.Dispatch<React.SetStateAction<string | null>>;
   toggleLike: (postId: string) => void;
   likePendingFor: string | null;
@@ -1579,7 +1602,7 @@ type PostCardProps = {
 };
 
 function PostCard({ 
-  post, index, hasLiked, postComments, commentOpen, visibleCommentCount, T, user, 
+  post, index, hasLiked, postComments, commentOpen, visibleCommentCount, T, user, hasProAccess,
   setOpenCommentFor, toggleLike, likePendingFor, commentDrafts, setCommentDrafts, 
   commentPendingFor, submitComment, commentErrorByPost, commentInfoByPost, 
   commentsSetupNeeded, commentsAuthNeeded, timeAgo, setSearch, onFollowUpdate 
@@ -1755,8 +1778,8 @@ function PostCard({
                       [post.id]: event.target.value,
                     }))
                   }
-                  placeholder={user ? "Write a comment..." : "Sign in to comment"}
-                  disabled={!user || commentPendingFor === post.id}
+                  placeholder={user ? (hasProAccess ? "Write a comment..." : "Upgrade to Pro to comment") : "Sign in to comment"}
+                  disabled={!user || commentPendingFor === post.id || !hasProAccess}
                   style={{
                     width: "100%",
                     borderRadius: "9px",
@@ -1771,20 +1794,20 @@ function PostCard({
                 />
                 <button
                   onClick={() => submitComment(post.id)}
-                  disabled={!user || commentPendingFor === post.id}
+                  disabled={!user || commentPendingFor === post.id || !hasProAccess}
                   style={{
                     borderRadius: "9px",
                     border: "none",
-                    backgroundColor: user ? T.accent : T.chip,
-                    color: user ? "#FFFFFF" : T.dim,
-                    cursor: user ? "pointer" : "not-allowed",
+                    backgroundColor: user && hasProAccess ? T.accent : T.chip,
+                    color: user && hasProAccess ? "#FFFFFF" : T.dim,
+                    cursor: user && hasProAccess ? "pointer" : "not-allowed",
                     fontFamily: "'Satoshi', sans-serif",
                     fontSize: "0.74rem",
                     fontWeight: 700,
                     padding: "0.44rem 0.55rem",
                   }}
                 >
-                  {commentPendingFor === post.id ? "..." : "Send"}
+                  {commentPendingFor === post.id ? "..." : hasProAccess ? "Send" : "Pro"}
                 </button>
               </div>
               <p
@@ -1801,7 +1824,9 @@ function PostCard({
               >
                 {commentErrorByPost[post.id] ||
                   commentInfoByPost[post.id] ||
-                  (commentsSetupNeeded
+                  (user && !hasProAccess
+                    ? "Upgrade to Pro to reply in community discussions."
+                    : commentsSetupNeeded
                     ? "Live comments are not configured yet."
                     : commentsAuthNeeded
                     ? "Sign in to view comments and reply."

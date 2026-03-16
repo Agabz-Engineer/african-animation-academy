@@ -49,7 +49,8 @@ const PLANS: Plan[] = [
     ctaLabel: "Start free",
     href: "/signup",
     features: [
-      "Access to all Beginner course previews",
+      "Access to beginner lessons and previews",
+      "Messages and creator networking",
       "Limited gallery submissions (3/month)",
       "Community forum read-only access",
       "Challenge participation (no prize eligibility)",
@@ -65,6 +66,7 @@ const PLANS: Plan[] = [
     href: "/pricing",
     features: [
       "Full access to Beginner, Intermediate, and Advanced courses",
+      "Unlimited creator messaging + networking",
       "Unlimited gallery submissions",
       "Full forum participation and thread creation",
       "Challenge prize eligibility + leaderboard ranking",
@@ -76,7 +78,8 @@ const PLANS: Plan[] = [
 ];
 
 const COMPARISON_ROWS: ComparisonRow[] = [
-  { feature: "Course access", free: "Previews only", pro: "All levels" },
+  { feature: "Course access", free: "Beginner + previews", pro: "All levels" },
+  { feature: "Messaging", free: "Included", pro: "Included" },
   { feature: "Gallery submissions", free: "3 / month", pro: "Unlimited" },
   { feature: "Forum participation", free: "Read-only", pro: "Post + threads" },
   { feature: "Challenge rewards", free: "No prizes", pro: "Prize + leaderboard" },
