@@ -187,7 +187,7 @@ export default function PaymentsPage() {
         <div>
           <h1 style={{ color: UI.text, fontSize: "2rem", fontWeight: 700, margin: "0 0 0.35rem 0" }}>Payments</h1>
           <p style={{ color: UI.textMuted, fontSize: "0.95rem", margin: 0 }}>
-            Track revenue, payment status, and billing activity.
+            Track revenue, payment status, and billing activity. Completed payments can apply or refresh Pro access from here.
           </p>
         </div>
         <button
@@ -387,12 +387,18 @@ export default function PaymentsPage() {
                   </p>
                 </div>
 
-                <div>{statusChip(payment.status)}</div>
+                <div style={{ minWidth: "140px" }}>
+                  <div>{statusChip(payment.status)}</div>
+                  <p style={{ margin: "0.35rem 0 0", color: UI.textMuted, fontSize: "0.72rem" }}>
+                    Current plan: {payment.user_subscription_tier === "pro" ? "Pro" : "Free"}
+                  </p>
+                </div>
                 <button
                   onClick={() => void handleGrantPro(payment)}
                   disabled={payment.status !== "completed" || actionLoadingFor === payment.id}
+                  title={payment.status !== "completed" ? "Only completed payments can apply Pro access." : "Apply or refresh Pro access for this user."}
                   style={{
-                    padding: "0.5rem 0.8rem",
+                    padding: "0.6rem 0.95rem",
                     borderRadius: "8px",
                     border: "none",
                     backgroundColor:
@@ -403,13 +409,18 @@ export default function PaymentsPage() {
                       payment.status === "completed" && actionLoadingFor !== payment.id ? "pointer" : "not-allowed",
                     fontSize: "0.8rem",
                     fontWeight: 600,
+                    minWidth: "150px",
+                    boxShadow:
+                      payment.status === "completed" && actionLoadingFor !== payment.id
+                        ? `0 8px 18px ${UI.accent}30`
+                        : "none",
                   }}
                 >
                   {actionLoadingFor === payment.id
-                    ? "Granting..."
-                    : payment.user_subscription_tier === "pro"
-                      ? "Refresh Pro"
-                      : "Grant Pro"}
+                    ? "Applying..."
+                    : payment.status === "completed"
+                      ? "Apply Pro Access"
+                      : "Complete Payment First"}
                 </button>
               </div>
             ))}
