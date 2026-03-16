@@ -654,7 +654,7 @@ export default function DashboardPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
               {[
                 { text: "New challenge: Character of the Month", time: "2h ago", icon: Trophy },
-                { text: "New lesson by Kwame Mensah",           time: "5h ago", icon: Play   },
+                { text: "New lesson crafted by Zenock G.-A.",   time: "5h ago", icon: Play   },
                 { text: "Your post got 3 replies",              time: "1d ago", icon: Users  },
                 { text: "Weekly streak milestone reached!",     time: "2d ago", icon: Flame  },
               ].map((item, i) => (

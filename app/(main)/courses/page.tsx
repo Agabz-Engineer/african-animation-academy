@@ -32,10 +32,31 @@ type DbCourse = {
 
 const FALLBACK_COURSES: Course[] = [
   { title: "Quick Poses for Strong Silhouettes", instructor: "Kwame Mensah", level: "Beginner", duration: "4h 30m", desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", access: "free" },
-  { title: "Expressive Walk Cycles: The Gathering Place Study", instructor: "TBA", level: "Beginner", duration: "TBD", desc: "Study rhythm, weight, and personality in walk cycles using a lively gathering‑place scene.", videoUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", enrollUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", access: "free" },
-  { title: "Bouncing Ball with Tail — Moho Tutorial", instructor: "TBA", level: "Intermediate", duration: "TBD", desc: "Practice follow-through and overlap by animating a bouncing ball with a tail in Moho.", videoUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", enrollUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", access: "pro" },
-  { title: "oon Boom Fundamentals", instructor: "TBA", level: "Intermediate", duration: "TBD", desc: "Core tools, timelines, and workflows to start animating confidently in Toon Boom.", videoUrl: "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb", enrollUrl: "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb", access: "pro" },
+  { title: "Expressive Walk Cycles: The Gathering Place Study", instructor: "Zenock G.-A.", level: "Beginner", duration: "TBD", desc: "Study rhythm, weight, and personality in walk cycles using a lively gathering‑place scene.", videoUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", enrollUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", access: "free" },
+  { title: "Bouncing Ball with Tail — Moho Tutorial", instructor: "Zenock G.-A.", level: "Intermediate", duration: "TBD", desc: "Practice follow-through and overlap by animating a bouncing ball with a tail in Moho.", videoUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", enrollUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", access: "pro" },
+  { title: "oon Boom Fundamentals", instructor: "Zenock G.-A.", level: "Intermediate", duration: "TBD", desc: "Core tools, timelines, and workflows to start animating confidently in Toon Boom.", videoUrl: "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb", enrollUrl: "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb", access: "pro" },
 ];
+
+const COURSE_CREDIT_NAME = "Zenock G.-A.";
+
+const getCourseInstructorLabel = (instructor: string) => {
+  const normalized = instructor.trim();
+  if (!normalized || normalized.toLowerCase() === "tba") {
+    return COURSE_CREDIT_NAME;
+  }
+  return normalized;
+};
+
+const getCourseCreditLabel = (instructor: string) => {
+  const normalized = instructor.trim();
+  if (!normalized || normalized.toLowerCase() === "tba") {
+    return "Course craft: Zenock G.-A.";
+  }
+  if (normalized.toLowerCase().includes("zenock")) {
+    return "Original course craft by Zenock G.-A.";
+  }
+  return "Course craft with Zenock G.-A.";
+};
 
 const ACCESSIBLE: Record<string, string[]> = {
   beginner:     ["Beginner"],
@@ -193,7 +214,8 @@ export default function CoursesPage() {
   const accessible = ACCESSIBLE[skillLevel] || ["Beginner"];
   const filtered   = courses.filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase()) ||
-    c.instructor.toLowerCase().includes(search.toLowerCase())
+    c.instructor.toLowerCase().includes(search.toLowerCase()) ||
+    COURSE_CREDIT_NAME.toLowerCase().includes(search.toLowerCase())
   );
   const hasPro     = hasProAccess;
   const expiryLabel = subscriptionEndsAt && !Number.isNaN(new Date(subscriptionEndsAt).getTime())
@@ -397,9 +419,12 @@ export default function CoursesPage() {
                 <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text, marginBottom: "0.2rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {course.title}
                 </h3>
-                <p style={{ fontSize: "0.72rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", marginBottom: "0.2rem" }}>
-                  {course.instructor}
+                <p style={{ fontSize: "0.72rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", marginBottom: "0.32rem" }}>
+                  {getCourseInstructorLabel(course.instructor)}
                 </p>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.22rem 0.5rem", borderRadius: "999px", border: `1px solid ${T.accent}33`, backgroundColor: T.accentSoft, color: T.accent, fontSize: "0.62rem", fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, letterSpacing: "0.02em", marginBottom: "0.4rem" }}>
+                  {getCourseCreditLabel(course.instructor)}
+                </div>
                 <p className="hide-mobile" style={{ fontSize: "0.7rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.5 }}>
                   {course.desc}
                 </p>
