@@ -79,6 +79,9 @@ const TABS = ["Overview", "Portfolio", "Compensation", "Security"];
 
 const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️"];
 
+const addCacheBuster = (url: string) =>
+  `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+
 export default function ProfilePage() {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
@@ -416,17 +419,20 @@ export default function ProfilePage() {
     if (!profile || !supabase) return;
     try {
       const blob = await compressImage(file);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}-cover.${fileExt}`;
+      const fileName = `${profile.id}-cover-${Date.now()}.jpg`;
       const filePath = `covers/${fileName}`;
 
-      await supabase.storage.from('portfolio-attachments').upload(filePath, blob, { upsert: true });
+      await supabase.storage.from('portfolio-attachments').upload(filePath, blob, {
+        upsert: false,
+        contentType: "image/jpeg",
+      });
       const { data: { publicUrl } } = supabase.storage.from('portfolio-attachments').getPublicUrl(filePath);
 
       const { error } = await supabase.from("profiles").update({ cover_url: publicUrl }).eq("id", profile.id);
-      if (!error) setProfile(prev => prev ? { ...prev, cover_url: publicUrl } : null);
+      if (!error) setProfile(prev => prev ? { ...prev, cover_url: addCacheBuster(publicUrl) } : null);
     } catch (err) {
       console.error("Cover upload error:", err);
+      alert("Failed to upload cover image.");
     }
   };
 

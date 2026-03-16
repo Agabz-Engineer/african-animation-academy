@@ -126,6 +126,7 @@ export default function SettingsPage() {
   const [saved, setSaved]   = useState(false);
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState<LanguageId>(getInitialLanguage);
+  const [isMobile, setIsMobile] = useState(false);
 
   /* Profile fields */
   const [fullName,    setFullName]    = useState("");
@@ -160,6 +161,13 @@ export default function SettingsPage() {
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
+    const syncViewport = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+
     let mounted = true;
 
     const loadUser = async () => {
@@ -193,6 +201,7 @@ export default function SettingsPage() {
     return () => {
       mounted = false;
       obs.disconnect();
+      window.removeEventListener("resize", syncViewport);
     };
   }, []);
 
@@ -667,22 +676,22 @@ export default function SettingsPage() {
     <div style={{ backgroundColor: T.pageBg, minHeight: "100vh", color: T.text, fontFamily: "'General Sans',sans-serif", transition: "background-color 0.3s" }}>
 
       {/* ── Page header ── */}
-      <div style={{ padding: "2.5rem 2.5rem 0" }}>
+      <div style={{ padding: isMobile ? "1rem 1rem 0" : "2.5rem 2.5rem 0" }}>
         <div style={{ display: "flex", gap: "3px", marginBottom: "1.25rem" }}>
           {["#FF8C00","#1C1C1C","#EDE5CC","#FF8C00"].map((c, i) => (
             <div key={i} style={{ height: "3px", width: i === 0 || i === 3 ? "24px" : "8px", backgroundColor: c, borderRadius: "999px" }} />
           ))}
         </div>
         <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: T.text, letterSpacing: "-0.01em", marginBottom: "0.375rem" }}>Settings</h1>
-        <p style={{ fontSize: "0.92rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", lineHeight: 1.6, marginBottom: "2rem" }}>Manage your profile, account and preferences.</p>
+        <p style={{ fontSize: "0.92rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", lineHeight: 1.6, marginBottom: isMobile ? "1.1rem" : "2rem" }}>Manage your profile, account and preferences.</p>
       </div>
 
       {/* ── Layout: tabs left + content right ── */}
-      <div style={{ display: "flex", gap: 0, padding: "0 2.5rem 4rem", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "1rem" : 0, padding: isMobile ? "0 1rem 5rem" : "0 2.5rem 4rem", alignItems: "flex-start" }}>
 
         {/* Left tab list */}
-        <div style={{ width: "196px", minWidth: "196px", marginRight: "2rem", flexShrink: 0 }}>
-          <div style={{ backgroundColor: T.sidebarBg, borderRadius: "14px", padding: "0.5rem", border: `1px solid ${T.border}` }}>
+        <div style={{ width: isMobile ? "100%" : "196px", minWidth: isMobile ? "100%" : "196px", marginRight: isMobile ? "0" : "2rem", flexShrink: 0 }}>
+          <div style={{ backgroundColor: T.sidebarBg, borderRadius: "14px", padding: "0.5rem", border: `1px solid ${T.border}`, display: isMobile ? "flex" : "block", overflowX: isMobile ? "auto" : "visible", gap: isMobile ? "0.4rem" : 0 }}>
             {TABS.map((t) => {
               const active = tab === t.id;
               return (
@@ -691,7 +700,7 @@ export default function SettingsPage() {
                   onClick={() => setTab(t.id)}
                   style={{
                     display: "flex", alignItems: "center", gap: "0.65rem",
-                    width: "100%", padding: "0.6rem 0.75rem",
+                    width: isMobile ? "auto" : "100%", padding: "0.6rem 0.75rem",
                     borderRadius: "9px", border: "none", cursor: "pointer",
                     backgroundColor: active ? T.accentSoft : "transparent",
                     color: active ? T.accent : T.textMuted,
@@ -701,7 +710,9 @@ export default function SettingsPage() {
                     textAlign: "left",
                     transition: "all 0.16s",
                     outline: active ? `1px solid ${T.accent}22` : "none",
-                    marginBottom: "2px",
+                    marginBottom: isMobile ? "0" : "2px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
                   }}
                 >
                   <t.icon style={{ width: "15px", height: "15px", flexShrink: 0 }} />
@@ -713,7 +724,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Right content panel */}
-        <div style={{ flex: 1, minWidth: 0, backgroundColor: T.cardBg, border: `1px solid ${T.border}`, borderRadius: "16px", padding: "1.75rem 2rem" }}>
+        <div style={{ flex: 1, width: "100%", minWidth: 0, backgroundColor: T.cardBg, border: `1px solid ${T.border}`, borderRadius: "16px", padding: isMobile ? "1.1rem 1rem" : "1.75rem 2rem" }}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={tab}
