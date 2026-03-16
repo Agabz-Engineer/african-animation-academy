@@ -94,6 +94,7 @@ const timeAgo = (isoDate: string) => {
 
 // ─── Page Component ────────────────────────────────────────
 export default function MessagesPage() {
+  const LAST_CHAT_STORAGE_KEY = "africafx:last-open-chat";
   const theme = useThemeMode();
   const T = theme === "dark" ? DARK : LIGHT;
   const [isMobile, setIsMobile] = useState(false);
@@ -101,6 +102,7 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
   const selectedChatRef = useRef<Conversation | null>(null);
+  const restoredChatRef = useRef(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -109,6 +111,53 @@ export default function MessagesPage() {
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
+
+  const markConversationAsRead = useCallback(async (otherId: string, userId: string) => {
+    if (!supabase) return;
+
+    const { error } = await supabase
+      .from("direct_messages")
+      .update({ is_read: true })
+      .eq("sender_id", otherId)
+      .eq("receiver_id", userId)
+      .eq("is_read", false);
+
+    if (error) throw error;
+
+    setConversations((prev) =>
+      prev.map((c) => (c.other_user_id === otherId ? { ...c, unread_count: 0 } : c))
+    );
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.sender_id === otherId && m.receiver_id === userId ? { ...m, is_read: true } : m
+      )
+    );
+  }, []);
+
+  const openConversation = useCallback(async (convo: Conversation, activeUserId?: string) => {
+    const currentUserId = activeUserId ?? user?.id;
+    if (!currentUserId || !supabase) return;
+
+    setSelectedChat(convo);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LAST_CHAT_STORAGE_KEY, convo.other_user_id);
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("direct_messages")
+        .select("*")
+        .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${convo.other_user_id}),and(sender_id.eq.${convo.other_user_id},receiver_id.eq.${currentUserId})`)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      setMessages(data || []);
+      await markConversationAsRead(convo.other_user_id, currentUserId);
+    } catch (err) {
+      console.error("Error opening conversation:", err);
+    }
+  }, [markConversationAsRead, user?.id]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -175,17 +224,28 @@ export default function MessagesPage() {
         }
       }
 
-      setConversations(
-        Array.from(convosMap.values())
-          .filter(c => c.other_user_id !== userId)
-          .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
-      );
+      const nextConversations = Array.from(convosMap.values())
+        .filter(c => c.other_user_id !== userId)
+        .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
+
+      setConversations(nextConversations);
+
+      if (typeof window !== "undefined" && !restoredChatRef.current) {
+        const lastOpenChatId = window.localStorage.getItem(LAST_CHAT_STORAGE_KEY);
+        if (lastOpenChatId) {
+          const restoredChat = nextConversations.find((c) => c.other_user_id === lastOpenChatId);
+          if (restoredChat) {
+            restoredChatRef.current = true;
+            void openConversation(restoredChat, userId);
+          }
+        }
+      }
     } catch (err) {
       console.error("Error fetching conversations:", err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [openConversation]);
 
   const fetchMessages = useCallback(async (otherId: string) => {
     if (!user || !supabase) return;
@@ -198,21 +258,11 @@ export default function MessagesPage() {
 
       if (error) throw error;
       setMessages(data || []);
-
-      await supabase
-        .from("direct_messages")
-        .update({ is_read: true })
-        .eq("sender_id", otherId)
-        .eq("receiver_id", user.id)
-        .eq("is_read", false);
-
-      setConversations(prev => prev.map(c => 
-        c.other_user_id === otherId ? { ...c, unread_count: 0 } : c
-      ));
+      await markConversationAsRead(otherId, user.id);
     } catch (err) {
       console.error("Error fetching messages:", err);
     }
-  }, [user]);
+  }, [markConversationAsRead, user]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -223,9 +273,16 @@ export default function MessagesPage() {
       if (!active) return;
       if (session?.user) {
         setUser(session.user);
+        restoredChatRef.current = false;
         void fetchConversations(session.user.id);
       } else {
         setUser(null);
+        setSelectedChat(null);
+        setMessages([]);
+        restoredChatRef.current = false;
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem(LAST_CHAT_STORAGE_KEY);
+        }
         setLoading(false);
       }
     };
@@ -533,8 +590,7 @@ export default function MessagesPage() {
                     animate={{ opacity: 1, x: 0 }}
                     key={convo.other_user_id}
                     onClick={() => {
-                      setSelectedChat(convo);
-                      fetchMessages(convo.other_user_id);
+                      void openConversation(convo);
                     }}
                     whileHover={{ backgroundColor: isActive ? T.accentSoft : theme === 'dark' ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}
                     style={{
@@ -689,7 +745,12 @@ export default function MessagesPage() {
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                 <motion.button 
-                  onClick={() => setSelectedChat(null)}
+                  onClick={() => {
+                    setSelectedChat(null);
+                    if (typeof window !== "undefined") {
+                      window.localStorage.removeItem(LAST_CHAT_STORAGE_KEY);
+                    }
+                  }}
                   whileHover={{ x: -2 }}
                   style={{ display: "flex", alignItems: "center", background: "none", border: "none", color: T.accent, cursor: "pointer", padding: "0 0.2rem 0 0", fontWeight: 600 }}
                   className="mobile-back"
