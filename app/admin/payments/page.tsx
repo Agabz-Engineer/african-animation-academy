@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   User,
 } from "lucide-react";
-import { getAdminPayments, grantUserProAccess } from "@/app/admin/actions";
+import { getAdminPayments, grantUserProAccess, updatePaymentStatus } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -152,13 +152,26 @@ export default function PaymentsPage() {
   };
 
   const handleGrantPro = async (payment: Payment) => {
-    setActionLoadingFor(payment.id);
+    setActionLoadingFor(`${payment.id}:pro`);
     try {
       await grantUserProAccess({ userId: payment.user_id, paymentId: payment.id });
       await fetchPayments();
     } catch (error) {
       console.error("Error granting pro access:", error);
       alert(error instanceof Error ? error.message : "Failed to grant pro access.");
+    } finally {
+      setActionLoadingFor(null);
+    }
+  };
+
+  const handleMarkSuccessful = async (payment: Payment) => {
+    setActionLoadingFor(`${payment.id}:status`);
+    try {
+      await updatePaymentStatus(payment.id, "completed");
+      await fetchPayments();
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      alert(error instanceof Error ? error.message : "Failed to update payment status.");
     } finally {
       setActionLoadingFor(null);
     }
@@ -393,35 +406,58 @@ export default function PaymentsPage() {
                     Current plan: {payment.user_subscription_tier === "pro" ? "Pro" : "Free"}
                   </p>
                 </div>
-                <button
-                  onClick={() => void handleGrantPro(payment)}
-                  disabled={payment.status !== "completed" || actionLoadingFor === payment.id}
-                  title={payment.status !== "completed" ? "Only completed payments can apply Pro access." : "Apply or refresh Pro access for this user."}
-                  style={{
-                    padding: "0.6rem 0.95rem",
-                    borderRadius: "8px",
-                    border: "none",
-                    backgroundColor:
-                      payment.status === "completed" && actionLoadingFor !== payment.id ? UI.accent : UI.border,
-                    color:
-                      payment.status === "completed" && actionLoadingFor !== payment.id ? "#FFFFFF" : UI.textMuted,
-                    cursor:
-                      payment.status === "completed" && actionLoadingFor !== payment.id ? "pointer" : "not-allowed",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    minWidth: "150px",
-                    boxShadow:
-                      payment.status === "completed" && actionLoadingFor !== payment.id
-                        ? `0 8px 18px ${UI.accent}30`
-                        : "none",
-                  }}
-                >
-                  {actionLoadingFor === payment.id
-                    ? "Applying..."
-                    : payment.status === "completed"
-                      ? "Apply Pro Access"
-                      : "Complete Payment First"}
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", minWidth: "170px" }}>
+                  {payment.status === "pending" && (
+                    <button
+                      onClick={() => void handleMarkSuccessful(payment)}
+                      disabled={actionLoadingFor !== null}
+                      title="Mark this validated payment as successful."
+                      style={{
+                        padding: "0.6rem 0.95rem",
+                        borderRadius: "8px",
+                        border: "none",
+                        backgroundColor: actionLoadingFor === null ? UI.success : UI.border,
+                        color: actionLoadingFor === null ? "#FFFFFF" : UI.textMuted,
+                        cursor: actionLoadingFor === null ? "pointer" : "not-allowed",
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        minWidth: "150px",
+                        boxShadow: actionLoadingFor === null ? `0 8px 18px ${UI.success}30` : "none",
+                      }}
+                    >
+                      {actionLoadingFor === `${payment.id}:status` ? "Updating..." : "Mark Successful"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => void handleGrantPro(payment)}
+                    disabled={payment.status !== "completed" || actionLoadingFor !== null}
+                    title={payment.status !== "completed" ? "Mark the payment successful first, then apply Pro access." : "Apply or refresh Pro access for this user."}
+                    style={{
+                      padding: "0.6rem 0.95rem",
+                      borderRadius: "8px",
+                      border: "none",
+                      backgroundColor:
+                        payment.status === "completed" && actionLoadingFor === null ? UI.accent : UI.border,
+                      color:
+                        payment.status === "completed" && actionLoadingFor === null ? "#FFFFFF" : UI.textMuted,
+                      cursor:
+                        payment.status === "completed" && actionLoadingFor === null ? "pointer" : "not-allowed",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      minWidth: "150px",
+                      boxShadow:
+                        payment.status === "completed" && actionLoadingFor === null
+                          ? `0 8px 18px ${UI.accent}30`
+                          : "none",
+                    }}
+                  >
+                    {actionLoadingFor === `${payment.id}:pro`
+                      ? "Applying..."
+                      : payment.status === "completed"
+                        ? "Apply Pro Access"
+                        : "Complete Payment First"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

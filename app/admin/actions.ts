@@ -496,6 +496,34 @@ export async function getAdminPayments() {
   });
 }
 
+export async function updatePaymentStatus(
+  paymentId: string,
+  status: "pending" | "completed" | "failed" | "refunded"
+) {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const payload: {
+    status: "pending" | "completed" | "failed" | "refunded";
+    completed_at?: string | null;
+  } = {
+    status,
+  };
+
+  if (status === "completed") {
+    payload.completed_at = new Date().toISOString();
+  } else if (status === "pending") {
+    payload.completed_at = null;
+  }
+
+  const { error } = await supabaseAdmin
+    .from("payments")
+    .update(payload)
+    .eq("id", paymentId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
 // ==========================================
 // User Management Actions
 // ==========================================
