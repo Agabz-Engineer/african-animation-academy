@@ -37,7 +37,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { data: course, error: courseError } = await supabaseAdmin
     .from("courses")
-    .select("id, title, price, status, video_path")
+    .select("id, title, access_tier, price, status, video_path")
     .eq("id", courseId)
     .maybeSingle();
 
@@ -53,7 +53,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "This course does not have content attached yet." }, { status: 404 });
   }
 
-  const requiresPro = Number(course.price || 0) > 0;
+  const requiresPro = course.access_tier === "pro" || Number(course.price || 0) > 0;
   const hasPro = requiresPro ? await userHasActiveProAccess(user.id) : true;
 
   if (requiresPro && !hasPro) {
