@@ -2,6 +2,7 @@
 
 import nodemailer from "nodemailer";
 import { DEFAULT_ADMIN_SETTINGS, getAdminSettings as loadAdminSettings, saveAdminSettingsRecord, type AdminSettings } from "@/lib/adminSettings";
+import { normalizeAccountType } from "@/lib/accountRouting";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { User } from "@supabase/supabase-js";
 
@@ -332,6 +333,7 @@ export async function getAdminUsers() {
       last_sign_in: user.last_sign_in_at || null,
       skill_level: profile?.skill_level || null,
       subscription_tier: profile?.subscription_tier || null,
+      account_type: normalizeAccountType(user.user_metadata?.account_type),
     };
   });
 
@@ -537,6 +539,24 @@ export async function setUserRole(userId: string, role: string) {
   return { success: true };
 }
 
+export async function setUserAccountType(userId: string, accountType: "animator" | "studio") {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const normalizedType = normalizeAccountType(accountType);
+  const { data: authUserData, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+  if (authUserError) throw authUserError;
+
+  const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    user_metadata: {
+      ...(authUserData.user?.user_metadata || {}),
+      account_type: normalizedType,
+    },
+  });
+  if (authUpdateError) throw authUpdateError;
+
+  return { success: true, account_type: normalizedType };
+}
+
 export async function grantUserProAccess(input: { userId: string; paymentId?: string }) {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
 
@@ -637,6 +657,7 @@ export async function createAdminUser(input: {
   fullName?: string;
   role?: "user" | "admin" | "moderator";
   status?: "active" | "inactive" | "banned";
+  accountType?: "animator" | "studio";
 }) {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
 
@@ -645,6 +666,7 @@ export async function createAdminUser(input: {
   const fullName = input.fullName?.trim() || null;
   const role = input.role || "user";
   const status = input.status || "active";
+  const accountType = normalizeAccountType(input.accountType);
 
   if (!email) throw new Error("Email is required.");
   if (password.length < 8) throw new Error("Password must be at least 8 characters.");
@@ -655,6 +677,7 @@ export async function createAdminUser(input: {
     email_confirm: true,
     user_metadata: {
       full_name: fullName,
+      account_type: accountType,
     },
     app_metadata: {
       role,

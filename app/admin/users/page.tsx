@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
+import {
   Search, 
   Download, 
   Shield, 
@@ -14,7 +14,7 @@ import {
   UserPlus,
   RefreshCw
 } from "lucide-react";
-import { banUser, unbanUser, createAdminUser, deleteUser, getAdminUsers, grantUserProAccess, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
+import { banUser, unbanUser, createAdminUser, deleteUser, getAdminUsers, grantUserProAccess, setUserAccountType, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -47,6 +47,7 @@ interface User {
   email: string;
   full_name: string | null;
   role: string;
+  account_type?: "animator" | "studio";
   skill_level?: string | null;
   created_at: string;
   last_sign_in?: string | null;
@@ -78,8 +79,10 @@ export default function UserManagement() {
     try {
       const { users } = await getAdminUsers();
       setUsers(users);
+      return users;
     } catch (error) {
       console.error('Error fetching users:', error);
+      return [] as User[];
     } finally {
       setLoading(false);
     }
@@ -131,9 +134,9 @@ export default function UserManagement() {
           break;
       }
       
-      await fetchUsers();
+      const nextUsers = await fetchUsers();
       if (selectedUser?.id === userId) {
-        const nextSelected = users.find((user) => user.id === userId) || null;
+        const nextSelected = nextUsers.find((user) => user.id === userId) || null;
         setSelectedUser(nextSelected);
       }
     } catch (error) {
@@ -192,6 +195,7 @@ export default function UserManagement() {
     password: string;
     fullName: string;
     role: "user" | "admin" | "moderator";
+    accountType: "animator" | "studio";
   }) => {
     setCreatingUser(true);
     setUserError("");
@@ -276,6 +280,26 @@ export default function UserManagement() {
       team: UI.success,
     } as const;
     const color = colors[value as keyof typeof colors] || UI.textMuted;
+
+    return (
+      <span style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "0.25rem 0.75rem",
+        borderRadius: "9999px",
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        backgroundColor: `${color}20`,
+        color,
+      }}>
+        {value.charAt(0).toUpperCase() + value.slice(1)}
+      </span>
+    );
+  };
+
+  const getAccountTypeBadge = (accountType?: string) => {
+    const value = accountType === "studio" ? "studio" : "animator";
+    const color = value === "studio" ? UI.accent : UI.info;
 
     return (
       <span style={{
@@ -601,6 +625,9 @@ export default function UserManagement() {
                   Status
                 </th>
                 <th style={{ padding: "1rem", textAlign: "left", color: UI.textMuted, fontSize: "0.875rem", fontWeight: 600 }}>
+                  Account
+                </th>
+                <th style={{ padding: "1rem", textAlign: "left", color: UI.textMuted, fontSize: "0.875rem", fontWeight: 600 }}>
                   Skill Level
                 </th>
                 <th style={{ padding: "1rem", textAlign: "left", color: UI.textMuted, fontSize: "0.875rem", fontWeight: 600 }}>
@@ -650,6 +677,9 @@ export default function UserManagement() {
                   </td>
                   <td style={{ padding: "1rem" }}>
                     {getStatusBadge(user.status)}
+                  </td>
+                  <td style={{ padding: "1rem" }}>
+                    {getAccountTypeBadge(user.account_type)}
                   </td>
                   <td style={{ padding: "1rem" }}>
                     <span style={{
@@ -762,6 +792,13 @@ export default function UserManagement() {
             await handleUserAction("grant_pro", selectedUser.id);
             await fetchUsers();
           }}
+          onChangeAccountType={async (accountType) => {
+            if (!selectedUser) return;
+            await setUserAccountType(selectedUser.id, accountType);
+            const nextUsers = await fetchUsers();
+            const nextSelected = nextUsers.find((user) => user.id === selectedUser.id) || null;
+            setSelectedUser(nextSelected);
+          }}
           UI={UI}
         />
       )}
@@ -784,6 +821,7 @@ function UserModal({
   onToggleRole,
   onToggleStatus,
   onGrantPro,
+  onChangeAccountType,
   UI,
 }: {
   user: User | null;
@@ -795,16 +833,19 @@ function UserModal({
     password: string;
     fullName: string;
     role: "user" | "admin" | "moderator";
+    accountType: "animator" | "studio";
   }) => Promise<void>;
   onToggleRole: () => Promise<void>;
   onToggleStatus: () => Promise<void>;
   onGrantPro: () => Promise<void>;
+  onChangeAccountType: (accountType: "animator" | "studio") => Promise<void>;
   UI: typeof DARK_UI;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"user" | "admin" | "moderator">("user");
+  const [accountType, setAccountType] = useState<"animator" | "studio">("animator");
 
   return (
     <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", zIndex: 1000 }}>
@@ -834,6 +875,17 @@ function UserModal({
               <div style={{ color: UI.textMuted, fontSize: "0.78rem" }}>Subscription</div>
               <div style={{ color: UI.text, fontWeight: 600 }}>{user.subscription_tier || "free"}</div>
             </div>
+            <div>
+              <div style={{ color: UI.textMuted, fontSize: "0.78rem", marginBottom: "0.4rem" }}>Account type</div>
+              <select
+                value={user.account_type || "animator"}
+                onChange={(event) => void onChangeAccountType(event.target.value as "animator" | "studio")}
+                style={modalInput(UI)}
+              >
+                <option value="animator">Animator</option>
+                <option value="studio">Studio</option>
+              </select>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.8rem" }}>
               <button onClick={() => void onToggleRole()} style={{ padding: "0.7rem", borderRadius: "8px", border: "none", backgroundColor: UI.info, color: "#fff", cursor: "pointer" }}>
                 {user.role === "admin" ? "Remove Admin" : "Make Admin"}
@@ -856,8 +908,12 @@ function UserModal({
               <option value="admin">Admin</option>
               <option value="moderator">Moderator</option>
             </select>
+            <select value={accountType} onChange={(event) => setAccountType(event.target.value as "animator" | "studio")} style={modalInput(UI)}>
+              <option value="animator">Animator</option>
+              <option value="studio">Studio</option>
+            </select>
             <button
-              onClick={() => void onCreate({ email, password, fullName, role })}
+              onClick={() => void onCreate({ email, password, fullName, role, accountType })}
               disabled={creating}
               style={{ padding: "0.8rem", borderRadius: "8px", border: "none", backgroundColor: UI.success, color: "#fff", cursor: creating ? "wait" : "pointer", opacity: creating ? 0.7 : 1 }}
             >
