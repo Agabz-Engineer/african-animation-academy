@@ -84,6 +84,7 @@ const addCacheBuster = (url: string) =>
 
 export default function ProfilePage() {
   const router = useRouter();
+  const tabContentRef = useRef<HTMLDivElement | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   const [loading, setLoading] = useState(true);
@@ -644,7 +645,14 @@ export default function ProfilePage() {
             {TABS.map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => {
+                  setActiveTab(tab);
+                  if (isMobile) {
+                    requestAnimationFrame(() => {
+                      tabContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
+                  }
+                }}
                 style={{
                   background: "none",
                   padding: isMobile ? "0.9rem 0.75rem" : "0.75rem 0",
@@ -676,7 +684,7 @@ export default function ProfilePage() {
           <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "2rem" }} className="profile-grid">
             
             {/* Left Column: Personal Info */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2rem", order: isMobile ? 2 : 1 }}>
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -786,7 +794,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Right Column: Dynamic Content based on Tabs */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "2rem", minWidth: 0, overflow: "hidden" }}>
+            <div ref={tabContentRef} style={{ display: "flex", flexDirection: "column", gap: "2rem", minWidth: 0, overflow: "hidden", order: isMobile ? 1 : 2 }}>
               
               <AnimatePresence mode="wait">
                 {activeTab === "Overview" && (
