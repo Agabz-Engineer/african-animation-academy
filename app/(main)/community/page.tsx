@@ -847,6 +847,7 @@ export default function CommunityPage() {
     }
 
     const tags = parseTags(postTags);
+    const shouldModeratePost = Boolean(publicSettings?.postModeration && !hasProAccess);
 
     if (setupNeeded) {
       setSubmitError("Live community database is not configured yet.");
@@ -867,7 +868,7 @@ export default function CommunityPage() {
         user_handle: user.handle,
         content,
         tags,
-        status: publicSettings?.postModeration ? "pending" : "approved",
+        status: shouldModeratePost ? "pending" : "approved",
       })
       .select("*, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
       .single();
@@ -883,12 +884,12 @@ export default function CommunityPage() {
       return;
     }
 
-    if (!publicSettings?.postModeration) {
+    if (!shouldModeratePost) {
       setPosts((prev) => mergePosts([normalizePost(data as DbPost, followedIds)], prev));
     }
     setFilter("Latest");
     setPostText("");
-    setSubmitInfo(publicSettings?.postModeration ? "Post submitted for admin review." : "Posted to live community.");
+    setSubmitInfo(shouldModeratePost ? "Post submitted for admin review." : "Posted to live community.");
     recordAction("post");
   };
 
