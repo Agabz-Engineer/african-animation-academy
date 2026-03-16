@@ -805,7 +805,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="app-footer-columns">
               {FOOTER_GROUPS.map((group) => (
-                <div key={group.title}>
+                <div
+                  key={group.title}
+                  className="app-footer-group"
+                  style={{
+                    border: `1px solid ${T.border}`,
+                    backgroundColor: theme === "dark" ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.62)",
+                  }}
+                >
                   <p className="app-footer-heading" style={{ color: T.text }}>{group.title}</p>
                   <div className="app-footer-list">
                     {group.links.map((item) =>
@@ -873,7 +880,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-padding   { padding: 1rem !important; }
           .hide-mobile    { display: none !important; }
           .app-footer-shell { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
-          .app-footer-columns { grid-template-columns: minmax(0, 1fr); gap: 0.85rem; }
+          .app-footer-columns { grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
+          .app-footer-group { padding: 0.9rem 0.95rem; border-radius: 16px; }
           .app-footer-bottom { flex-direction: column; align-items: flex-start; gap: 0.32rem; }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
@@ -882,6 +890,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-padding { padding: 1.25rem !important; }
           .app-footer-shell { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
           .app-footer-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; }
+          .app-footer-group { padding: 0.9rem 0.95rem; border-radius: 16px; }
         }
         @media (min-width: 1024px) {
           .dash-grid-4    { grid-template-columns: repeat(4,1fr); }
@@ -927,6 +936,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           font-size: 0.95rem;
           letter-spacing: -0.015em;
           font-weight: 600;
+        }
+        .app-footer-group {
+          min-width: 0;
+          padding: 0;
+          border-radius: 0;
         }
         .app-footer-list {
           margin-top: 0.42rem;

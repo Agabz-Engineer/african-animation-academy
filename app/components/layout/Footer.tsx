@@ -188,9 +188,12 @@ export default function Footer() {
           </div>
 
           {/* Links Columns */}
-          <div className="lg:col-span-2 grid grid-cols-2 gap-8">
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             {footerLinks.slice(0, 2).map((group) => (
-              <div key={group.title}>
+              <div
+                key={group.title}
+                className="rounded-2xl border border-[#444444] bg-white/[0.02] p-4 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0"
+              >
                 <h4 className="font-bold mb-4 text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#FF6D1F" }}>
                   {group.title}
                 </h4>
@@ -211,9 +214,12 @@ export default function Footer() {
             ))}
           </div>
 
-          <div className="lg:col-span-2 grid grid-cols-2 gap-8">
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             {footerLinks.slice(2).map((group) => (
-              <div key={group.title}>
+              <div
+                key={group.title}
+                className="rounded-2xl border border-[#444444] bg-white/[0.02] p-4 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0"
+              >
                 <h4 className="font-bold mb-4 text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#FF6D1F" }}>
                   {group.title}
                 </h4>
