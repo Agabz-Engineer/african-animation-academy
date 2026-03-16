@@ -453,7 +453,8 @@ export default function ProfilePage() {
       setEditData(prev => ({ ...prev, cover_url: freshUrl }));
     } catch (err) {
       console.error("Cover upload error:", err);
-      alert("Failed to upload cover image.");
+      const message = err instanceof Error ? err.message : "Unknown error.";
+      alert(`Failed to upload cover image: ${message}`);
     } finally {
       if (coverInputRef.current) {
         coverInputRef.current.value = "";
