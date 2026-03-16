@@ -3,6 +3,32 @@
 
 create extension if not exists "pgcrypto";
 
+create or replace function public.user_has_active_pro(target_user_id uuid)
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select
+    exists (
+      select 1
+      from public.profiles
+      where id = target_user_id
+        and (
+          role = 'admin'
+          or subscription_tier in ('pro', 'team')
+        )
+    )
+    or exists (
+      select 1
+      from public.subscriptions
+      where user_id = target_user_id
+        and plan in ('pro', 'team')
+        and status = 'active'
+        and (ends_at is null or ends_at > now())
+    );
+$$;
+
 create table if not exists public.community_posts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -32,7 +58,10 @@ create policy "community_posts_insert_own"
   on public.community_posts
   for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and public.user_has_active_pro(auth.uid())
+  );
 
 drop policy if exists "community_posts_update_own" on public.community_posts;
 create policy "community_posts_update_own"
@@ -76,7 +105,10 @@ create policy "community_post_comments_insert_own"
   on public.community_post_comments
   for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and public.user_has_active_pro(auth.uid())
+  );
 
 drop policy if exists "community_post_comments_update_own" on public.community_post_comments;
 create policy "community_post_comments_update_own"
