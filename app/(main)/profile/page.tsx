@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -112,6 +112,8 @@ export default function ProfilePage() {
   const [projPreview, setProjPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
 
   // Compression Utility
   const compressImage = async (file: File): Promise<Blob> => {
@@ -228,12 +230,15 @@ export default function ProfilePage() {
       
       // 2. Upload to Storage
       const fileExt = projFile.name.split('.').pop();
-      const fileName = `${profile.id}-${Math.random()}.${fileExt}`;
-      const filePath = `portfolio/${fileName}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const filePath = `portfolio/${profile.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('portfolio-attachments')
-        .upload(filePath, compressedBlob);
+        .upload(filePath, compressedBlob, {
+          upsert: false,
+          contentType: projFile.type || "image/jpeg",
+        });
 
       if (uploadError) throw uploadError;
 
@@ -416,23 +421,44 @@ export default function ProfilePage() {
   };
 
   const handleCoverUpload = async (file: File) => {
-    if (!profile || !supabase) return;
+    if (!profile || !supabase || coverUploading) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    setCoverUploading(true);
+
     try {
       const blob = await compressImage(file);
-      const fileName = `${profile.id}-cover-${Date.now()}.jpg`;
-      const filePath = `covers/${fileName}`;
+      const fileName = `${Date.now()}-cover.jpg`;
+      const filePath = `covers/${profile.id}/${fileName}`;
 
-      await supabase.storage.from('portfolio-attachments').upload(filePath, blob, {
+      const { error: uploadError } = await supabase.storage.from('portfolio-attachments').upload(filePath, blob, {
         upsert: false,
         contentType: "image/jpeg",
       });
+      if (uploadError) throw uploadError;
+
       const { data: { publicUrl } } = supabase.storage.from('portfolio-attachments').getPublicUrl(filePath);
+      if (!publicUrl) {
+        throw new Error("Cover upload succeeded but no public URL was returned.");
+      }
 
       const { error } = await supabase.from("profiles").update({ cover_url: publicUrl }).eq("id", profile.id);
-      if (!error) setProfile(prev => prev ? { ...prev, cover_url: addCacheBuster(publicUrl) } : null);
+      if (error) throw error;
+
+      const freshUrl = addCacheBuster(publicUrl);
+      setProfile(prev => prev ? { ...prev, cover_url: freshUrl } : null);
+      setEditData(prev => ({ ...prev, cover_url: freshUrl }));
     } catch (err) {
       console.error("Cover upload error:", err);
       alert("Failed to upload cover image.");
+    } finally {
+      if (coverInputRef.current) {
+        coverInputRef.current.value = "";
+      }
+      setCoverUploading(false);
     }
   };
 
@@ -511,8 +537,19 @@ export default function ProfilePage() {
                   border: "1px solid rgba(255,255,255,0.2)"
                 }}
               >
-                <Camera size={16} /> Change Cover
-                <input type="file" id="cover-upload" accept="image/*" style={{ display: "none" }} onChange={(e) => e.target.files?.[0] && handleCoverUpload(e.target.files[0])} />
+                {coverUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                {coverUploading ? "Uploading..." : "Change Cover"}
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  id="cover-upload"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleCoverUpload(file);
+                  }}
+                />
               </label>
             </div>
             
