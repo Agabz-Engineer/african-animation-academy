@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, 
@@ -26,7 +27,6 @@ import {
   Instagram,
   Linkedin
 } from "lucide-react";
-import DashboardLayout from "@/app/components/ui/DashboardLayout";
 import { useThemeMode } from "@/lib/useThemeMode";
 import { supabase } from "@/lib/supabase";
 
@@ -80,6 +80,7 @@ const TABS = ["Overview", "Portfolio", "Compensation", "Security"];
 const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️"];
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   const [loading, setLoading] = useState(true);
@@ -107,6 +108,7 @@ export default function ProfilePage() {
   const [projFile, setProjFile] = useState<File | null>(null);
   const [projPreview, setProjPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   // Compression Utility
   const compressImage = async (file: File): Promise<Blob> => {
@@ -161,6 +163,56 @@ export default function ProfilePage() {
     if (file) {
       setProjFile(file);
       setProjPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!profile || !supabase || avatarUploading) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    setAvatarUploading(true);
+
+    try {
+      const blob = await compressImage(file);
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const filePath = `${profile.id}/${Date.now()}-avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, blob, {
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl, avatar_path: filePath },
+      });
+
+      if (authError) throw authError;
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", profile.id);
+
+      if (profileError) throw profileError;
+
+      setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
+      setEditData((prev) => ({ ...prev, avatar_url: publicUrl }));
+    } catch (err) {
+      console.error("Avatar upload error:", err);
+      alert("Failed to upload profile photo.");
+    } finally {
+      setAvatarUploading(false);
     }
   };
 
@@ -412,12 +464,11 @@ export default function ProfilePage() {
     shadow: isDark ? "0 4px 24px rgba(0,0,0,0.4)" : "0 4px 20px rgba(0,0,0,0.05)",
   };
 
-  if (loading) return <DashboardLayout><div style={{ padding: "4rem", textAlign: "center", color: T.text }}>Loading Profile...</div></DashboardLayout>;
+  if (loading) return <div style={{ padding: "4rem", textAlign: "center", color: T.text }}>Loading Profile...</div>;
 
   return (
     <>
-      <DashboardLayout>
-        <div style={{ padding: isMobile ? "1rem" : "1.5rem", color: T.text, fontFamily: "'General Sans', sans-serif" }}>
+      <div style={{ padding: isMobile ? "1rem" : "1.5rem", color: T.text, fontFamily: "'General Sans', sans-serif" }}>
           
           {/* Cover Photo Area */}
           <div style={{ position: "relative", marginBottom: isMobile ? "1.5rem" : "3rem" }}>
@@ -490,7 +541,7 @@ export default function ProfilePage() {
           {/* Header Section */}
           <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-end", gap: isMobile ? "1rem" : 0, marginBottom: "2rem" }}>
             <div>
-              <div style={{ fontSize: "0.85rem", color: T.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>Creator Dashboard</div>
+              <div style={{ fontSize: "0.85rem", color: T.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>Creator Profile</div>
               <h1 style={{ fontSize: isMobile ? "2rem" : "2.5rem", fontWeight: 800, fontFamily: "'Clash Display', sans-serif", letterSpacing: "-0.03em" }}>My Profile</h1>
             </div>
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1rem", width: isMobile ? "100%" : "auto" }}>
@@ -526,7 +577,8 @@ export default function ProfilePage() {
                 gap: "0.5rem",
                 boxShadow: `0 8px 20px ${T.accent}33`,
                 width: isMobile ? "100%" : "auto"
-              }}>
+              }}
+              onClick={() => router.push("/settings")}>
                 <Settings size={18} /> Settings
               </button>
             </div>
@@ -578,7 +630,10 @@ export default function ProfilePage() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-                  <div style={{ width: "80px", height: "80px", borderRadius: "24px", background: "linear-gradient(135deg, #FF6D1F, #E04D00)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
+                  <div
+                    onClick={() => document.getElementById("profile-avatar-upload")?.click()}
+                    style={{ width: "80px", height: "80px", borderRadius: "24px", background: "linear-gradient(135deg, #FF6D1F, #E04D00)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", cursor: avatarUploading ? "progress" : "pointer" }}
+                  >
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt={`${profile.full_name || "Profile"} avatar`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
@@ -586,7 +641,30 @@ export default function ProfilePage() {
                     )}
                     <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: "50%", background: T.accent, border: `3px solid ${T.cardBg}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>⚡</div>
                   </div>
-                  <button style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}><MoreHorizontal /></button>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "0.6rem" }}>
+                    <input
+                      id="profile-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          void handleAvatarUpload(file);
+                        }
+                        e.currentTarget.value = "";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("profile-avatar-upload")?.click()}
+                      disabled={avatarUploading}
+                      style={{ padding: "0.45rem 0.7rem", borderRadius: "10px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: "0.72rem", fontWeight: 700, cursor: avatarUploading ? "progress" : "pointer" }}
+                    >
+                      {avatarUploading ? "Uploading..." : "Change photo"}
+                    </button>
+                    <button style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}><MoreHorizontal /></button>
+                  </div>
                 </div>
                 <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>{profile?.full_name || "Creative Member"}</h2>
                 <div style={{ fontSize: "0.85rem", color: T.muted, marginBottom: "1rem", fontWeight: 600 }}>@{profile?.user_name || "anonymous"}</div>
@@ -886,8 +964,7 @@ export default function ProfilePage() {
             .hide-scroll::-webkit-scrollbar { display: none; }
             .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
           `}</style>
-        </div>
-      </DashboardLayout>
+      </div>
       
       <AnimatePresence>
         {isEditing && (
