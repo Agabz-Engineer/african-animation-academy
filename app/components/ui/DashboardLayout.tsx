@@ -803,7 +803,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </div>
 
-            <div className="app-footer-columns">
+            <div className="app-footer-columns hide-footer-links-mobile">
               {FOOTER_GROUPS.map((group) => (
                 <div
                   key={group.title}
@@ -879,6 +879,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .dash-hero      { height: 180px !important; }
           .dash-padding   { padding: 1rem !important; }
           .hide-mobile    { display: none !important; }
+          .hide-footer-links-mobile { display: none !important; }
           .app-footer-shell { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
           .app-footer-columns { grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
           .app-footer-group { padding: 0.9rem 0.95rem; border-radius: 16px; }

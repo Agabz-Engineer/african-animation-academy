@@ -188,7 +188,7 @@ export default function Footer() {
           </div>
 
           {/* Links Columns */}
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+          <div className="hidden sm:grid lg:col-span-2 grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             {footerLinks.slice(0, 2).map((group) => (
               <div
                 key={group.title}
@@ -214,7 +214,7 @@ export default function Footer() {
             ))}
           </div>
 
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+          <div className="hidden sm:grid lg:col-span-2 grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             {footerLinks.slice(2).map((group) => (
               <div
                 key={group.title}
