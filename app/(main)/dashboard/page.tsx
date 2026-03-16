@@ -16,7 +16,7 @@ const FILTER_TABS = ["Hot", "New", "Event"];
 const SHOWCASE_CARDS = [
   { title: "Character Design", category: "Colorimetry", note: "Included in your learning path", tag: "Hot", image: "/images/bg-desktop.jpg", imagePosition: "center 22%" },
   { title: "Background Art",   category: "Background",  note: "Studio-ready visual worldbuilding", tag: "New", image: "/images/community-bg-dark.webp", imagePosition: "center center" },
-  { title: "Texture: Afro",    category: "Texturing",   note: "Build richer surfaces and detail", tag: "Hot", image: "/images/texture-afro.png", imagePosition: "center center" },
+  { title: "Texture: Afro",    category: "Texturing",   note: "Build richer surfaces and detail", tag: "Hot", image: "/images/texture-afro.jpg", imagePosition: "center 28%" },
   { title: "Clothing Design",  category: "Clothing",    note: "Live critique and styling workshop", tag: "Event", image: "/images/bg-desktop.jpg", imagePosition: "center 72%" },
 ];
 
