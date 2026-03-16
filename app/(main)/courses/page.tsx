@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Clock, Camera, X, Lock, Play } from "lucide-react";
+import { Search, Clock, X, Lock, Play } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type Course = {
@@ -25,7 +25,6 @@ type DbCourse = {
   level: string;
   duration: number;
   description: string;
-  video_path?: string | null;
   thumbnail_url?: string | null;
   price: number | string;
   status: "published" | "draft" | "archived";
@@ -91,6 +90,8 @@ export default function CoursesPage() {
   const [subscriptionExpired, setSubscriptionExpired] = useState(false);
   const [loading, setLoading]   = useState(true);
   const [courses, setCourses]   = useState<Course[]>(FALLBACK_COURSES);
+  const [launchingCourseId, setLaunchingCourseId] = useState<string | null>(null);
+  const [launchError, setLaunchError] = useState("");
 
   const minutesToLabel = (minutes: number) => {
     if (!Number.isFinite(minutes) || minutes <= 0) return "TBD";
@@ -159,7 +160,7 @@ export default function CoursesPage() {
 
       client
         .from("courses")
-        .select("id,title,instructor,level,duration,description,video_path,thumbnail_url,price,status")
+        .select("id,title,instructor,level,duration,description,thumbnail_url,price,status")
         .eq("status", "published")
         .order("created_at", { ascending: false })
         .then(({ data, error }) => {
@@ -172,8 +173,6 @@ export default function CoursesPage() {
             level: course.level,
             duration: minutesToLabel(course.duration),
             desc: course.description,
-            videoUrl: course.video_path || undefined,
-            enrollUrl: course.video_path || undefined,
             access: Number(course.price || 0) > 0 ? ("pro" as const) : ("free" as const),
           }));
 
@@ -215,6 +214,61 @@ export default function CoursesPage() {
   const levelColor = (l: string) =>
     l === "Beginner"     ? "#4CAF50" :
     l === "Intermediate" ? "#FF8C00" : "#888";
+
+  const launchCourse = async (course: Course) => {
+    setLaunchError("");
+
+    if (!course.id) {
+      const fallbackUrl = course.enrollUrl || course.videoUrl;
+      if (fallbackUrl) {
+        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+      setLaunchError("This course is not available to open right now.");
+      return;
+    }
+
+    if (!supabase) return;
+
+    if (isLocked(course)) {
+      if ((course.access ?? "free") === "pro" && !hasPro) {
+        window.location.href = "/pricing";
+      }
+      return;
+    }
+
+    setLaunchingCourseId(course.id);
+
+    try {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+
+      if (!accessToken) {
+        setLaunchError("Sign in again to open this course.");
+        return;
+      }
+
+      const response = await fetch(`/api/courses/${course.id}/launch`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const payload = (await response.json()) as { url?: string; error?: string };
+
+      if (!response.ok || !payload.url) {
+        setLaunchError(payload.error || "Unable to open this course right now.");
+        return;
+      }
+
+      window.open(payload.url, "_blank", "noopener,noreferrer");
+    } catch {
+      setLaunchError("Unable to open this course right now.");
+    } finally {
+      setLaunchingCourseId(null);
+    }
+  };
 
   if (loading) return (
     <div style={{ backgroundColor: "#222222", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -294,28 +348,21 @@ export default function CoursesPage() {
       <div style={{ padding: "0 2.5rem 3rem" }}>
         {filtered.map((course, i) => {
           const locked = isLocked(course);
-          const hasPreview = Boolean(course.videoUrl);
-          const canPreview = hasPreview && !locked;
           const thumbnail = (
             <div style={{ width: "96px", height: "68px", borderRadius: "10px", backgroundColor: T.imgBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}`, position: "relative", overflow: "hidden" }}>
-              {hasPreview ? (
-                <>
-                  <div style={{ position: "absolute", inset: 0, background: theme === "dark" ? "linear-gradient(135deg, rgba(255,109,31,0.2), rgba(34,34,34,0.8))" : "linear-gradient(135deg, rgba(255,109,31,0.18), rgba(255,255,255,0.9))" }} />
-                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: "34px", height: "34px", borderRadius: "999px", backgroundColor: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}` }}>
-                      <Play style={{ width: "16px", height: "16px", color: T.text }} />
-                    </div>
-                  </div>
-                  <span style={{ position: "absolute", top: "6px", left: "6px", fontSize: "0.55rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: T.text, backgroundColor: theme === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.7)", padding: "2px 6px", borderRadius: "6px", border: `1px solid ${T.border}` }}>
-                    Official preview
-                  </span>
-                  <span style={{ position: "absolute", bottom: "6px", right: "6px", fontSize: "0.55rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: T.accent, backgroundColor: T.accentSoft, padding: "2px 6px", borderRadius: "6px" }}>
-                    Open Drive
-                  </span>
-                </>
-              ) : (
-                <Camera style={{ width: "16px", height: "16px", color: T.textDim, opacity: 0.4 }} />
-              )}
+              <div style={{ position: "absolute", inset: 0, background: theme === "dark" ? "linear-gradient(135deg, rgba(255,109,31,0.2), rgba(34,34,34,0.8))" : "linear-gradient(135deg, rgba(255,109,31,0.18), rgba(255,255,255,0.9))" }} />
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: "34px", height: "34px", borderRadius: "999px", backgroundColor: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}` }}>
+                  {locked ? (
+                    <Lock style={{ width: "15px", height: "15px", color: T.text }} />
+                  ) : (
+                    <Play style={{ width: "16px", height: "16px", color: T.text }} />
+                  )}
+                </div>
+              </div>
+              <span style={{ position: "absolute", top: "6px", left: "6px", fontSize: "0.55rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: T.text, backgroundColor: theme === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.7)", padding: "2px 6px", borderRadius: "6px", border: `1px solid ${T.border}` }}>
+                {(course.access ?? "free") === "pro" ? "Pro course" : "Course access"}
+              </span>
               {locked && (
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: theme === "dark" ? "rgba(34,34,34,0.85)" : "rgba(250,243,225,0.85)" }}>
                   <Lock style={{ width: "15px", height: "15px", color: T.textDim }} />
@@ -333,19 +380,7 @@ export default function CoursesPage() {
               style={{ display: "flex", alignItems: "center", gap: "1.5rem", padding: "1.5rem 0", borderBottom: `1px solid ${T.border}`, cursor: locked ? "not-allowed" : "default", opacity: locked ? 0.4 : 1, transition: "opacity 0.2s" }}
             >
               {/* Thumbnail */}
-              {canPreview ? (
-                <a
-                  href={course.videoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Open ${course.title} preview on Google Drive`}
-                  style={{ display: "block", textDecoration: "none" }}
-                >
-                  {thumbnail}
-                </a>
-              ) : (
-                thumbnail
-              )}
+              {thumbnail}
 
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -385,27 +420,36 @@ export default function CoursesPage() {
                 </span>
                 {locked ? (
                   <button
-                    disabled
-                    style={{ padding: "0.45rem 1.1rem", borderRadius: "8px", border: `1px solid ${T.border}`, backgroundColor: "transparent", color: T.textDim, fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.775rem", cursor: "not-allowed", transition: "all 0.18s", whiteSpace: "nowrap" }}
+                    disabled={!((course.access ?? "free") === "pro" && !hasPro)}
+                    onClick={() => {
+                      if ((course.access ?? "free") === "pro" && !hasPro) {
+                        window.location.href = "/pricing";
+                      }
+                    }}
+                    style={{ padding: "0.45rem 1.1rem", borderRadius: "8px", border: `1px solid ${T.border}`, backgroundColor: "transparent", color: T.textDim, fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.775rem", cursor: (course.access ?? "free") === "pro" && !hasPro ? "pointer" : "not-allowed", transition: "all 0.18s", whiteSpace: "nowrap" }}
                   >
-                    Locked
+                    {(course.access ?? "free") === "pro" && !hasPro ? "Upgrade" : "Locked"}
                   </button>
                 ) : (
-                  <a
-                    href={course.enrollUrl || course.videoUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => void launchCourse(course)}
                     style={{ padding: "0.45rem 1.1rem", borderRadius: "8px", border: `1px solid ${T.accent}`, backgroundColor: "transparent", color: T.accent, fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.775rem", cursor: "pointer", transition: "all 0.18s", whiteSpace: "nowrap", textDecoration: "none", display: "inline-flex" }}
-                    onMouseEnter={(e) => { const b = e.currentTarget as HTMLAnchorElement; b.style.backgroundColor = T.accent; b.style.color = T.accentText; }}
-                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLAnchorElement; b.style.backgroundColor = "transparent"; b.style.color = T.accent; }}
+                    onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.backgroundColor = T.accent; b.style.color = T.accentText; }}
+                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.backgroundColor = "transparent"; b.style.color = T.accent; }}
                   >
-                    Enrol
-                  </a>
+                    {launchingCourseId === course.id ? "Opening..." : "Enrol"}
+                  </button>
                 )}
               </div>
             </motion.div>
           );
         })}
+        {launchError && (
+          <div style={{ marginTop: "1rem", color: "#E46464", fontSize: "0.82rem", fontFamily: "'General Sans',sans-serif" }}>
+            {launchError}
+          </div>
+        )}
       </div>
 
     </div>
