@@ -11,6 +11,7 @@ import {
   ChevronRight, Menu, X, Sparkles, Mail, Instagram, Linkedin, Youtube
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getAccountHomePath, isStudioAccount } from "@/lib/accountRouting";
 
 // ─── Nav links ───────────────────────────────────────────
 const NAV_LINKS = [
@@ -30,6 +31,20 @@ const BOTTOM_NAV = [
   { label: "Community", href: "/community",  icon: Users     },
   { label: "Messages",  href: "/messages",   icon: Mail      },
   { label: "Profile",   href: "/profile",    icon: User      },
+];
+
+const STUDIO_NAV_LINKS = [
+  { label: "Home",      href: "/studio",     icon: Home      },
+  { label: "Messages",  href: "/messages",   icon: Mail      },
+  { label: "Profile",   href: "/profile",    icon: User      },
+  { label: "Settings",  href: "/settings",   icon: Settings  },
+];
+
+const STUDIO_BOTTOM_NAV = [
+  { label: "Home",      href: "/studio",     icon: Home      },
+  { label: "Messages",  href: "/messages",   icon: Mail      },
+  { label: "Profile",   href: "/profile",    icon: User      },
+  { label: "Settings",  href: "/settings",   icon: Settings  },
 ];
 
 // ─── Colour tokens ───────────────────────────────────────
@@ -155,7 +170,10 @@ const getViewportFlags = () => {
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "error";
 
-const ACTIVE_ROUTE_ALIASES: Record<string, string[]> = {};
+const ACTIVE_ROUTE_ALIASES: Record<string, string[]> = {
+  "/dashboard": ["/studio"],
+  "/studio": ["/dashboard"],
+};
 
 const isRouteActive = (pathname: string, href: string) => {
   const candidates = [href, ...(ACTIVE_ROUTE_ALIASES[href] || [])];
@@ -179,7 +197,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<{
     id: string;
     email?: string;
-    user_metadata?: { full_name?: string; avatar_path?: string; avatar_url?: string };
+    user_metadata?: { full_name?: string; avatar_path?: string; avatar_url?: string; account_type?: "animator" | "studio" };
   } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarLoadError, setAvatarLoadError] = useState(false);
@@ -320,9 +338,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.replace(`/login?next=${nextPath}`);
   }, [authStatus, pathname, router]);
 
+  useEffect(() => {
+    if (authStatus !== "authenticated" || !user) return;
+
+    const preferredHome = getAccountHomePath(user.user_metadata?.account_type);
+    if (user.user_metadata?.account_type === "studio" && pathname === "/dashboard") {
+      router.replace(preferredHome);
+    }
+    if (user.user_metadata?.account_type !== "studio" && pathname === "/studio") {
+      router.replace(preferredHome);
+    }
+  }, [authStatus, pathname, router, user]);
+
   const T = theme === "dark" ? DARK : LIGHT;
   const isDesktop = !isMobile && !isTablet;
   const sidebarW = expanded ? W_EXPANDED : W_COLLAPSED;
+  const accountType = user?.user_metadata?.account_type;
+  const studioUser = isStudioAccount(accountType);
+  const navLinks = studioUser ? STUDIO_NAV_LINKS : NAV_LINKS;
+  const bottomNavLinks = studioUser ? STUDIO_BOTTOM_NAV : BOTTOM_NAV;
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? user?.email?.split("@")[0] ?? "Creative";
   const initial = firstName.charAt(0).toUpperCase();
   const hasProfileDetails =
@@ -435,7 +469,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.8rem", color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{firstName}</div>
             <div style={{ fontSize: "0.58rem", color: T.textDim, display: "flex", alignItems: "center", gap: 3 }}>
               <Sparkles style={{ width: 8, height: 8, color: T.accent }} />
-              Animator
+              {studioUser ? "Studio" : "Animator"}
             </div>
           </div>
         )}
@@ -448,7 +482,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             Menu
           </div>
         )}
-        {NAV_LINKS.map(link => {
+        {navLinks.map(link => {
           const active = isRouteActive(pathname, link.href);
           return (
             <Link
@@ -856,7 +890,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* MOBILE BOTTOM NAV */}
       {(isMobile || isTablet) && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20, backgroundColor: T.bottomNavBg, borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "0.5rem 0 calc(0.625rem + env(safe-area-inset-bottom))", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
-          {BOTTOM_NAV.map(link => {
+          {bottomNavLinks.map(link => {
             const active = isRouteActive(pathname, link.href);
             return (
               <Link key={link.label} href={link.href}

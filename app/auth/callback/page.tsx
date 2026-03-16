@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
+import { getAccountHomePath } from "@/lib/accountRouting";
 
 const DARK_UI = {
   bg: "#222222",
@@ -112,7 +113,8 @@ export default function AuthCallbackPage() {
       }
 
       const nextPath = params.get("next");
-      router.replace(nextPath && nextPath.startsWith("/") ? nextPath : "/dashboard");
+      const accountType = session.user.user_metadata?.account_type as "animator" | "studio" | undefined;
+      router.replace(nextPath && nextPath.startsWith("/") ? nextPath : getAccountHomePath(accountType));
     };
 
     finishAuth();

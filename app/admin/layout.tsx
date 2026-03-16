@@ -54,6 +54,7 @@ const adminNavItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard", color: "#FF8C00" },
   { href: "/admin/users", icon: Users, label: "Users", color: "#3B82F6" },
   { href: "/admin/courses", icon: BookOpen, label: "Courses", color: "#10B981" },
+  { href: "/admin/studios", icon: FileText, label: "Studios", color: "#F97316" },
   { href: "/admin/community", icon: MessageSquare, label: "Community", color: "#8B5CF6" },
   { href: "/admin/analytics", icon: BarChart3, label: "Analytics", color: "#F59E0B" },
   { href: "/admin/settings", icon: Settings, label: "Settings", color: "#6B7280" },

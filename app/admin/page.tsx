@@ -17,7 +17,8 @@ import {
   CheckCircle,
   BarChart3,
   PieChart,
-  Calendar
+  Calendar,
+  Building2
 } from "lucide-react";
 import { getAdminDashboardData } from "@/app/admin/actions";
 
@@ -177,6 +178,13 @@ export default function AdminDashboard() {
       icon: MessageSquare,
       href: "/admin/community",
       color: UI.warning,
+    },
+    {
+      title: "Studio Requests",
+      description: "Review briefs from studio accounts",
+      icon: Building2,
+      href: "/admin/studios",
+      color: UI.accent,
     },
     {
       title: "View Analytics",

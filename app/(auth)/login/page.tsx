@@ -6,6 +6,7 @@ import { motion, Easing } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { REMEMBER_ME_KEY, setRememberSessionPreference, supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
+import { getAccountHomePath } from "@/lib/accountRouting";
 
 const DARK_UI = {
   surface: "#0F0F0F",
@@ -47,7 +48,8 @@ export default function LoginPage() {
     if (supabase) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-          window.location.href = "/dashboard";
+          const accountType = session.user.user_metadata?.account_type as "animator" | "studio" | undefined;
+          window.location.href = getAccountHomePath(accountType);
         }
       });
     }
@@ -71,7 +73,9 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      window.location.href = "/dashboard";
+      const { data } = await supabase.auth.getUser();
+      const accountType = data.user?.user_metadata?.account_type as "animator" | "studio" | undefined;
+      window.location.href = getAccountHomePath(accountType);
     }
   };
 

@@ -47,6 +47,29 @@ type CourseInput = {
   status: string;
 };
 
+type StudioRequestStatus = "new" | "reviewing" | "shortlisting" | "matched" | "closed";
+
+type StudioRequestRow = {
+  id: string;
+  studio_id: string;
+  studio_name: string;
+  contact_name: string;
+  contact_email: string;
+  role_needed: string;
+  animation_type: string;
+  required_tools: string[] | null;
+  experience_level: string;
+  contract_type: string;
+  timeline: string;
+  budget_range: string;
+  artists_needed: number;
+  project_brief: string;
+  status: StudioRequestStatus;
+  admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type EmailCampaign = {
   id: string;
   title: string;
@@ -371,6 +394,37 @@ export async function getAdminCourses() {
 
   if (error) throw error;
   return data || [];
+}
+
+export async function getAdminStudioRequests() {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const { data, error } = await supabaseAdmin
+    .from("studio_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as StudioRequestRow[];
+}
+
+export async function updateStudioRequestStatus(
+  requestId: string,
+  status: StudioRequestStatus,
+  adminNotes?: string
+) {
+  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+
+  const { error } = await supabaseAdmin
+    .from("studio_requests")
+    .update({
+      status,
+      admin_notes: adminNotes ?? null,
+    })
+    .eq("id", requestId);
+
+  if (error) throw error;
+  return { success: true };
 }
 
 export async function getAdminCommunityPosts() {
