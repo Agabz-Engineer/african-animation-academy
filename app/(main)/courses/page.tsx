@@ -58,6 +58,9 @@ const getCourseCreditLabel = (instructor: string) => {
   return "Course craft with Zenock G.-A.";
 };
 
+const getCourseKey = (course: Pick<Course, "title" | "instructor">) =>
+  `${course.title.trim().toLowerCase()}::${course.instructor.trim().toLowerCase()}`;
+
 const ACCESSIBLE: Record<string, string[]> = {
   beginner:     ["Beginner"],
   intermediate: ["Beginner", "Intermediate"],
@@ -197,7 +200,13 @@ export default function CoursesPage() {
             access: Number(course.price || 0) > 0 ? ("pro" as const) : ("free" as const),
           }));
 
-          setCourses(liveCourses);
+          const liveKeys = new Set(liveCourses.map(getCourseKey));
+          const mergedCourses = [
+            ...liveCourses,
+            ...FALLBACK_COURSES.filter((course) => !liveKeys.has(getCourseKey(course))),
+          ];
+
+          setCourses(mergedCourses);
         });
     } else {
       // Small delay to avoid synchronous state update in effect
