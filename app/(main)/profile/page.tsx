@@ -629,25 +629,40 @@ export default function ProfilePage() {
           </div>
 
           {/* Tabs */}
-          <div style={{ display: "flex", gap: "2rem", borderBottom: `1px solid ${T.border}`, marginBottom: "2rem", overflowX: "auto", whiteSpace: "nowrap", paddingBottom: "2px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(4, max-content)",
+              gap: isMobile ? "0.75rem" : "2rem",
+              borderBottom: isMobile ? "none" : `1px solid ${T.border}`,
+              marginBottom: "2rem",
+              overflowX: isMobile ? "visible" : "auto",
+              whiteSpace: isMobile ? "normal" : "nowrap",
+              paddingBottom: isMobile ? 0 : "2px",
+            }}
+          >
             {TABS.map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 style={{
                   background: "none",
-                  border: "none",
-                  padding: "0.75rem 0",
+                  padding: isMobile ? "0.9rem 0.75rem" : "0.75rem 0",
                   color: activeTab === tab ? T.text : T.muted,
                   fontWeight: activeTab === tab ? 600 : 500,
                   fontSize: "0.9rem",
                   cursor: "pointer",
                   position: "relative",
-                  transition: "color 0.2s"
+                  transition: "color 0.2s",
+                  borderRadius: isMobile ? "14px" : 0,
+                  backgroundColor: isMobile ? (activeTab === tab ? T.cardBg : T.bg) : "transparent",
+                  borderBottom: !isMobile && activeTab === tab ? `2px solid ${T.accent}` : "none",
+                  border: isMobile ? `1px solid ${activeTab === tab ? T.accent : T.border}` : "none",
+                  minWidth: 0,
                 }}
               >
                 {tab}
-                {activeTab === tab && (
+                {!isMobile && activeTab === tab && (
                   <motion.div 
                     layoutId="activeTab"
                     style={{ position: "absolute", bottom: -1, left: 0, right: 0, height: "2px", background: T.accent }} 
@@ -771,15 +786,15 @@ export default function ProfilePage() {
             </div>
 
             {/* Right Column: Dynamic Content based on Tabs */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2rem", minWidth: 0, overflow: "hidden" }}>
               
               <AnimatePresence mode="wait">
                 {activeTab === "Overview" && (
                   <motion.div
                     key="overview"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    initial={isMobile ? { opacity: 0, y: 12 } : { opacity: 0, x: 20 }}
+                    animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
+                    exit={isMobile ? { opacity: 0, y: -12 } : { opacity: 0, x: -20 }}
                     style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
                   >
                     {/* Experience Section */}
@@ -901,9 +916,9 @@ export default function ProfilePage() {
                 {activeTab === "Portfolio" && (
                   <motion.div
                     key="portfolio"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    initial={isMobile ? { opacity: 0, y: 12 } : { opacity: 0, x: 20 }}
+                    animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
+                    exit={isMobile ? { opacity: 0, y: -12 } : { opacity: 0, x: -20 }}
                   >
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
                       {projects.map(project => (
@@ -963,9 +978,9 @@ export default function ProfilePage() {
                 {activeTab === "Compensation" && (
                   <motion.div
                     key="compensation"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    initial={isMobile ? { opacity: 0, y: 12 } : { opacity: 0, x: 20 }}
+                    animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
+                    exit={isMobile ? { opacity: 0, y: -12 } : { opacity: 0, x: -20 }}
                     style={{ background: T.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${T.border}`, textAlign: "center" }}
                   >
                     <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: T.accentSoft, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
@@ -979,9 +994,9 @@ export default function ProfilePage() {
                 {activeTab === "Security" && (
                   <motion.div
                     key="security"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    initial={isMobile ? { opacity: 0, y: 12 } : { opacity: 0, x: 20 }}
+                    animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
+                    exit={isMobile ? { opacity: 0, y: -12 } : { opacity: 0, x: -20 }}
                     style={{ background: T.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${T.border}`, textAlign: "center" }}
                   >
                     <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: T.accentSoft, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
