@@ -40,6 +40,7 @@ type CourseInput = {
   duration: number | string;
   lessons: number;
   price: string | number;
+  access_tier?: "free" | "pro";
   rating?: number;
   thumbnail_url?: string | null;
   video_path?: string | null;
@@ -697,6 +698,7 @@ export async function saveCourse(courseData: Partial<CourseInput>, isEditing: bo
     ...courseData,
     duration: normalizedDuration,
     price: normalizedPrice.toFixed(2),
+    access_tier: courseData.access_tier === "pro" ? "pro" : "free",
     rating: courseData.rating ?? 0,
     thumbnail_url: courseData.thumbnail_url || null,
     video_path: courseData.video_path || null,

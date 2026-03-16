@@ -59,6 +59,7 @@ interface Course {
   duration: string;
   lessons: number;
   price: string;
+  access_tier?: "free" | "pro";
   rating: number;
   enrolled_count: number;
   thumbnail_url: string | null;
@@ -192,6 +193,26 @@ export default function CourseManagement() {
         color: colors[level as keyof typeof colors],
       }}>
         {level}
+      </span>
+    );
+  };
+
+  const getAccessBadge = (accessTier?: string) => {
+    const isPro = accessTier === "pro";
+
+    return (
+      <span style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "0.25rem",
+        padding: "0.25rem 0.75rem",
+        borderRadius: "9999px",
+        fontSize: "0.75rem",
+        fontWeight: 500,
+        backgroundColor: isPro ? `${UI.accent}20` : `${UI.info}20`,
+        color: isPro ? UI.accent : UI.info,
+      }}>
+        {isPro ? "Pro" : "Free"}
       </span>
     );
   };
@@ -449,9 +470,12 @@ export default function CourseManagement() {
                 right: "1rem",
                 display: "flex",
                 gap: "0.5rem",
+                flexWrap: "wrap",
+                justifyContent: "flex-end",
               }}>
                 {getStatusBadge(course.status)}
                 {getLevelBadge(course.level)}
+                {getAccessBadge(course.access_tier)}
               </div>
             </div>
 
@@ -514,7 +538,7 @@ export default function CourseManagement() {
                   fontWeight: 700, 
                   color: UI.accent 
                 }}>
-                  {course.price}
+                  {course.access_tier === "pro" ? "Included in Pro" : "Included"}
                 </div>
               </div>
 
@@ -681,6 +705,7 @@ function CourseForm({
     duration: course?.duration || '',
     lessons: course?.lessons || 0,
     price: course?.price || '',
+    access_tier: course?.access_tier || 'free',
     rating: course?.rating || 0,
     thumbnail_url: course?.thumbnail_url || '',
     status: course?.status || 'draft',
@@ -956,7 +981,7 @@ function CourseForm({
               type="text"
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              placeholder="e.g., GH₵50"
+              placeholder="0 for included courses"
               required
               style={{
                 width: "100%",
@@ -1000,6 +1025,38 @@ function CourseForm({
               <option value="archived">Archived</option>
             </select>
           </div>
+        </div>
+
+        <div>
+          <label style={{ 
+            display: "block", 
+            color: UI.text, 
+            fontSize: "0.875rem", 
+            fontWeight: 500, 
+            marginBottom: "0.5rem" 
+          }}>
+            Access
+          </label>
+          <select
+            value={formData.access_tier}
+            onChange={(e) => setFormData({ ...formData, access_tier: e.target.value as "free" | "pro" })}
+            style={{
+              width: "100%",
+              padding: "0.75rem",
+              borderRadius: "8px",
+              border: `1px solid ${UI.border}`,
+              backgroundColor: UI.bg,
+              color: UI.text,
+              fontSize: "0.875rem",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            <option value="free">Free</option>
+            <option value="pro">Pro subscription</option>
+          </select>
+          <p style={{ margin: "0.45rem 0 0", color: UI.textMuted, fontSize: "0.75rem" }}>
+            Choose Pro subscription to include the course in Pro without a separate sales price.
+          </p>
         </div>
 
         <div>
