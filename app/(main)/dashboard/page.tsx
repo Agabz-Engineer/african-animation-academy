@@ -16,7 +16,7 @@ const FILTER_TABS = ["Hot", "New", "Event"];
 const SHOWCASE_CARDS = [
   { title: "Character Design", category: "Colorimetry", note: "Included in your learning path", tag: "Hot", image: "/images/bg-desktop.jpg", imagePosition: "center 22%" },
   { title: "Background Art",   category: "Background",  note: "Studio-ready visual worldbuilding", tag: "New", image: "/images/community-bg-dark.webp", imagePosition: "center center" },
-  { title: "Texture: Afro",    category: "Texturing",   note: "Build richer surfaces and detail", tag: "Hot", image: "/images/bg-mobile.jpg", imagePosition: "center 40%" },
+  { title: "Texture: Afro",    category: "Texturing",   note: "Build richer surfaces and detail", tag: "Hot", image: "/images/texture-afro.png", imagePosition: "center center" },
   { title: "Clothing Design",  category: "Clothing",    note: "Live critique and styling workshop", tag: "Event", image: "/images/bg-desktop.jpg", imagePosition: "center 72%" },
 ];
 
@@ -470,7 +470,7 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="dash-hero"
-          style={{ width: "100%", height: "230px", borderRadius: "20px", border: `1px solid ${T.border}`, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", marginBottom: "1.25rem", position: "relative", overflow: "hidden", cursor: "pointer", backgroundImage: `linear-gradient(135deg, rgba(12,10,8,0.18), rgba(12,10,8,0.72)), url('/images/bg-desktop.jpg')`, backgroundSize: "cover", backgroundPosition: "center 38%" }}
+          style={{ width: "100%", height: "230px", borderRadius: "20px", border: `1px solid ${T.border}`, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", marginBottom: "1.25rem", position: "relative", overflow: "hidden", cursor: "pointer", backgroundImage: `linear-gradient(135deg, rgba(12,10,8,0.18), rgba(12,10,8,0.72)), url('/images/visual-storytelling-workshop.jpg')`, backgroundSize: "cover", backgroundPosition: "center center" }}
         >
           <div style={{ position: "absolute", inset: 0, background: theme === "dark" ? "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(10,8,6,0.70) 100%)" : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(34,34,34,0.58) 100%)" }} />
           {/* Corner markers */}
@@ -490,8 +490,8 @@ export default function DashboardPage() {
               Explore scene composition, lighting mood, and cinematic pacing through artist-led sessions.
             </p>
           </div>
-          <p style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text, marginBottom: "3px" }}>Featured Banner</p>
-          <p style={{ fontSize: "0.72rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>Recommended: 1200 × 400px</p>
+
+
 
           {/* Play button */}
           <div style={{ position: "absolute", right: "1.25rem", bottom: "1.25rem", width: "40px", height: "40px", borderRadius: "50%", backgroundColor: T.accent, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.2)", zIndex: 1 }}>
@@ -549,7 +549,7 @@ export default function DashboardPage() {
                 {/* Image placeholder */}
                 <div style={{ width: "100%", height: "145px", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", position: "relative", backgroundImage: `linear-gradient(180deg, rgba(8,8,8,0.04) 0%, rgba(8,8,8,0.72) 100%), url('${card.image}')`, backgroundSize: "cover", backgroundPosition: card.imagePosition }}>
                   <Camera style={{ width: "22px", height: "22px", color: "#FAF3E1", opacity: 0, marginBottom: "5px" }} />
-                  <span style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif" }}>400 × 290px</span>
+                  <span style={{ fontSize: "0.6rem", color: "transparent", fontFamily: "'Satoshi',sans-serif" }}>{card.note}</span>
                   {/* FIX 1: tag uses tokenised colours */}
                   <div style={{ position: "absolute", top: "8px", left: "8px", padding: "2px 8px", borderRadius: "6px", fontSize: "0.6rem", fontFamily: "'Satoshi',sans-serif", fontWeight: 700, backgroundColor: ts.bg, color: ts.color }}>
                     {card.tag}
@@ -706,5 +706,7 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+
 
 
