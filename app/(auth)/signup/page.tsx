@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap, Film, Clapperboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
-import { getAccountHomePath } from "@/lib/accountRouting";
+import { getAccountHomePath, normalizeAccountType } from "@/lib/accountRouting";
 
 type SkillLevel = "beginner" | "intermediate" | "advanced" | null;
 type AccountType = "animator" | "studio" | null;
@@ -162,7 +162,11 @@ export default function SignupPage() {
       return;
     }
 
-    window.location.href = getAccountHomePath(accountType);
+    const { data: currentUser } = await supabase.auth.getUser();
+    const resolvedAccountType = normalizeAccountType(
+      currentUser.user?.user_metadata?.account_type ?? accountType
+    );
+    window.location.href = getAccountHomePath(resolvedAccountType);
   };
 
   const strengthColor = password.length === 0 ? C.border : password.length < 8 ? "#FF5722" : password.length < 12 ? "#FF9800" : "#4CAF50";

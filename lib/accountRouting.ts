@@ -1,7 +1,10 @@
 export type AccountType = "animator" | "studio" | null | undefined;
 
+export const normalizeAccountType = (accountType: unknown): "animator" | "studio" =>
+  accountType === "studio" ? "studio" : "animator";
+
 export const getAccountHomePath = (accountType: AccountType) =>
-  accountType === "studio" ? "/studio" : "/dashboard";
+  normalizeAccountType(accountType) === "studio" ? "/studio" : "/dashboard";
 
 export const isStudioAccount = (accountType: AccountType) =>
-  accountType === "studio";
+  normalizeAccountType(accountType) === "studio";

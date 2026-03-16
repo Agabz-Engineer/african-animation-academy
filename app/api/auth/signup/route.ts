@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAdminSettings } from "@/lib/adminSettings";
+import { normalizeAccountType } from "@/lib/accountRouting";
 
 type SignupBody = {
   email?: string;
@@ -51,7 +52,15 @@ export async function POST(request: Request) {
 
   const email = (body.email || "").trim().toLowerCase();
   const password = body.password || "";
-  const userData = body.data || {};
+  const rawUserData = body.data || {};
+  const userData = {
+    ...rawUserData,
+    account_type: normalizeAccountType(
+      typeof rawUserData === "object" && rawUserData !== null
+        ? (rawUserData as Record<string, unknown>).account_type
+        : undefined
+    ),
+  };
 
   if (!email || !password) {
     return NextResponse.json(
