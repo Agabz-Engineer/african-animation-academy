@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Settings, Shield, Database, CheckCircle } from "lucide-react";
 import { getAdminSettings, saveAdminSettings } from "@/app/admin/actions";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -63,7 +64,9 @@ export default function AdminSettingsPage() {
 
     const loadSettings = async () => {
       try {
-        const data = await getAdminSettings();
+        const accessToken = await getAdminActionAccessToken();
+        if (!accessToken) throw new Error("Admin access required.");
+        const data = await getAdminSettings(accessToken);
         if (!active) return;
         setSettings({
           maintenanceMode: data.maintenance_mode,
@@ -98,7 +101,9 @@ export default function AdminSettingsPage() {
     setError("");
 
     try {
-      await saveAdminSettings({
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      await saveAdminSettings(accessToken, {
         maintenance_mode: settings.maintenanceMode,
         allow_signups: settings.allowSignups,
         post_moderation: settings.postModeration,

@@ -23,6 +23,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 import { 
   approvePost, 
   rejectPost, 
@@ -77,6 +78,9 @@ interface CommunityPost {
   };
   reports_count?: number;
 }
+type CommunityPostRow = CommunityPost & {
+  community_reports?: Array<{ count?: number | null }>;
+};
 
 export default function CommunityManagement() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -96,10 +100,12 @@ export default function CommunityManagement() {
 
   const fetchPosts = async () => {
     try {
-      const data = await getAdminCommunityPosts();
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const data = await getAdminCommunityPosts(accessToken);
 
       // Transform data to include reports count
-      const transformedPosts = (data || []).map((post: any) => ({
+      const transformedPosts = ((data || []) as CommunityPostRow[]).map((post) => ({
         ...post,
         reports_count: post.community_reports?.[0]?.count || 0,
       }));
@@ -122,19 +128,20 @@ export default function CommunityManagement() {
 
   const handlePostAction = async (action: string, postId: string) => {
     try {
-      let result;
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
       switch (action) {
         case 'approve':
-          result = await approvePost(postId);
+          await approvePost(accessToken, postId);
           break;
         case 'reject':
-          result = await rejectPost(postId);
+          await rejectPost(accessToken, postId);
           break;
         case 'flag':
-          result = await flagPost(postId);
+          await flagPost(accessToken, postId);
           break;
         case 'delete':
-          result = await deletePost(postId);
+          await deletePost(accessToken, postId);
           break;
       }
       
@@ -149,15 +156,17 @@ export default function CommunityManagement() {
     if (selectedPosts.length === 0) return;
 
     try {
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
       switch (action) {
         case 'approve_all':
-          await bulkApprovePosts(selectedPosts);
+          await bulkApprovePosts(accessToken, selectedPosts);
           break;
         case 'reject_all':
-          await bulkRejectPosts(selectedPosts);
+          await bulkRejectPosts(accessToken, selectedPosts);
           break;
         case 'delete_all':
-          await bulkDeletePosts(selectedPosts);
+          await bulkDeletePosts(accessToken, selectedPosts);
           break;
       }
       

@@ -3,6 +3,7 @@
 import nodemailer from "nodemailer";
 import { DEFAULT_ADMIN_SETTINGS, getAdminSettings as loadAdminSettings, saveAdminSettingsRecord, type AdminSettings } from "@/lib/adminSettings";
 import { normalizeAccountType } from "@/lib/accountRouting";
+import { assertAdminAccess } from "@/lib/serverAdminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { User } from "@supabase/supabase-js";
 
@@ -85,8 +86,13 @@ type EmailCampaign = {
   created_at: string;
 };
 
-const listAllAuthUsers = async (): Promise<User[]> => {
+const getSupabaseAdmin = (): NonNullable<typeof supabaseAdmin> => {
   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+  return supabaseAdmin;
+};
+
+const listAllAuthUsers = async (): Promise<User[]> => {
+  const supabaseAdmin = getSupabaseAdmin();
 
   const users: User[] = [];
   let page = 1;
@@ -145,8 +151,9 @@ const chunkArray = <T>(items: T[], size: number): T[][] => {
 // Data Fetching Actions (Bypass RLS)
 // ==========================================
 
-export async function getAdminDashboardData() {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function getAdminDashboardData(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const today = new Date();
   const todayDate = today.toISOString().split("T")[0];
@@ -303,8 +310,9 @@ export async function getAdminDashboardData() {
   };
 }
 
-export async function getAdminUsers() {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function getAdminUsers(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const [{ data: profiles, error: profilesError }, authUsers] = await Promise.all([
     supabaseAdmin.from("profiles").select("*").order("created_at", { ascending: false }),
@@ -340,8 +348,9 @@ export async function getAdminUsers() {
   return { users };
 }
 
-export async function syncProfilesFromAuth() {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function syncProfilesFromAuth(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const authUsers = await listAllAuthUsers();
 
@@ -386,8 +395,9 @@ export async function syncProfilesFromAuth() {
   return { total: authUsers.length, inserted: missingUsers.length };
 }
 
-export async function getAdminCourses() {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function getAdminCourses(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   
   const { data, error } = await supabaseAdmin
     .from('courses')
@@ -398,8 +408,9 @@ export async function getAdminCourses() {
   return data || [];
 }
 
-export async function getAdminStudioRequests() {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function getAdminStudioRequests(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data, error } = await supabaseAdmin
     .from("studio_requests")
@@ -411,11 +422,13 @@ export async function getAdminStudioRequests() {
 }
 
 export async function updateStudioRequestStatus(
+  accessToken: string,
   requestId: string,
   status: StudioRequestStatus,
   adminNotes?: string
 ) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { error } = await supabaseAdmin
     .from("studio_requests")
@@ -429,8 +442,9 @@ export async function updateStudioRequestStatus(
   return { success: true };
 }
 
-export async function getAdminCommunityPosts() {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function getAdminCommunityPosts(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   
   const { data, error } = await supabaseAdmin
     .from('community_posts')
@@ -445,8 +459,9 @@ export async function getAdminCommunityPosts() {
   return data || [];
 }
 
-export async function getAdminPayments() {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function getAdminPayments(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const [{ data: payments, error }, authUsers, { data: profiles, error: profilesError }] = await Promise.all([
     supabaseAdmin
@@ -497,10 +512,12 @@ export async function getAdminPayments() {
 }
 
 export async function updatePaymentStatus(
+  accessToken: string,
   paymentId: string,
   status: "pending" | "completed" | "failed" | "refunded"
 ) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const payload: {
     status: "pending" | "completed" | "failed" | "refunded";
@@ -528,8 +545,9 @@ export async function updatePaymentStatus(
 // User Management Actions
 // ==========================================
 
-export async function banUser(userId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function banUser(accessToken: string, userId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('profiles')
     .upsert({ id: userId, status: 'banned' }, { onConflict: 'id' });
@@ -537,8 +555,9 @@ export async function banUser(userId: string) {
   return { success: true };
 }
 
-export async function unbanUser(userId: string) {
-   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function unbanUser(accessToken: string, userId: string) {
+   await assertAdminAccess(accessToken);
+   const supabaseAdmin = getSupabaseAdmin();
    const { error } = await supabaseAdmin
     .from('profiles')
     .upsert({ id: userId, status: 'active' }, { onConflict: 'id' });
@@ -546,8 +565,9 @@ export async function unbanUser(userId: string) {
    return { success: true };
 }
 
-export async function setUserRole(userId: string, role: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function setUserRole(accessToken: string, userId: string, role: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { data: authUserData, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
   if (authUserError) throw authUserError;
 
@@ -567,8 +587,9 @@ export async function setUserRole(userId: string, role: string) {
   return { success: true };
 }
 
-export async function setUserAccountType(userId: string, accountType: "animator" | "studio") {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function setUserAccountType(accessToken: string, userId: string, accountType: "animator" | "studio") {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const normalizedType = normalizeAccountType(accountType);
   const { data: authUserData, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -585,8 +606,9 @@ export async function setUserAccountType(userId: string, accountType: "animator"
   return { success: true, account_type: normalizedType };
 }
 
-export async function grantUserProAccess(input: { userId: string; paymentId?: string }) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function grantUserProAccess(accessToken: string, input: { userId: string; paymentId?: string }) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   let payment: PaymentRow | null = null;
 
@@ -661,8 +683,9 @@ export async function grantUserProAccess(input: { userId: string; paymentId?: st
   return { success: true };
 }
 
-export async function revokeUserProAccess(userId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function revokeUserProAccess(accessToken: string, userId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const now = new Date().toISOString();
 
@@ -686,8 +709,9 @@ export async function revokeUserProAccess(userId: string) {
   return { success: true };
 }
 
-export async function deleteUser(userId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function deleteUser(accessToken: string, userId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   
   // Try to delete profile first to respect foreign keys
   const { error: profileError } = await supabaseAdmin
@@ -704,7 +728,7 @@ export async function deleteUser(userId: string) {
   return { success: true };
 }
 
-export async function createAdminUser(input: {
+export async function createAdminUser(accessToken: string, input: {
   email: string;
   password: string;
   fullName?: string;
@@ -712,7 +736,8 @@ export async function createAdminUser(input: {
   status?: "active" | "inactive" | "banned";
   accountType?: "animator" | "studio";
 }) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const email = input.email.trim().toLowerCase();
   const password = input.password.trim();
@@ -760,8 +785,9 @@ export async function createAdminUser(input: {
 // Course Management Actions
 // ==========================================
 
-export async function publishCourse(courseId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function publishCourse(accessToken: string, courseId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('courses')
     .update({ status: 'published' })
@@ -770,8 +796,9 @@ export async function publishCourse(courseId: string) {
   return { success: true };
 }
 
-export async function archiveCourse(courseId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function archiveCourse(accessToken: string, courseId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('courses')
     .update({ status: 'archived' })
@@ -780,8 +807,9 @@ export async function archiveCourse(courseId: string) {
   return { success: true };
 }
 
-export async function draftCourse(courseId: string) {
-   if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function draftCourse(accessToken: string, courseId: string) {
+   await assertAdminAccess(accessToken);
+   const supabaseAdmin = getSupabaseAdmin();
    const { error } = await supabaseAdmin
      .from('courses')
      .update({ status: 'draft' })
@@ -790,8 +818,9 @@ export async function draftCourse(courseId: string) {
    return { success: true };
 }
  
-export async function deleteCourse(courseId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function deleteCourse(accessToken: string, courseId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('courses')
     .delete()
@@ -800,8 +829,9 @@ export async function deleteCourse(courseId: string) {
   return { success: true };
 }
 
-export async function saveCourse(courseData: Partial<CourseInput>, isEditing: boolean, courseId?: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function saveCourse(accessToken: string, courseData: Partial<CourseInput>, isEditing: boolean, courseId?: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   if (!courseData.title || !courseData.description || !courseData.instructor || !courseData.level || courseData.duration === undefined || courseData.lessons === undefined || courseData.price === undefined || !courseData.status) {
     throw new Error("Course title, description, instructor, level, duration, lessons, price, and status are required.");
@@ -855,8 +885,9 @@ export async function saveCourse(courseData: Partial<CourseInput>, isEditing: bo
 // Community Management Actions
 // ==========================================
 
-export async function approvePost(postId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function approvePost(accessToken: string, postId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('community_posts')
     .update({ status: 'approved' })
@@ -865,8 +896,9 @@ export async function approvePost(postId: string) {
   return { success: true };
 }
 
-export async function rejectPost(postId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function rejectPost(accessToken: string, postId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('community_posts')
     .update({ status: 'rejected' })
@@ -875,8 +907,9 @@ export async function rejectPost(postId: string) {
   return { success: true };
 }
 
-export async function flagPost(postId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function flagPost(accessToken: string, postId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('community_posts')
     .update({ status: 'flagged' })
@@ -885,8 +918,9 @@ export async function flagPost(postId: string) {
   return { success: true };
 }
 
-export async function deletePost(postId: string) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function deletePost(accessToken: string, postId: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('community_posts')
     .delete()
@@ -895,8 +929,9 @@ export async function deletePost(postId: string) {
   return { success: true };
 }
 
-export async function bulkApprovePosts(postIds: string[]) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function bulkApprovePosts(accessToken: string, postIds: string[]) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('community_posts')
     .update({ status: 'approved' })
@@ -905,8 +940,9 @@ export async function bulkApprovePosts(postIds: string[]) {
   return { success: true };
 }
 
-export async function bulkRejectPosts(postIds: string[]) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function bulkRejectPosts(accessToken: string, postIds: string[]) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('community_posts')
     .update({ status: 'rejected' })
@@ -915,8 +951,9 @@ export async function bulkRejectPosts(postIds: string[]) {
   return { success: true };
 }
 
-export async function bulkDeletePosts(postIds: string[]) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function bulkDeletePosts(accessToken: string, postIds: string[]) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
     .from('community_posts')
     .delete()
@@ -925,11 +962,15 @@ export async function bulkDeletePosts(postIds: string[]) {
   return { success: true };
 }
 
-export async function getAdminSettings() {
+export async function getAdminSettings(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  getSupabaseAdmin();
   return loadAdminSettings();
 }
 
-export async function saveAdminSettings(settings: AdminSettings) {
+export async function saveAdminSettings(accessToken: string, settings: AdminSettings) {
+  await assertAdminAccess(accessToken);
+  getSupabaseAdmin();
   const nextSettings = {
     ...DEFAULT_ADMIN_SETTINGS,
     ...settings,
@@ -939,8 +980,9 @@ export async function saveAdminSettings(settings: AdminSettings) {
   return nextSettings;
 }
 
-export async function getAdminEmailCampaigns() {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+export async function getAdminEmailCampaigns(accessToken: string) {
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data, error } = await supabaseAdmin
     .from("admin_email_campaigns")
@@ -964,13 +1006,14 @@ export async function getAdminEmailCampaigns() {
   }));
 }
 
-export async function sendAdminTestEmail(input: {
+export async function sendAdminTestEmail(accessToken: string, input: {
   title: string;
   audience: string;
   subject: string;
   message: string;
 }) {
-  if (!supabaseAdmin) throw new Error("Supabase Admin not initialized");
+  await assertAdminAccess(accessToken);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const smtpHost = process.env.SMTP_HOST;
   const smtpPort = Number(process.env.SMTP_PORT || 587);

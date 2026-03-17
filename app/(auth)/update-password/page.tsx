@@ -171,7 +171,7 @@ export default function UpdatePasswordPage() {
           </h2>
 
           <p style={{ color: C.muted, fontSize: "1rem", lineHeight: 1.7, maxWidth: "300px", margin: "0 auto 2.5rem" }}>
-            Create a strong new password that you haven't used before.
+            Create a strong new password that you haven&apos;t used before.
           </p>
         </motion.div>
       </div>

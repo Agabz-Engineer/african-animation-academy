@@ -14,6 +14,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { getAdminEmailCampaigns, sendAdminTestEmail } from "@/app/admin/actions";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -76,7 +77,9 @@ export default function EmailsPage() {
   const loadCampaigns = async () => {
     try {
       setLoading(true);
-      const data = await getAdminEmailCampaigns();
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const data = await getAdminEmailCampaigns(accessToken);
       setCampaigns(data || []);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load email campaigns.");
@@ -130,7 +133,9 @@ export default function EmailsPage() {
     setInfo("");
 
     try {
-      const result = await sendAdminTestEmail({
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const result = await sendAdminTestEmail(accessToken, {
         title: title.trim() || subject.trim(),
         audience,
         subject,

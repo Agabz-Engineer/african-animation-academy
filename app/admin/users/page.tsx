@@ -15,6 +15,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { banUser, unbanUser, createAdminUser, deleteUser, getAdminUsers, grantUserProAccess, revokeUserProAccess, setUserAccountType, setUserRole, syncProfilesFromAuth } from "@/app/admin/actions";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -77,7 +78,9 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const { users } = await getAdminUsers();
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const { users } = await getAdminUsers(accessToken);
       setUsers(users);
       return users;
     } catch (error) {
@@ -91,7 +94,9 @@ export default function UserManagement() {
   const handleSyncProfiles = async () => {
     setSyncingProfiles(true);
     try {
-      const result = await syncProfilesFromAuth();
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const result = await syncProfilesFromAuth(accessToken);
       await fetchUsers();
       alert(`Synced profiles. Inserted ${result.inserted} of ${result.total} users.`);
     } catch (error) {
@@ -113,27 +118,29 @@ export default function UserManagement() {
 
   const handleUserAction = async (action: string, userId: string) => {
     try {
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
       switch (action) {
         case 'ban':
-          await banUser(userId);
+          await banUser(accessToken, userId);
           break;
         case 'unban':
-          await unbanUser(userId);
+          await unbanUser(accessToken, userId);
           break;
         case 'delete':
-          await deleteUser(userId);
+          await deleteUser(accessToken, userId);
           break;
         case 'make_admin':
-          await setUserRole(userId, 'admin');
+          await setUserRole(accessToken, userId, 'admin');
           break;
         case 'remove_admin':
-          await setUserRole(userId, 'user');
+          await setUserRole(accessToken, userId, 'user');
           break;
         case 'grant_pro':
-          await grantUserProAccess({ userId });
+          await grantUserProAccess(accessToken, { userId });
           break;
         case 'revoke_pro':
-          await revokeUserProAccess(userId);
+          await revokeUserProAccess(accessToken, userId);
           break;
       }
       
@@ -204,7 +211,9 @@ export default function UserManagement() {
     setUserError("");
 
     try {
-      await createAdminUser(input);
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      await createAdminUser(accessToken, input);
       await fetchUsers();
       setShowUserModal(false);
       setSelectedUser(null);
@@ -797,7 +806,9 @@ export default function UserManagement() {
           }}
           onChangeAccountType={async (accountType) => {
             if (!selectedUser) return;
-            await setUserAccountType(selectedUser.id, accountType);
+            const accessToken = await getAdminActionAccessToken();
+            if (!accessToken) throw new Error("Admin access required.");
+            await setUserAccountType(accessToken, selectedUser.id, accountType);
             const nextUsers = await fetchUsers();
             const nextSelected = nextUsers.find((user) => user.id === selectedUser.id) || null;
             setSelectedUser(nextSelected);

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Clock3, FileText, Loader2, Search, Users2 } from "lucide-react";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 import {
   getAdminStudioRequests,
   updateStudioRequestStatus,
@@ -72,7 +73,9 @@ export default function AdminStudiosPage() {
 
   const fetchRequests = async () => {
     try {
-      const data = (await getAdminStudioRequests()) as StudioRequest[];
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const data = (await getAdminStudioRequests(accessToken)) as StudioRequest[];
       setRequests(data);
       setDraftStatuses(Object.fromEntries(data.map((item) => [item.id, item.status])));
       setDraftNotes(Object.fromEntries(data.map((item) => [item.id, item.admin_notes || ""])));
@@ -134,7 +137,10 @@ export default function AdminStudiosPage() {
   const handleSave = async (requestId: string) => {
     try {
       setSavingId(requestId);
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
       await updateStudioRequestStatus(
+        accessToken,
         requestId,
         draftStatuses[requestId],
         draftNotes[requestId] || ""

@@ -12,6 +12,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { getAdminDashboardData } from "@/app/admin/actions";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -78,7 +79,9 @@ export default function AnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      const data = await getAdminDashboardData();
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const data = await getAdminDashboardData(accessToken);
       setStats(data.stats);
       setRecentActivity(data.recentActivity || []);
     } catch (error) {

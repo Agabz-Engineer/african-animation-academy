@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
+import {
   Users, 
   BookOpen, 
   MessageSquare, 
@@ -21,6 +21,7 @@ import {
   Building2
 } from "lucide-react";
 import { getAdminDashboardData } from "@/app/admin/actions";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -112,7 +113,9 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const dashboardData = await getAdminDashboardData();
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const dashboardData = await getAdminDashboardData(accessToken);
       setStats(dashboardData.stats);
       setRecentActivity(dashboardData.recentActivity || []);
     } catch (error) {
@@ -236,7 +239,7 @@ export default function AdminDashboard() {
           fontSize: "1rem", 
           margin: 0 
         }}>
-          Welcome back! Here's what's happening on AfricaFX today.
+          Welcome back! Here&apos;s what&apos;s happening on AfricaFX today.
         </p>
       </div>
 

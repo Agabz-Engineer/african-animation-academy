@@ -14,6 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { getAdminPayments, grantUserProAccess, updatePaymentStatus } from "@/app/admin/actions";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -69,7 +70,9 @@ export default function PaymentsPage() {
 
   const fetchPayments = async () => {
     try {
-      const data = await getAdminPayments();
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const data = await getAdminPayments(accessToken);
       setPayments(data || []);
     } catch (error) {
       console.error("Error fetching payments:", error);
@@ -154,7 +157,9 @@ export default function PaymentsPage() {
   const handleGrantPro = async (payment: Payment) => {
     setActionLoadingFor(`${payment.id}:pro`);
     try {
-      await grantUserProAccess({ userId: payment.user_id, paymentId: payment.id });
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      await grantUserProAccess(accessToken, { userId: payment.user_id, paymentId: payment.id });
       await fetchPayments();
     } catch (error) {
       console.error("Error granting pro access:", error);
@@ -167,7 +172,9 @@ export default function PaymentsPage() {
   const handleMarkSuccessful = async (payment: Payment) => {
     setActionLoadingFor(`${payment.id}:status`);
     try {
-      await updatePaymentStatus(payment.id, "completed");
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      await updatePaymentStatus(accessToken, payment.id, "completed");
       await fetchPayments();
     } catch (error) {
       console.error("Error updating payment status:", error);

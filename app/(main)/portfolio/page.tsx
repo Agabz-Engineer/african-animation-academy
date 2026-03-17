@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { User } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -57,6 +58,12 @@ const LIGHT_UI = {
   pillInactiveTxt: "#555555",
   dim: "#9E9688",
 };
+type ThemeTokens = typeof DARK_UI;
+type CommunityPostDraft = {
+  id: string;
+  content: string;
+  tags: string[];
+};
 
 // ─── Static animation variants (defined ONCE, not per render) ─
 const containerVariants = {
@@ -108,7 +115,7 @@ function Thumbnail({ size = 48 }: { size?: number }) {
 }
 
 // ─── Grid Card ─────────────────────────────────────────────
-function GridCard({ project, C }: { project: Project; C: any }) {
+function GridCard({ project, C }: { project: Project; C: ThemeTokens }) {
   return (
     <motion.div
       variants={itemVariants}
@@ -188,7 +195,7 @@ function GridCard({ project, C }: { project: Project; C: any }) {
 }
 
 // ─── List Card ─────────────────────────────────────────────
-function ListCard({ project, C }: { project: Project; C: any }) {
+function ListCard({ project, C }: { project: Project; C: ThemeTokens }) {
   return (
     <motion.div
       variants={itemVariants}
@@ -279,7 +286,7 @@ export default function PortfolioPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   
   // Form State
   const [newProject, setNewProject] = useState({
@@ -290,7 +297,7 @@ export default function PortfolioPage() {
     thumbnail_url: "",
     media_url: ""
   });
-  const [communityPosts, setCommunityPosts] = useState<any[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<CommunityPostDraft[]>([]);
   const [isTaggingMode, setIsTaggingMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [hasProAccess, setHasProAccess] = useState(false);
@@ -381,7 +388,7 @@ export default function PortfolioPage() {
     setSubmitting(false);
   };
 
-  const tagPost = (post: any) => {
+  const tagPost = (post: CommunityPostDraft) => {
     setNewProject({
       ...newProject,
       title: post.content.split("\n")[0].substring(0, 50),
@@ -572,8 +579,8 @@ export default function PortfolioPage() {
         >
           {filteredProjects.map(project => (
             viewMode === "grid"
-              ? <GridCard key={project.id} project={project as any} C={C} />
-              : <ListCard key={project.id} project={project as any} C={C} />
+              ? <GridCard key={project.id} project={project} C={C} />
+              : <ListCard key={project.id} project={project} C={C} />
           ))}
         </motion.div>
       )}

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { publishCourse, draftCourse, archiveCourse, deleteCourse, getAdminCourses, saveCourse } from "@/app/admin/actions";
+import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -49,6 +50,7 @@ const LIGHT_UI = {
   danger: "#EF4444",
   info: "#3B82F6",
 };
+type AdminTheme = typeof DARK_UI;
 
 interface Course {
   id: string;
@@ -88,7 +90,9 @@ export default function CourseManagement() {
 
   const fetchCourses = async () => {
     try {
-      const data = await getAdminCourses();
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      const data = await getAdminCourses(accessToken);
       setCourses(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -109,19 +113,20 @@ export default function CourseManagement() {
 
   const handleCourseAction = async (action: string, courseId: string) => {
     try {
-      let result;
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
       switch (action) {
         case 'publish':
-          result = await publishCourse(courseId);
+          await publishCourse(accessToken, courseId);
           break;
         case 'draft':
-          result = await draftCourse(courseId);
+          await draftCourse(accessToken, courseId);
           break;
         case 'archive':
-          result = await archiveCourse(courseId);
+          await archiveCourse(accessToken, courseId);
           break;
         case 'delete':
-          result = await deleteCourse(courseId);
+          await deleteCourse(accessToken, courseId);
           break;
       }
       
@@ -134,7 +139,9 @@ export default function CourseManagement() {
 
   const handleSaveCourse = async (courseData: Partial<Course>) => {
     try {
-      await saveCourse(courseData, isEditing, isEditing && selectedCourse ? selectedCourse.id : undefined);
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      await saveCourse(accessToken, courseData, isEditing, isEditing && selectedCourse ? selectedCourse.id : undefined);
       
       await fetchCourses();
       setShowCourseModal(false);
@@ -695,7 +702,7 @@ function CourseForm({
   course: Course | null;
   onSave: (data: Partial<Course>) => void;
   onCancel: () => void;
-  UI: any;
+  UI: AdminTheme;
 }) {
   const [formData, setFormData] = useState({
     title: course?.title || '',
@@ -1008,7 +1015,7 @@ function CourseForm({
             </label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as Course["status"] })}
               style={{
                 width: "100%",
                 padding: "0.75rem",

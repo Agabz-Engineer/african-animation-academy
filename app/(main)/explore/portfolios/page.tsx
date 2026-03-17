@@ -39,6 +39,9 @@ type PortfolioProject = {
     avatar_url: string | null;
   };
 };
+type PortfolioProjectRow = Omit<PortfolioProject, "profiles"> & {
+  profiles?: PortfolioProject["profiles"] | PortfolioProject["profiles"][];
+};
 
 // ─── Themes ───────────────────────────────────────────────
 const DARK = {
@@ -70,9 +73,10 @@ const LIGHT = {
 };
 
 const CATEGORIES = ["All", "Following", "2D Animation", "3D Animation", "Character Design", "Motion Graphics", "VFX"];
+type ThemeTokens = typeof DARK;
 
 // ─── Components ──────────────────────────────────────────
-function ProjectCard({ project, theme, viewMode, onFollowUpdate, currentUserId }: { project: PortfolioProject, theme: any, viewMode: "grid" | "list", onFollowUpdate: (userId: string) => void, currentUserId?: string }) {
+function ProjectCard({ project, theme, viewMode, onFollowUpdate, currentUserId }: { project: PortfolioProject, theme: ThemeTokens, viewMode: "grid" | "list", onFollowUpdate: (userId: string) => void, currentUserId?: string }) {
   const isGrid = viewMode === "grid";
   const [isMsgOpen, setIsMsgOpen] = useState(false);
   
@@ -278,10 +282,14 @@ export default function ExplorePortfoliosPage() {
         .range((pageNum - 1) * PAGE_SIZE, pageNum * PAGE_SIZE - 1);
         
       if (!error && data) {
+        const normalizedProjects = (data as PortfolioProjectRow[]).map((project) => ({
+          ...project,
+          profiles: Array.isArray(project.profiles) ? project.profiles[0] : project.profiles,
+        }));
         if (pageNum === 1) {
-          setProjects(data as any);
+          setProjects(normalizedProjects);
         } else {
-          setProjects(prev => [...prev, ...(data as any)]);
+          setProjects(prev => [...prev, ...normalizedProjects]);
         }
         setHasMore(data.length === PAGE_SIZE);
       }

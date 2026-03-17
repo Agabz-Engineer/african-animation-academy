@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { User } from "@supabase/supabase-js";
 import { 
   LayoutDashboard, 
   Users, 
@@ -19,6 +20,8 @@ import {
   Search
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getAccountHomePath } from "@/lib/accountRouting";
+import { getAdminClientAccess } from "@/lib/adminClientAuth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -64,35 +67,48 @@ const adminNavItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [user, setUser] = useState<any>(null);
+  const [theme] = useState<"dark" | "light">("dark");
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
 
   const UI = theme === "dark" ? DARK_UI : LIGHT_UI;
 
   useEffect(() => {
-    // Check authentication and admin role
     const checkAuth = async () => {
       try {
-        if (!supabase) throw new Error('Supabase not initialized');
-        
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        if (!supabase) throw new Error("Supabase not initialized");
+
+        const access = await getAdminClientAccess();
+        if (!access?.user) {
+          const {
+            data: { user: authUser },
+          } = await supabase.auth.getUser();
+
+          if (!authUser) {
+            window.location.href = "/login";
+            return;
+          }
+
+          window.location.href = getAccountHomePath(authUser.user_metadata?.account_type);
+          return;
+        }
+
+        setUser(access.user);
+      } catch (error) {
+        console.error("Auth error:", error);
+        if (!supabase) {
           window.location.href = "/login";
           return;
         }
 
-        // TEMPORARY: BYPASS ALL AUTHENTICATION FOR ADMIN ROUTES
-        console.log('Admin access granted - bypassing all authentication');
-        console.log('User ID:', user.id);
-        console.log('User email:', user.email);
-        
-        // Skip all authentication checks and allow admin access
-        setUser(user);
-      } catch (error) {
-        console.error('Auth error:', error);
-        window.location.href = "/login";
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+
+        window.location.href = authUser
+          ? getAccountHomePath(authUser.user_metadata?.account_type)
+          : "/login";
       } finally {
         setLoading(false);
       }

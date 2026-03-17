@@ -159,7 +159,7 @@ export default function ForgotPasswordPage() {
           </h2>
 
           <p style={{ color: C.muted, fontSize: "1rem", lineHeight: 1.7, maxWidth: "300px", margin: "0 auto 2.5rem" }}>
-            Don't worry, it happens to the best of us! Enter your email and we'll send you a password reset link.
+            Don&apos;t worry, it happens to the best of us! Enter your email and we&apos;ll send you a password reset link.
           </p>
         </motion.div>
       </div>
@@ -202,7 +202,7 @@ export default function ForgotPasswordPage() {
             Reset Password
           </h1>
           <p style={{ color: C.muted, marginBottom: "2rem", fontFamily: "'General Sans', sans-serif" }}>
-            We'll send you an email with instructions to reset your password.
+            We&apos;ll send you an email with instructions to reset your password.
           </p>
 
           {error && (
@@ -226,7 +226,7 @@ export default function ForgotPasswordPage() {
               </div>
               <h3 style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 600, fontSize: "1.1rem", marginBottom: "0.5rem", color: C.text }}>Check your email</h3>
               <p style={{ fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-                We've sent a password reset link to <strong>{email}</strong>.
+                We&apos;ve sent a password reset link to <strong>{email}</strong>.
               </p>
               <Link
                 href="/login"
