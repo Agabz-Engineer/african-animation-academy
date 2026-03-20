@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -11,6 +12,7 @@ import {
   Loader2,
   Search,
   Sparkles,
+  Trophy,
   Users2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -315,6 +317,26 @@ export default function StudioPage() {
                   Submit talent request
                   <ArrowRight style={{ width: 15, height: 15 }} />
                 </a>
+                <Link
+                  href="/community/leaderboard"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.55rem",
+                    borderRadius: 14,
+                    border: `1px solid ${T.border}`,
+                    backgroundColor: T.cardSoft,
+                    color: T.text,
+                    padding: "0.82rem 1rem",
+                    fontSize: "0.9rem",
+                    fontFamily: "'General Sans', sans-serif",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  <Trophy style={{ width: 15, height: 15, color: T.accent }} />
+                  Open talent board
+                </Link>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", borderRadius: 14, border: `1px solid ${T.border}`, backgroundColor: T.cardSoft, color: T.muted, padding: "0.82rem 1rem", fontSize: "0.9rem", fontFamily: "'General Sans', sans-serif" }}>
                   <Clock3 style={{ width: 15, height: 15, color: T.accent }} />
                   {activeRequests} active request{activeRequests === 1 ? "" : "s"}
@@ -355,18 +377,35 @@ export default function StudioPage() {
             </div>
           </div>
 
-          <div style={card(T, theme)}>
-            <p style={eyebrow(T)}>Talent lanes</p>
-            <div className="studio-lanes-grid" style={{ marginTop: "0.9rem" }}>
-              {TALENT_LANES.map((lane) => (
-                <div key={lane} style={{ borderRadius: 18, border: `1px solid ${T.border}`, backgroundColor: T.cardSoft, padding: "0.9rem" }}>
+	          <div style={card(T, theme)}>
+	            <p style={eyebrow(T)}>Talent lanes</p>
+	            <div className="studio-lanes-grid" style={{ marginTop: "0.9rem" }}>
+	              {TALENT_LANES.map((lane) => (
+	                <div key={lane} style={{ borderRadius: 18, border: `1px solid ${T.border}`, backgroundColor: T.cardSoft, padding: "0.9rem" }}>
                   <Layers3 style={{ width: 18, height: 18, color: T.accent }} />
                   <p style={{ margin: "0.6rem 0 0", fontSize: "0.92rem", lineHeight: 1.4, fontFamily: "'General Sans', sans-serif" }}>{lane}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+	                </div>
+	              ))}
+	            </div>
+              <Link
+                href="/community/leaderboard"
+                style={{
+                  marginTop: "1rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.55rem",
+                  textDecoration: "none",
+                  color: T.accent,
+                  fontSize: "0.9rem",
+                  fontWeight: 700,
+                  fontFamily: "'General Sans', sans-serif",
+                }}
+              >
+                <Trophy style={{ width: 15, height: 15 }} />
+	                Review this week&apos;s standout creators
+              </Link>
+	          </div>
+	        </section>
 
         <section className="studio-two-col" style={{ alignItems: "start" }}>
           <form id="studio-request-form" onSubmit={handleSubmit} style={{ ...card(T, theme), display: "grid", gap: "0.9rem" }}>

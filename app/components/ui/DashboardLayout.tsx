@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Home, BookOpen, Calendar, Image as ImageIcon, Users, DollarSign,
   User, Settings, LogOut, Sun, Moon,
-  ChevronRight, Menu, X, Sparkles, Mail, Instagram, Linkedin, Youtube
+  ChevronRight, Menu, X, Sparkles, Mail, Instagram, Linkedin, Youtube, Trophy
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getAccountHomePath, isStudioAccount } from "@/lib/accountRouting";
@@ -35,14 +35,14 @@ const BOTTOM_NAV = [
 
 const STUDIO_NAV_LINKS = [
   { label: "Home",      href: "/studio",     icon: Home      },
-  { label: "Messages",  href: "/messages",   icon: Mail      },
+  { label: "Talent Board", href: "/community/leaderboard", icon: Trophy },
   { label: "Profile",   href: "/profile",    icon: User      },
   { label: "Settings",  href: "/settings",   icon: Settings  },
 ];
 
 const STUDIO_BOTTOM_NAV = [
   { label: "Home",      href: "/studio",     icon: Home      },
-  { label: "Messages",  href: "/messages",   icon: Mail      },
+  { label: "Talent",    href: "/community/leaderboard", icon: Trophy },
   { label: "Profile",   href: "/profile",    icon: User      },
   { label: "Settings",  href: "/settings",   icon: Settings  },
 ];
@@ -757,7 +757,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }}
             >
               <p style={{ margin: 0, fontSize: "0.76rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>
-                Your profile is still empty. Add your display name and avatar to personalize the dashboard.
+                {studioUser
+                  ? "Your studio identity is still empty. Add your studio name and avatar to personalize this workspace."
+                  : "Your profile is still empty. Add your display name and avatar to personalize the dashboard."}
               </p>
               <Link
                 href="/settings"

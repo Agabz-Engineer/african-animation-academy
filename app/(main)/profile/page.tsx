@@ -25,10 +25,14 @@ import {
   Globe,
   Twitter,
   Instagram,
-  Linkedin
+  Linkedin,
+  Trophy,
+  Briefcase,
+  Clock3
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
 import { supabase } from "@/lib/supabase";
+import { isStudioAccount } from "@/lib/accountRouting";
 
 // ─── Types ─────────────────────────────────────────────────
 type Experience = {
@@ -75,7 +79,31 @@ type Project = {
   has_liked?: boolean;
 };
 
-const TABS = ["Overview", "Portfolio", "Compensation", "Security"];
+type StudioRequestStatus =
+  | "new"
+  | "reviewing"
+  | "shortlisting"
+  | "matched"
+  | "closed";
+
+type StudioRequest = {
+  id: string;
+  role_needed: string;
+  animation_type: string;
+  artists_needed: number;
+  timeline: string;
+  budget_range: string;
+  experience_level: string;
+  contract_type: string;
+  project_brief: string;
+  required_tools: string[] | null;
+  status: StudioRequestStatus;
+  admin_notes: string | null;
+  created_at: string;
+};
+
+const CREATOR_TABS = ["Overview", "Portfolio", "Compensation", "Security"];
+const STUDIO_TABS = ["Overview", "Talent Board", "Hiring", "Security"];
 
 const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️"];
 
@@ -88,8 +116,11 @@ export default function ProfilePage() {
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
   const [loading, setLoading] = useState(true);
+  const [accountType, setAccountType] = useState<"animator" | "studio">("animator");
+  const [accountEmail, setAccountEmail] = useState<string>("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [studioRequests, setStudioRequests] = useState<StudioRequest[]>([]);
   const [isLiking, setIsLiking] = useState<string | null>(null);
   const [stats, setStats] = useState({ followers: 0, following: 0 });
 
@@ -293,6 +324,11 @@ export default function ProfilePage() {
       if (!supabase) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const nextAccountType = isStudioAccount(user.user_metadata?.account_type)
+        ? "studio"
+        : "animator";
+      setAccountType(nextAccountType);
+      setAccountEmail(user.email || "");
 
       // 1. Fetch Profile
       const { data: prof } = await supabase
@@ -306,14 +342,26 @@ export default function ProfilePage() {
         setEditData(prof);
       }
 
-      // 2. Fetch Portfolio Projects
-      const { data: projs } = await supabase
-        .from("portfolio_projects")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      
-      if (projs) setProjects(projs);
+      if (nextAccountType === "studio") {
+        const { data: requests } = await supabase
+          .from("studio_requests")
+          .select("*")
+          .eq("studio_id", user.id)
+          .order("created_at", { ascending: false });
+
+        setStudioRequests((requests || []) as StudioRequest[]);
+        setProjects([]);
+      } else {
+        // 2. Fetch Portfolio Projects
+        const { data: projs } = await supabase
+          .from("portfolio_projects")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+        
+        if (projs) setProjects(projs);
+        setStudioRequests([]);
+      }
 
       // 3. Fetch Social Stats
       const { count: followers } = await supabase
@@ -331,6 +379,13 @@ export default function ProfilePage() {
     }
     fetchProfile();
   }, []);
+
+  useEffect(() => {
+    const tabs = accountType === "studio" ? STUDIO_TABS : CREATOR_TABS;
+    if (!tabs.includes(activeTab)) {
+      setActiveTab("Overview");
+    }
+  }, [accountType, activeTab]);
 
   const handleUpdateProfile = async () => {
     if (!profile || !supabase || saving) return;
@@ -498,6 +553,22 @@ export default function ProfilePage() {
     shadow: isDark ? "0 4px 24px rgba(0,0,0,0.4)" : "0 4px 20px rgba(0,0,0,0.05)",
   };
 
+  const isStudioProfile = accountType === "studio";
+  const tabs = isStudioProfile ? STUDIO_TABS : CREATOR_TABS;
+  const activeStudioRequests = studioRequests.filter((request) => request.status !== "closed").length;
+  const matchedStudioRequests = studioRequests.filter((request) => request.status === "matched").length;
+  const latestStudioRequest = studioRequests[0] || null;
+  const topTalentLane = latestStudioRequest?.animation_type || "Talent discovery";
+  const primaryIdentityLabel = isStudioProfile ? "Studio name" : "Full Name";
+  const primaryBioLabel = isStudioProfile ? "Studio summary" : "Bio";
+  const primaryBioPlaceholder = isStudioProfile
+    ? "Describe your studio, the productions you handle, and the kind of animators you usually hire."
+    : "Tell the community who you are...";
+  const primaryWebsitePlaceholder = isStudioProfile
+    ? "https://yourstudio.com"
+    : "https://yourportfolio.com";
+  const locationPlaceholder = isStudioProfile ? "City, Country or HQ location" : "City, Country";
+
   if (loading) return <div style={{ padding: "4rem", textAlign: "center", color: T.text }}>Loading Profile...</div>;
 
   return (
@@ -572,13 +643,21 @@ export default function ProfilePage() {
               border: `1px solid ${T.border}`
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ fontWeight: 800, color: T.accent }}>{stats.followers}</span>
-                <span style={{ fontSize: "0.75rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Followers</span>
+                <span style={{ fontWeight: 800, color: T.accent }}>
+                  {isStudioProfile ? activeStudioRequests : stats.followers}
+                </span>
+                <span style={{ fontSize: "0.75rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>
+                  {isStudioProfile ? "Active briefs" : "Followers"}
+                </span>
               </div>
               <div style={{ width: "1px", height: "14px", background: T.border, alignSelf: "center" }} />
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ fontWeight: 800, color: T.text }}>{stats.following}</span>
-                <span style={{ fontSize: "0.75rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Following</span>
+                <span style={{ fontWeight: 800, color: T.text }}>
+                  {isStudioProfile ? studioRequests.length : stats.following}
+                </span>
+                <span style={{ fontSize: "0.75rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>
+                  {isStudioProfile ? "Requests sent" : "Following"}
+                </span>
               </div>
             </div>
           </div>
@@ -586,7 +665,9 @@ export default function ProfilePage() {
           {/* Header Section */}
           <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-end", gap: isMobile ? "1rem" : 0, marginBottom: "2rem" }}>
             <div>
-              <div style={{ fontSize: "0.85rem", color: T.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>Creator Profile</div>
+              <div style={{ fontSize: "0.85rem", color: T.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>
+                {isStudioProfile ? "Studio Profile" : "Creator Profile"}
+              </div>
               <h1 style={{ fontSize: isMobile ? "2rem" : "2.5rem", fontWeight: 800, fontFamily: "'Clash Display', sans-serif", letterSpacing: "-0.03em" }}>My Profile</h1>
             </div>
             <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1rem", width: isMobile ? "100%" : "auto" }}>
@@ -604,12 +685,14 @@ export default function ProfilePage() {
                 justifyContent: "center",
                 gap: "0.5rem",
                 width: isMobile ? "100%" : "auto"
-              }}>
-                <Share2 size={18} /> Public View
+              }}
+              onClick={() => router.push(isStudioProfile ? "/community/leaderboard" : "/portfolio")}>
+                {isStudioProfile ? <Trophy size={18} /> : <Share2 size={18} />}
+                {isStudioProfile ? "Talent Board" : "Public View"}
               </button>
-              <button style={{ 
-                background: T.accent, 
-                color: "#fff",
+	              <button style={{ 
+	                background: T.accent, 
+	                color: "#fff",
                 border: "none",
                 padding: "0.75rem 1.5rem",
                 borderRadius: "14px",
@@ -618,15 +701,16 @@ export default function ProfilePage() {
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-                boxShadow: `0 8px 20px ${T.accent}33`,
-                width: isMobile ? "100%" : "auto"
-              }}
-              onClick={() => router.push("/settings")}>
-                <Settings size={18} /> Settings
-              </button>
-            </div>
+	                justifyContent: "center",
+	                gap: "0.5rem",
+	                boxShadow: `0 8px 20px ${T.accent}33`,
+	                width: isMobile ? "100%" : "auto"
+	              }}
+	              onClick={() => router.push(isStudioProfile ? "/studio" : "/settings")}>
+	                {isStudioProfile ? <Briefcase size={18} /> : <Settings size={18} />}
+	                {isStudioProfile ? "Studio Desk" : "Settings"}
+	              </button>
+	            </div>
           </div>
 
           {/* Tabs */}
@@ -642,7 +726,7 @@ export default function ProfilePage() {
               paddingBottom: isMobile ? 0 : "2px",
             }}
           >
-            {TABS.map(tab => (
+            {tabs.map(tab => (
               <button
                 key={tab}
                 onClick={() => {
@@ -733,7 +817,9 @@ export default function ProfilePage() {
                     <button style={{ background: "none", border: "none", color: T.muted, cursor: "pointer" }}><MoreHorizontal /></button>
                   </div>
                 </div>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>{profile?.full_name || "Creative Member"}</h2>
+	                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.25rem", letterSpacing: "-0.02em" }}>
+                    {profile?.full_name || (isStudioProfile ? "Studio Team" : "Creative Member")}
+                  </h2>
                 <div style={{ fontSize: "0.85rem", color: T.muted, marginBottom: "1rem", fontWeight: 600 }}>@{profile?.user_name || "anonymous"}</div>
 
                 {profile?.bio && (
@@ -741,18 +827,24 @@ export default function ProfilePage() {
                 )}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                  <section>
-                    <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Contact Info</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.9rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><Mail size={14} color={T.accent} /> {profile?.id.substring(0, 12)}...</div>
-                      {profile?.location && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><MapPin size={14} color={T.accent} /> {profile.location}</div>
-                      )}
-                      {!profile?.location && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><MapPin size={14} color={T.accent} /> Based in Africa</div>
-                      )}
-                    </div>
-                  </section>
+	                  <section>
+	                    <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, marginBottom: "0.75rem", fontWeight: 800 }}>
+                        {isStudioProfile ? "Studio contact" : "Contact Info"}
+                      </h3>
+	                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.9rem" }}>
+	                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <Mail size={14} color={T.accent} /> {accountEmail || `${profile?.id?.substring(0, 12) || "member"}...`}
+                        </div>
+	                      {profile?.location && (
+	                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}><MapPin size={14} color={T.accent} /> {profile.location}</div>
+	                      )}
+	                      {!profile?.location && (
+	                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                            <MapPin size={14} color={T.accent} /> {isStudioProfile ? "Studio location not set yet" : "Based in Africa"}
+                          </div>
+	                      )}
+	                    </div>
+	                  </section>
                   
                   {(profile?.twitter_url || profile?.instagram_url || profile?.linkedin_url || profile?.website_url) && (
                     <section>
@@ -767,17 +859,41 @@ export default function ProfilePage() {
                   )}
 
                   <section>
-                    <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, marginBottom: "0.75rem", fontWeight: 800 }}>Skill Level</h3>
+	                    <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, marginBottom: "0.75rem", fontWeight: 800 }}>
+                        {isStudioProfile ? "Hiring focus" : "Skill Level"}
+                      </h3>
                     <div style={{ padding: "0.75rem", borderRadius: "12px", background: T.bg, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: "0.75rem" }}>
                       <div style={{ fontSize: "1.2rem" }}>🎨</div>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>{profile?.skill_level || "Apprentice"}</div>
-                        <div style={{ fontSize: "0.7rem", color: T.muted }}>Artist Level</div>
+	                        <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                            {isStudioProfile ? topTalentLane : profile?.skill_level || "Apprentice"}
+                          </div>
+	                        <div style={{ fontSize: "0.7rem", color: T.muted }}>
+                            {isStudioProfile ? "Current hiring lane" : "Artist Level"}
+                          </div>
                       </div>
                     </div>
-                  </section>
+	                  </section>
 
-                  <div style={{ paddingTop: "1rem", display: "flex", gap: "0.75rem" }}>
+                    {isStudioProfile && (
+                      <section>
+                        <h3 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, marginBottom: "0.75rem", fontWeight: 800 }}>
+                          Studio pulse
+                        </h3>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                          <div style={{ padding: "0.75rem", borderRadius: "12px", background: T.bg, border: `1px solid ${T.border}` }}>
+                            <div style={{ fontWeight: 800, fontSize: "1.05rem", color: T.accent }}>{activeStudioRequests}</div>
+                            <div style={{ fontSize: "0.72rem", color: T.muted }}>Active briefs</div>
+                          </div>
+                          <div style={{ padding: "0.75rem", borderRadius: "12px", background: T.bg, border: `1px solid ${T.border}` }}>
+                            <div style={{ fontWeight: 800, fontSize: "1.05rem", color: T.text }}>{matchedStudioRequests}</div>
+                            <div style={{ fontSize: "0.72rem", color: T.muted }}>Matched</div>
+                          </div>
+                        </div>
+                      </section>
+                    )}
+
+	                  <div style={{ paddingTop: "1rem", display: "flex", gap: "0.75rem" }}>
                     <button 
                       onClick={() => {
                         setEditData(profile || {});
@@ -785,18 +901,250 @@ export default function ProfilePage() {
                       }}
                       style={{ flex: 1, padding: "0.8rem", borderRadius: "12px", background: T.accent, color: "#fff", border: "none", fontWeight: 700, fontSize: "0.85rem", cursor: "pointer", boxShadow: `0 4px 15px ${T.accent}44` }}
                     >
-                      Edit Profile
-                    </button>
-                    <button style={{ padding: "0.8rem", borderRadius: "12px", background: T.bg, border: `1px solid ${T.border}`, color: T.text, cursor: "pointer" }}><Share2 size={18} /></button>
-                  </div>
+	                      {isStudioProfile ? "Edit Studio Profile" : "Edit Profile"}
+	                    </button>
+	                    <button
+                        onClick={() => router.push(isStudioProfile ? "/community/leaderboard" : "/portfolio")}
+                        style={{ padding: "0.8rem", borderRadius: "12px", background: T.bg, border: `1px solid ${T.border}`, color: T.text, cursor: "pointer" }}
+                      >
+                        {isStudioProfile ? <Trophy size={18} /> : <Share2 size={18} />}
+                      </button>
+	                  </div>
                 </div>
               </motion.div>
             </div>
 
             {/* Right Column: Dynamic Content based on Tabs */}
-            <div ref={tabContentRef} style={{ display: "flex", flexDirection: "column", gap: "2rem", minWidth: 0, overflow: "hidden", order: isMobile ? 1 : 2 }}>
-              
-              <AnimatePresence mode="wait">
+	            <div ref={tabContentRef} style={{ display: "flex", flexDirection: "column", gap: "2rem", minWidth: 0, overflow: "hidden", order: isMobile ? 1 : 2 }}>
+	              {isStudioProfile ? (
+                  <AnimatePresence mode="wait">
+                    {activeTab === "Overview" && (
+                      <motion.div
+                        key="studio-overview"
+                        initial={isMobile ? { opacity: 0, y: 12 } : { opacity: 0, x: 20 }}
+                        animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
+                        exit={isMobile ? { opacity: 0, y: -12 } : { opacity: 0, x: -20 }}
+                        style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
+                      >
+                        <div style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                              <div style={{ padding: "0.5rem", borderRadius: "12px", background: T.accentSoft, color: T.accent }}>
+                                <Briefcase size={20} />
+                              </div>
+                              <div>
+                                <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.2rem" }}>Studio snapshot</h3>
+                                <p style={{ margin: "0.3rem 0 0", color: T.muted, fontSize: "0.86rem" }}>
+                                  This profile is tuned for briefs, hiring visibility, and talent discovery.
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => router.push("/studio")}
+                              style={{ border: `1px solid ${T.border}`, background: T.bg, color: T.text, padding: "0.85rem 1rem", borderRadius: "14px", fontWeight: 700, cursor: "pointer" }}
+                            >
+                              Open studio desk
+                            </button>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: "1rem" }}>
+                            <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
+                              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: T.accent }}>{studioRequests.length}</div>
+                              <div style={{ fontSize: "0.7rem", color: T.muted, textTransform: "uppercase", fontWeight: 600 }}>Total briefs</div>
+                            </div>
+                            <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
+                              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: T.accent }}>{activeStudioRequests}</div>
+                              <div style={{ fontSize: "0.7rem", color: T.muted, textTransform: "uppercase", fontWeight: 600 }}>Active hiring</div>
+                            </div>
+                            <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
+                              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: T.accent }}>{matchedStudioRequests}</div>
+                              <div style={{ fontSize: "0.7rem", color: T.muted, textTransform: "uppercase", fontWeight: 600 }}>Matched briefs</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr", gap: "2rem" }}>
+                          <div style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+                              <div style={{ padding: "0.5rem", borderRadius: "12px", background: T.accentSoft, color: T.accent }}>
+                                <Clock3 size={18} />
+                              </div>
+                              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.1rem" }}>Recent briefs</h3>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+                              {studioRequests.length > 0 ? studioRequests.slice(0, 3).map((request) => (
+                                <div key={request.id} style={{ borderRadius: "16px", border: `1px solid ${T.border}`, background: T.bg, padding: "0.95rem" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem", alignItems: "flex-start" }}>
+                                    <div>
+                                      <p style={{ margin: 0, fontWeight: 700 }}>{request.role_needed}</p>
+                                      <p style={{ margin: "0.3rem 0 0", color: T.muted, fontSize: "0.84rem" }}>
+                                        {request.animation_type} • {request.artists_needed} artist{request.artists_needed === 1 ? "" : "s"} • {request.timeline}
+                                      </p>
+                                    </div>
+                                    <span style={{ padding: "0.35rem 0.62rem", borderRadius: 999, background: T.accentSoft, color: T.accent, fontSize: "0.74rem", fontWeight: 700 }}>
+                                      {request.status}
+                                    </span>
+                                  </div>
+                                  <p style={{ margin: "0.75rem 0 0", color: T.muted, fontSize: "0.84rem", lineHeight: 1.6 }}>
+                                    {request.project_brief}
+                                  </p>
+                                </div>
+                              )) : (
+                                <p style={{ margin: 0, color: T.muted, fontSize: "0.9rem" }}>
+                                  No studio briefs yet. Submit your first request from the studio desk.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.25rem" }}>
+                              <div style={{ padding: "0.5rem", borderRadius: "12px", background: T.accentSoft, color: T.accent }}>
+                                <Trophy size={18} />
+                              </div>
+                              <h3 style={{ margin: 0, fontWeight: 700, fontSize: "1.1rem" }}>Current hiring focus</h3>
+                            </div>
+                            <div style={{ display: "grid", gap: "0.9rem" }}>
+                              <div style={{ borderRadius: "16px", border: `1px solid ${T.border}`, background: T.bg, padding: "0.95rem" }}>
+                                <p style={{ margin: 0, fontSize: "0.72rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Top lane</p>
+                                <p style={{ margin: "0.35rem 0 0", fontWeight: 700 }}>{topTalentLane}</p>
+                              </div>
+                              <div style={{ borderRadius: "16px", border: `1px solid ${T.border}`, background: T.bg, padding: "0.95rem" }}>
+                                <p style={{ margin: 0, fontSize: "0.72rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Budget range</p>
+                                <p style={{ margin: "0.35rem 0 0", fontWeight: 700 }}>{latestStudioRequest?.budget_range || "Not set yet"}</p>
+                              </div>
+                              <div style={{ borderRadius: "16px", border: `1px solid ${T.border}`, background: T.bg, padding: "0.95rem" }}>
+                                <p style={{ margin: 0, fontSize: "0.72rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Preferred experience</p>
+                                <p style={{ margin: "0.35rem 0 0", fontWeight: 700 }}>{latestStudioRequest?.experience_level || "Not set yet"}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {activeTab === "Talent Board" && (
+                      <motion.div
+                        key="studio-talent-board"
+                        initial={isMobile ? { opacity: 0, y: 12 } : { opacity: 0, x: 20 }}
+                        animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
+                        exit={isMobile ? { opacity: 0, y: -12 } : { opacity: 0, x: -20 }}
+                        style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", marginBottom: "1rem" }}>
+                          <div style={{ width: "48px", height: "48px", borderRadius: "16px", background: T.accentSoft, display: "grid", placeItems: "center", color: T.accent }}>
+                            <Trophy size={22} />
+                          </div>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700 }}>Talent Board</h3>
+                            <p style={{ margin: "0.25rem 0 0", color: T.muted, fontSize: "0.9rem" }}>
+                              Review the three most engaging animators on the platform this week.
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
+                          <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
+                            <div style={{ fontSize: "0.72rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Why it matters</div>
+                            <p style={{ margin: "0.45rem 0 0", lineHeight: 1.6, color: T.text }}>Spot creators who are active, visible, and building momentum.</p>
+                          </div>
+                          <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
+                            <div style={{ fontSize: "0.72rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Signals used</div>
+                            <p style={{ margin: "0.45rem 0 0", lineHeight: 1.6, color: T.text }}>Approved posts, likes received, and comment engagement.</p>
+                          </div>
+                          <div style={{ padding: "1rem", borderRadius: "16px", background: T.bg, border: `1px solid ${T.border}` }}>
+                            <div style={{ fontSize: "0.72rem", color: T.muted, textTransform: "uppercase", fontWeight: 700 }}>Suggested next step</div>
+                            <p style={{ margin: "0.45rem 0 0", lineHeight: 1.6, color: T.text }}>Use the board to shortlist talent before sending a brief.</p>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                          <button
+                            onClick={() => router.push("/community/leaderboard")}
+                            style={{ border: "none", background: T.accent, color: "#fff", padding: "0.9rem 1.1rem", borderRadius: "14px", fontWeight: 700, cursor: "pointer" }}
+                          >
+                            Open weekly leaderboard
+                          </button>
+                          <button
+                            onClick={() => router.push("/studio")}
+                            style={{ border: `1px solid ${T.border}`, background: T.bg, color: T.text, padding: "0.9rem 1.1rem", borderRadius: "14px", fontWeight: 700, cursor: "pointer" }}
+                          >
+                            Go to studio desk
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {activeTab === "Hiring" && (
+                      <motion.div
+                        key="studio-hiring"
+                        initial={isMobile ? { opacity: 0, y: 12 } : { opacity: 0, x: 20 }}
+                        animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
+                        exit={isMobile ? { opacity: 0, y: -12 } : { opacity: 0, x: -20 }}
+                        style={{ background: T.cardBg, borderRadius: "24px", padding: "2rem", border: `1px solid ${T.border}`, boxShadow: T.shadow }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap", marginBottom: "1.2rem" }}>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700 }}>Hiring desk</h3>
+                            <p style={{ margin: "0.3rem 0 0", color: T.muted, fontSize: "0.9rem" }}>
+                              Track your briefs and keep your studio profile aligned with what you are hiring for.
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => router.push("/studio")}
+                            style={{ border: `1px solid ${T.border}`, background: T.bg, color: T.text, padding: "0.85rem 1rem", borderRadius: "14px", fontWeight: 700, cursor: "pointer" }}
+                          >
+                            Manage briefs
+                          </button>
+                        </div>
+                        <div style={{ display: "grid", gap: "0.9rem" }}>
+                          {studioRequests.length > 0 ? studioRequests.map((request) => (
+                            <div key={request.id} style={{ borderRadius: "18px", border: `1px solid ${T.border}`, background: T.bg, padding: "1rem" }}>
+                              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
+                                <div>
+                                  <p style={{ margin: 0, fontWeight: 700 }}>{request.role_needed}</p>
+                                  <p style={{ margin: "0.32rem 0 0", color: T.muted, fontSize: "0.85rem" }}>
+                                    {request.animation_type} • {request.contract_type} • {request.experience_level}
+                                  </p>
+                                </div>
+                                <span style={{ padding: "0.42rem 0.72rem", borderRadius: 999, background: T.accentSoft, color: T.accent, fontSize: "0.78rem", fontWeight: 700 }}>
+                                  {request.status}
+                                </span>
+                              </div>
+                              <p style={{ margin: "0.8rem 0 0", color: T.muted, fontSize: "0.88rem", lineHeight: 1.6 }}>
+                                {request.project_brief}
+                              </p>
+                              {request.admin_notes ? (
+                                <div style={{ marginTop: "0.8rem", borderRadius: "14px", border: `1px solid ${T.border}`, padding: "0.85rem 0.9rem" }}>
+                                  <p style={{ margin: 0, color: T.muted, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Admin note</p>
+                                  <p style={{ margin: "0.35rem 0 0", color: T.text, fontSize: "0.84rem", lineHeight: 1.6 }}>{request.admin_notes}</p>
+                                </div>
+                              ) : null}
+                            </div>
+                          )) : (
+                            <p style={{ margin: 0, color: T.muted, fontSize: "0.9rem" }}>
+                              No briefs yet. Once you submit a request from the studio desk, it will appear here.
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {activeTab === "Security" && (
+                      <motion.div
+                        key="studio-security"
+                        initial={isMobile ? { opacity: 0, y: 12 } : { opacity: 0, x: 20 }}
+                        animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0 }}
+                        exit={isMobile ? { opacity: 0, y: -12 } : { opacity: 0, x: -20 }}
+                        style={{ background: T.cardBg, borderRadius: "24px", padding: "3rem", border: `1px solid ${T.border}`, textAlign: "center" }}
+                      >
+                        <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: T.accentSoft, color: T.accent, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+                          <Plus size={32} />
+                        </div>
+                        <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.5rem" }}>Security Settings</h3>
+                        <p style={{ color: T.muted, fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto" }}>Manage your password, multi-factor authentication, and active sessions from this panel.</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                ) : (
+	              <AnimatePresence mode="wait">
                 {activeTab === "Overview" && (
                   <motion.div
                     key="overview"
@@ -1014,8 +1362,9 @@ export default function ProfilePage() {
                     <p style={{ color: T.muted, fontSize: "0.9rem", maxWidth: "400px", margin: "0 auto" }}>Manage your password, multi-factor authentication, and active sessions from this panel.</p>
                   </motion.div>
                 )}
-              </AnimatePresence>
-            </div>
+	              </AnimatePresence>
+                )}
+	            </div>
 
           </div>
 
@@ -1062,7 +1411,7 @@ export default function ProfilePage() {
               }}
             >
               <div style={{ padding: isMobile ? "1.1rem 1.25rem" : "1.5rem 2rem", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
-                <h3 style={{ fontWeight: 800, fontSize: "1.25rem" }}>Edit Profile</h3>
+	                <h3 style={{ fontWeight: 800, fontSize: "1.25rem" }}>{isStudioProfile ? "Edit Studio Profile" : "Edit Profile"}</h3>
                 <button 
                   onClick={() => setIsEditing(false)}
                   disabled={saving}
@@ -1079,7 +1428,7 @@ export default function ProfilePage() {
                   <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, fontWeight: 800 }}>Identity</h4>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1rem" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Full Name</label>
+	                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>{primaryIdentityLabel}</label>
                       <input 
                         value={editData.full_name || ""}
                         onChange={e => setEditData(prev => ({ ...prev, full_name: e.target.value }))}
@@ -1101,21 +1450,21 @@ export default function ProfilePage() {
                   <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, fontWeight: 800 }}>About</h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Bio</label>
+	                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>{primaryBioLabel}</label>
                       <textarea 
                         rows={3}
                         value={editData.bio || ""}
                         onChange={e => setEditData(prev => ({ ...prev, bio: e.target.value }))}
-                        placeholder="Tell the community who you are..."
+	                        placeholder={primaryBioPlaceholder}
                         style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none", resize: "none" }}
                       />
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Location</label>
+	                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>{isStudioProfile ? "Studio location" : "Location"}</label>
                       <input 
                         value={editData.location || ""}
                         onChange={e => setEditData(prev => ({ ...prev, location: e.target.value }))}
-                        placeholder="City, Country"
+	                        placeholder={locationPlaceholder}
                         style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
                       />
                     </div>
@@ -1126,11 +1475,11 @@ export default function ProfilePage() {
                   <h4 style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", color: T.muted, fontWeight: 800 }}>Social Links</h4>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1rem" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>Website</label>
+	                      <label style={{ fontSize: "0.8rem", fontWeight: 600, color: T.muted }}>{isStudioProfile ? "Studio website" : "Website"}</label>
                       <input 
                         value={editData.website_url || ""}
                         onChange={e => setEditData(prev => ({ ...prev, website_url: e.target.value }))}
-                        placeholder="https://yourportfolio.com"
+	                        placeholder={primaryWebsitePlaceholder}
                         style={{ padding: "1rem", borderRadius: "14px", border: `1px solid ${T.border}`, background: T.bg, color: T.text, outline: "none" }}
                       />
                     </div>

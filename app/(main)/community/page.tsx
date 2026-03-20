@@ -1372,10 +1372,22 @@ export default function CommunityPage() {
                   <CalendarDays style={{ width: "14px", height: "14px", color: T.accent }} />
                   <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'Satoshi', sans-serif" }}>Monthly challenge prompts and results</span>
                 </div>
-                <div style={{ border: `1px solid ${T.border}`, borderRadius: "11px", padding: "0.5rem 0.58rem", backgroundColor: T.chip, display: "flex", gap: "0.48rem", alignItems: "center" }}>
+                <Link
+                  href="/community/leaderboard"
+                  style={{
+                    border: `1px solid ${T.border}`,
+                    borderRadius: "11px",
+                    padding: "0.5rem 0.58rem",
+                    backgroundColor: T.chip,
+                    display: "flex",
+                    gap: "0.48rem",
+                    alignItems: "center",
+                    textDecoration: "none",
+                  }}
+                >
                   <Trophy style={{ width: "14px", height: "14px", color: T.accent }} />
                   <span style={{ fontSize: "0.78rem", color: T.muted, fontFamily: "'Satoshi', sans-serif" }}>Weekly standout creators board</span>
-                </div>
+                </Link>
               </div>
             </div>
 
