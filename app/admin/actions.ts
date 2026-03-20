@@ -30,6 +30,10 @@ type PaymentRow = {
   provider?: string | null;
   provider_reference?: string | null;
   term_months?: number | null;
+  manual_sender_name?: string | null;
+  manual_sender_phone?: string | null;
+  manual_note?: string | null;
+  manual_proof_path?: string | null;
   created_at: string;
   completed_at: string | null;
 };
@@ -496,19 +500,31 @@ export async function getAdminPayments(accessToken: string) {
     ])
   );
 
-  return (payments || []).map((payment: PaymentRow) => {
-    const userInfo = userMap.get(payment.user_id);
-    const profileInfo = profileMap.get(payment.user_id);
-    return {
-      ...payment,
-      amount: payment.amount ?? 0,
-      currency: payment.currency || "USD",
-      user_email: userInfo?.email || "unknown",
-      user_name: userInfo?.name || null,
-      user_subscription_tier: profileInfo?.subscription_tier || null,
-      user_role: profileInfo?.role || "user",
-    };
-  });
+  return Promise.all(
+    (payments || []).map(async (payment: PaymentRow) => {
+      const userInfo = userMap.get(payment.user_id);
+      const profileInfo = profileMap.get(payment.user_id);
+
+      let manual_proof_url: string | null = null;
+      if (payment.manual_proof_path) {
+        const { data: signedUrlData } = await supabaseAdmin.storage
+          .from("payment-proofs")
+          .createSignedUrl(payment.manual_proof_path, 60 * 60);
+        manual_proof_url = signedUrlData?.signedUrl || null;
+      }
+
+      return {
+        ...payment,
+        amount: payment.amount ?? 0,
+        currency: payment.currency || "USD",
+        manual_proof_url,
+        user_email: userInfo?.email || "unknown",
+        user_name: userInfo?.name || null,
+        user_subscription_tier: profileInfo?.subscription_tier || null,
+        user_role: profileInfo?.role || "user",
+      };
+    })
+  );
 }
 
 export async function updatePaymentStatus(

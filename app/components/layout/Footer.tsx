@@ -5,9 +5,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Instagram,
-  Twitter,
-  Youtube,
-  Facebook,
+  Music2,
   ArrowRight,
   Mail,
   CheckCircle,
@@ -60,10 +58,8 @@ const footerLinks = [
 ];
 
 const socialLinks = [
-  { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-  { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-  { icon: Youtube, href: "https://youtube.com", label: "YouTube" },
-  { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
+  { icon: Instagram, href: "https://instagram.com/p/DV9rdKzjKQw/", label: "Instagram" },
+  { icon: Music2, href: "https://www.tiktok.com/@the.animated.coll?is_from_webapp=1&sender_device=pc", label: "TikTok" },
 ];
 
 export default function Footer() {

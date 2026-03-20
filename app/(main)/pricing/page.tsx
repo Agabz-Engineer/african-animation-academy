@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import {
   BadgeCheck,
   Check,
+  Clock3,
   CreditCard,
   Lock,
   Copy,
+  Landmark,
+  Smartphone,
   ShieldCheck,
   Sparkles,
+  UploadCloud,
   X,
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -38,6 +42,22 @@ type ComparisonRow = {
   feature: string;
   free: CellValue;
   pro: CellValue;
+};
+
+type ManualPaymentRecord = {
+  id: string;
+  amount: string | number;
+  currency: string;
+  status: "pending" | "completed" | "failed" | "refunded";
+  payment_method: string | null;
+  provider_reference?: string | null;
+  created_at: string;
+  completed_at: string | null;
+  manual_sender_name?: string | null;
+  manual_sender_phone?: string | null;
+  manual_note?: string | null;
+  manual_proof_path?: string | null;
+  proofUrl?: string | null;
 };
 
 const PLANS: Plan[] = [
@@ -98,15 +118,15 @@ const FAQS = [
   },
   {
     q: "Can I upgrade from Free to Pro later?",
-    a: "Absolutely. Upgrades are instant and your progress remains intact.",
+    a: "Absolutely. Your progress remains intact, and Pro is activated as soon as your payment is verified.",
   },
   {
     q: "Are payments secure?",
-    a: "Yes. Checkout uses SSL encryption and secure payment providers. We do not expose card data in the app.",
+    a: "Yes. We only collect payment details needed for verification, and uploaded proofs are stored securely.",
   },
   {
     q: "Can I use Mobile Money or bank transfer?",
-    a: "Yes. Pay with card, Mobile Money, or bank transfer and renew monthly.",
+    a: "Yes. You can pay by Mobile Money, and bank transfer can also be shown if your bank details are configured.",
   },
 ];
 
@@ -163,15 +183,85 @@ export default function PricingPage() {
   const [paymentSandbox, setPaymentSandbox] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [showManualUpgrade, setShowManualUpgrade] = useState(false);
+  const [manualPaymentMethod, setManualPaymentMethod] = useState<"manual_momo" | "manual_bank_transfer">("manual_momo");
+  const [manualSenderName, setManualSenderName] = useState("");
+  const [manualSenderPhone, setManualSenderPhone] = useState("");
   const [manualReference, setManualReference] = useState("");
   const [manualNote, setManualNote] = useState("");
+  const [manualProofFile, setManualProofFile] = useState<File | null>(null);
   const [manualSubmitting, setManualSubmitting] = useState(false);
   const [manualSuccess, setManualSuccess] = useState("");
+  const [manualPayments, setManualPayments] = useState<ManualPaymentRecord[]>([]);
+  const [manualPaymentsLoading, setManualPaymentsLoading] = useState(true);
 
   const momoName = process.env.NEXT_PUBLIC_MOMO_NAME || "Platform Account";
   const momoNumber = process.env.NEXT_PUBLIC_MOMO_NUMBER || "Not configured";
   const momoNetwork = process.env.NEXT_PUBLIC_MOMO_NETWORK || "Mobile Money";
   const momoNote = process.env.NEXT_PUBLIC_MOMO_NOTE || "Use your email or username as reference";
+  const bankName = process.env.NEXT_PUBLIC_BANK_NAME || "";
+  const bankAccountName = process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "";
+  const bankAccountNumber = process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER || "";
+  const bankSwiftCode = process.env.NEXT_PUBLIC_BANK_SWIFT_CODE || "";
+  const hasBankDetails = Boolean(bankName && bankAccountName && bankAccountNumber);
+
+  const loadManualPayments = async () => {
+    const client = supabase;
+
+    if (!client) {
+      setManualPayments([]);
+      setManualPaymentsLoading(false);
+      return;
+    }
+
+    setManualPaymentsLoading(true);
+
+    try {
+      const {
+        data: { user },
+      } = await client.auth.getUser();
+
+      if (!user?.id) {
+        setManualPayments([]);
+        return;
+      }
+
+      const { data, error } = await client
+        .from("payments")
+        .select(
+          "id, amount, currency, status, payment_method, provider_reference, created_at, completed_at, manual_sender_name, manual_sender_phone, manual_note, manual_proof_path"
+        )
+        .eq("user_id", user.id)
+        .eq("provider", "manual-admin")
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+
+      const records = await Promise.all(
+        (data || []).map(async (payment) => {
+          if (!payment.manual_proof_path) {
+            return { ...payment, proofUrl: null };
+          }
+
+          const { data: signedUrlData } = await client.storage
+            .from("payment-proofs")
+            .createSignedUrl(payment.manual_proof_path, 60 * 60);
+
+          return {
+            ...payment,
+            proofUrl: signedUrlData?.signedUrl || null,
+          };
+        })
+      );
+
+      setManualPayments(records as ManualPaymentRecord[]);
+    } catch (error) {
+      console.warn("Failed to load manual payment requests:", error);
+      setManualPayments([]);
+    } finally {
+      setManualPaymentsLoading(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -197,6 +287,10 @@ export default function PricingPage() {
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    void loadManualPayments();
   }, []);
 
   const planPricing = PLANS.map((plan) => {
@@ -229,15 +323,27 @@ export default function PricingPage() {
       return;
     }
 
+    setCheckoutLoading(true);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id || !user?.email) {
         window.location.href = "/login?next=%2Fpricing";
         return;
       }
+      if (!manualSenderName) {
+        const displayName =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.email?.split("@")[0] ||
+          "";
+        setManualSenderName(String(displayName));
+      }
       setShowManualUpgrade(true);
     } catch (error) {
       setCheckoutError(error instanceof Error ? error.message : "Checkout failed.");
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -252,10 +358,43 @@ export default function PricingPage() {
     setManualSubmitting(true);
 
     try {
+      if (!manualSenderName.trim()) {
+        throw new Error("Add the sender name used for the payment.");
+      }
+
+      if (!manualSenderPhone.trim()) {
+        throw new Error("Add the sender phone number used for the payment.");
+      }
+
+      if (!manualReference.trim()) {
+        throw new Error("Add the payment reference before submitting.");
+      }
+
+      if (!manualProofFile) {
+        throw new Error("Upload a screenshot or PDF receipt as payment proof.");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id || !user?.email) {
         window.location.href = "/login?next=%2Fpricing";
         return;
+      }
+
+      const extension = manualProofFile.name.includes(".")
+        ? manualProofFile.name.split(".").pop()?.toLowerCase()
+        : undefined;
+      const safeExtension = extension && /^[a-z0-9]+$/.test(extension) ? extension : "jpg";
+      const proofPath = `proofs/${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExtension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("payment-proofs")
+        .upload(proofPath, manualProofFile, {
+          upsert: false,
+          contentType: manualProofFile.type || "application/octet-stream",
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message || "Could not upload your payment proof.");
       }
 
       const response = await fetch("/api/payments/manual-request", {
@@ -265,8 +404,12 @@ export default function PricingPage() {
           userId: user.id,
           email: user.email,
           termMonths,
+          paymentMethod: manualPaymentMethod,
+          senderName: manualSenderName,
+          senderPhone: manualSenderPhone,
           reference: manualReference,
           note: manualNote,
+          proofPath,
         }),
       });
 
@@ -275,9 +418,19 @@ export default function PricingPage() {
         throw new Error(payload?.error || "Could not submit payment request.");
       }
 
-      setManualSuccess("Payment request submitted. Admin can now verify it and activate Pro for you.");
+      setManualSuccess(
+        payload?.mode === "updated"
+          ? "Your pending payment proof was updated. We’ll review it and activate Pro after verification."
+          : "Payment submitted for review. We’ll activate Pro as soon as the transfer is verified."
+      );
+      setShowManualUpgrade(false);
+      setManualPaymentMethod("manual_momo");
+      setManualSenderName("");
+      setManualSenderPhone("");
       setManualReference("");
       setManualNote("");
+      setManualProofFile(null);
+      await loadManualPayments();
     } catch (error) {
       setCheckoutError(error instanceof Error ? error.message : "Could not submit payment request.");
     } finally {
@@ -293,6 +446,16 @@ export default function PricingPage() {
       setManualSuccess(`Copy this: ${value}`);
     }
   };
+
+  const handleProofChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setManualProofFile(file);
+  };
+
+  const getPaymentMethodLabel = (paymentMethod: string | null) =>
+    paymentMethod === "manual_bank_transfer" ? "Bank transfer" : "Mobile Money";
+
+  const latestManualPayment = manualPayments[0] || null;
 
   return (
     <div className="pricing-wrap">
@@ -326,7 +489,7 @@ export default function PricingPage() {
           </div>
           <div className="trust-pill" style={{ border: `1px solid ${T.border}`, background: T.chip, color: T.muted }}>
             <CreditCard style={{ width: "14px", height: "14px", color: T.accent }} />
-            Secure card, MoMo, bank payments
+            MoMo and bank transfer checkout
           </div>
         </div>
       </section>
@@ -375,7 +538,7 @@ export default function PricingPage() {
               </div>
               {isPaid && (
                 <p className="payment-note" style={{ color: T.muted }}>
-                  MoMo + bank top-up. Renew monthly.
+                  Manual MoMo or bank transfer verification.
                 </p>
               )}
 
@@ -429,6 +592,23 @@ export default function PricingPage() {
         </div>
       )}
 
+      {manualSuccess && (
+        <div
+          style={{
+            marginBottom: "1rem",
+            borderRadius: "12px",
+            border: `1px solid ${T.success}55`,
+            background: `${T.success}15`,
+            padding: "0.75rem 0.9rem",
+            color: T.text,
+            fontFamily: "General Sans, sans-serif",
+            fontSize: "0.85rem",
+          }}
+        >
+          {manualSuccess}
+        </div>
+      )}
+
       {paymentSandbox && (
         <div
           style={{
@@ -442,23 +622,45 @@ export default function PricingPage() {
             fontSize: "0.85rem",
           }}
         >
-                  Admin payment sandbox is enabled. Live checkout is off, so Pro upgrades use manual admin approval.
+          Automatic live checkout is not enabled yet, so Pro upgrades currently use proof-of-payment review.
         </div>
       )}
 
       <section className="comparison" style={{ border: `1px solid ${T.border}`, background: T.panel, marginBottom: "0.9rem" }}>
-        <h3 style={{ color: T.text }}>Manual Upgrade Option</h3>
+        <h3 style={{ color: T.text }}>Manual Pro Checkout</h3>
         <p style={{ color: T.muted, margin: "0.35rem 0 0.9rem" }}>
-          Perfect for starting out: users pay by Mobile Money, submit a reference, then admin verifies and upgrades them to Pro.
+          Pay outside the app, upload proof here, and we verify the transfer before activating Pro. This keeps the flow clean while live gateway onboarding is still pending.
         </p>
-        <div style={{ display: "grid", gap: "0.65rem" }}>
+        <div className="manual-flow-grid">
+          <div className="manual-step-card" style={{ border: `1px solid ${T.border}`, background: T.card }}>
+            <Smartphone style={{ width: "18px", height: "18px", color: T.accent }} />
+            <strong style={{ color: T.text }}>1. Send the exact amount</strong>
+            <span style={{ color: T.muted }}>Use Mobile Money or bank transfer if available.</span>
+          </div>
+          <div className="manual-step-card" style={{ border: `1px solid ${T.border}`, background: T.card }}>
+            <UploadCloud style={{ width: "18px", height: "18px", color: T.accent }} />
+            <strong style={{ color: T.text }}>2. Upload your receipt</strong>
+            <span style={{ color: T.muted }}>A screenshot or PDF makes manual checks much faster.</span>
+          </div>
+          <div className="manual-step-card" style={{ border: `1px solid ${T.border}`, background: T.card }}>
+            <Clock3 style={{ width: "18px", height: "18px", color: T.accent }} />
+            <strong style={{ color: T.text }}>3. Wait for verification</strong>
+            <span style={{ color: T.muted }}>Your latest request stays visible below while it is under review.</span>
+          </div>
+        </div>
+
+        <div className="manual-details-grid">
           <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
-            <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>MoMo Name</div>
+            <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Current amount</div>
+            <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>GHS {getProMonthlyRate(termMonths).toFixed(2)}</div>
+          </div>
+          <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
+            <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>MoMo name</div>
             <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{momoName}</div>
           </div>
           <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
             <div>
-              <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>MoMo Number</div>
+              <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>MoMo number</div>
               <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{momoNumber}</div>
             </div>
             <button type="button" onClick={() => void handleCopy(momoNumber)} style={{ border: `1px solid ${T.border}`, background: T.chip, color: T.text, borderRadius: "10px", padding: "0.55rem 0.7rem", cursor: "pointer" }}>
@@ -469,10 +671,108 @@ export default function PricingPage() {
             <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Network</div>
             <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{momoNetwork}</div>
           </div>
+          {hasBankDetails && (
+            <>
+              <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
+                <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Bank</div>
+                <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{bankName}</div>
+              </div>
+              <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
+                <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Account name</div>
+                <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{bankAccountName}</div>
+              </div>
+              <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
+                <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Account number</div>
+                <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{bankAccountNumber}</div>
+              </div>
+              {bankSwiftCode && (
+                <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
+                  <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Swift code</div>
+                  <div style={{ color: T.text, fontWeight: 700, marginTop: "0.2rem" }}>{bankSwiftCode}</div>
+                </div>
+              )}
+            </>
+          )}
           <div style={{ border: `1px solid ${T.border}`, background: T.card, borderRadius: "14px", padding: "0.85rem" }}>
-            <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Payment Note</div>
+            <div style={{ color: T.dim, fontSize: "0.72rem", textTransform: "uppercase", fontWeight: 700 }}>Reference note</div>
             <div style={{ color: T.muted, fontWeight: 600, marginTop: "0.2rem", lineHeight: 1.5 }}>{momoNote}</div>
           </div>
+        </div>
+
+        <div className="manual-history-block" style={{ border: `1px solid ${T.border}`, background: T.card }}>
+          <div className="manual-history-head">
+            <div>
+              <div style={{ color: T.text, fontWeight: 700 }}>Latest payment request</div>
+              <div style={{ color: T.muted, fontSize: "0.78rem", marginTop: "0.15rem" }}>
+                We keep your most recent submission visible so you know whether it is still pending or already verified.
+              </div>
+            </div>
+            <button type="button" onClick={handleCheckout} className="manual-launch" style={{ background: T.accent, color: "#FFFFFF" }}>
+              Submit proof
+            </button>
+          </div>
+
+          {manualPaymentsLoading ? (
+            <div style={{ color: T.muted, fontSize: "0.82rem" }}>Loading your payment status...</div>
+          ) : latestManualPayment ? (
+            <div className="manual-status-card" style={{ border: `1px solid ${T.border}`, background: T.panel }}>
+              <div className="manual-status-top">
+                <div>
+                  <div style={{ color: T.text, fontWeight: 700 }}>
+                    {getPaymentMethodLabel(latestManualPayment.payment_method)} · {latestManualPayment.currency}{" "}
+                    {Number(latestManualPayment.amount || 0).toFixed(2)}
+                  </div>
+                  <div style={{ color: T.muted, fontSize: "0.78rem", marginTop: "0.2rem" }}>
+                    Submitted {new Date(latestManualPayment.created_at).toLocaleString()}
+                  </div>
+                </div>
+                <span
+                  style={{
+                    borderRadius: "999px",
+                    padding: "0.35rem 0.65rem",
+                    font: '700 0.72rem "General Sans", sans-serif',
+                    background:
+                      latestManualPayment.status === "completed"
+                        ? `${T.success}18`
+                        : latestManualPayment.status === "pending"
+                          ? `${T.accent}18`
+                          : "rgba(255,255,255,0.06)",
+                    color:
+                      latestManualPayment.status === "completed"
+                        ? T.success
+                        : latestManualPayment.status === "pending"
+                          ? T.accent
+                          : T.text,
+                  }}
+                >
+                  {latestManualPayment.status === "completed"
+                    ? "Verified"
+                    : latestManualPayment.status === "pending"
+                      ? "Pending review"
+                      : latestManualPayment.status}
+                </span>
+              </div>
+
+              <div className="manual-status-meta">
+                <span style={{ color: T.muted }}>Reference: {latestManualPayment.provider_reference || "Not provided"}</span>
+                {latestManualPayment.manual_sender_name && (
+                  <span style={{ color: T.muted }}>
+                    Sender: {latestManualPayment.manual_sender_name}
+                    {latestManualPayment.manual_sender_phone ? ` · ${latestManualPayment.manual_sender_phone}` : ""}
+                  </span>
+                )}
+                {latestManualPayment.proofUrl && (
+                  <a href={latestManualPayment.proofUrl} target="_blank" rel="noreferrer" style={{ color: T.accent, fontWeight: 700 }}>
+                    View uploaded proof
+                  </a>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div style={{ color: T.muted, fontSize: "0.82rem" }}>
+              No payment request submitted yet. Once you pay and upload proof, the status will appear here.
+            </div>
+          )}
         </div>
       </section>
 
@@ -703,6 +1003,71 @@ export default function PricingPage() {
           margin: 0.35rem 0 0.72rem;
           font: 500 0.8rem "General Sans", sans-serif;
         }
+        .manual-flow-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.65rem;
+          margin-bottom: 0.85rem;
+        }
+        .manual-step-card {
+          border-radius: 14px;
+          padding: 0.85rem;
+          display: grid;
+          gap: 0.35rem;
+          box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+        }
+        .manual-step-card strong {
+          font: 700 0.84rem "General Sans", sans-serif;
+        }
+        .manual-step-card span {
+          font: 500 0.75rem "General Sans", sans-serif;
+          line-height: 1.5;
+        }
+        .manual-details-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.65rem;
+        }
+        .manual-history-block {
+          margin-top: 0.85rem;
+          border-radius: 16px;
+          padding: 0.9rem;
+          display: grid;
+          gap: 0.85rem;
+        }
+        .manual-history-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 0.75rem;
+          align-items: center;
+        }
+        .manual-launch {
+          border: none;
+          border-radius: 12px;
+          padding: 0.72rem 0.95rem;
+          font: 700 0.8rem "General Sans", sans-serif;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .manual-status-card {
+          border-radius: 14px;
+          padding: 0.85rem;
+          display: grid;
+          gap: 0.65rem;
+        }
+        .manual-status-top {
+          display: flex;
+          justify-content: space-between;
+          gap: 0.65rem;
+          align-items: flex-start;
+        }
+        .manual-status-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.65rem 1rem;
+          font: 600 0.74rem "General Sans", sans-serif;
+          line-height: 1.45;
+        }
         .table-wrap {
           overflow-x: auto;
           border-radius: 12px;
@@ -820,6 +1185,10 @@ export default function PricingPage() {
           .plan-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
+          .manual-flow-grid,
+          .manual-details-grid {
+            grid-template-columns: 1fr;
+          }
           .faq-list {
             grid-template-columns: 1fr;
           }
@@ -840,6 +1209,11 @@ export default function PricingPage() {
           .comparison,
           .faq {
             padding: 0.75rem;
+          }
+          .manual-history-head,
+          .manual-status-top {
+            flex-direction: column;
+            align-items: stretch;
           }
           .comparison-desktop {
             display: none;
@@ -863,7 +1237,7 @@ export default function PricingPage() {
               <div>
                 <h3 style={{ margin: 0, color: T.text, font: `700 1.1rem "Clash Display", sans-serif` }}>Manual Pro Upgrade</h3>
                 <p style={{ margin: "0.35rem 0 0", color: T.muted, font: `500 0.8rem "General Sans", sans-serif` }}>
-                  Pay with MoMo, then submit your transaction reference for admin approval.
+                  Send the payment first, then upload your proof so we can verify it and activate Pro.
                 </p>
               </div>
               <button type="button" onClick={() => setShowManualUpgrade(false)} style={{ background: "none", border: "none", color: T.text, cursor: "pointer" }}>
@@ -874,8 +1248,72 @@ export default function PricingPage() {
             <div className="manual-body">
               <div className="manual-card" style={{ border: `1px solid ${T.border}`, background: T.card }}>
                 <strong style={{ color: T.text }}>Amount: GHS {getProMonthlyRate(termMonths).toFixed(2)}</strong>
-                <span style={{ color: T.muted }}>Send to {momoNetwork}: {momoNumber}</span>
-                <span style={{ color: T.muted }}>Name: {momoName}</span>
+                <span style={{ color: T.muted }}>
+                  {manualPaymentMethod === "manual_bank_transfer" && hasBankDetails
+                    ? `Transfer to ${bankName}: ${bankAccountNumber}`
+                    : `Send to ${momoNetwork}: ${momoNumber}`}
+                </span>
+                <span style={{ color: T.muted }}>
+                  {manualPaymentMethod === "manual_bank_transfer" && hasBankDetails
+                    ? `Account name: ${bankAccountName}`
+                    : `Name: ${momoName}`}
+                </span>
+                <span style={{ color: T.muted }}>Use the same sender name and phone number in the form below.</span>
+              </div>
+
+              <div className="manual-methods">
+                <button
+                  type="button"
+                  onClick={() => setManualPaymentMethod("manual_momo")}
+                  className="manual-method"
+                  style={{
+                    border: `1px solid ${manualPaymentMethod === "manual_momo" ? T.accent : T.border}`,
+                    background: manualPaymentMethod === "manual_momo" ? T.accentSoft : T.card,
+                    color: T.text,
+                  }}
+                >
+                  <Smartphone style={{ width: "16px", height: "16px", color: T.accent }} />
+                  Mobile Money
+                </button>
+                {hasBankDetails && (
+                  <button
+                    type="button"
+                    onClick={() => setManualPaymentMethod("manual_bank_transfer")}
+                    className="manual-method"
+                    style={{
+                      border: `1px solid ${manualPaymentMethod === "manual_bank_transfer" ? T.accent : T.border}`,
+                      background: manualPaymentMethod === "manual_bank_transfer" ? T.accentSoft : T.card,
+                      color: T.text,
+                    }}
+                  >
+                    <Landmark style={{ width: "16px", height: "16px", color: T.accent }} />
+                    Bank transfer
+                  </button>
+                )}
+              </div>
+
+              <div className="manual-grid">
+                <label className="manual-label" style={{ color: T.muted }}>
+                  Sender full name
+                  <input
+                    value={manualSenderName}
+                    onChange={(event) => setManualSenderName(event.target.value)}
+                    placeholder="Name on the payment account"
+                    className="manual-input"
+                    style={{ border: `1px solid ${T.border}`, background: T.card, color: T.text }}
+                  />
+                </label>
+
+                <label className="manual-label" style={{ color: T.muted }}>
+                  Sender phone number
+                  <input
+                    value={manualSenderPhone}
+                    onChange={(event) => setManualSenderPhone(event.target.value)}
+                    placeholder="Phone number used to pay"
+                    className="manual-input"
+                    style={{ border: `1px solid ${T.border}`, background: T.card, color: T.text }}
+                  />
+                </label>
               </div>
 
               <label className="manual-label" style={{ color: T.muted }}>
@@ -887,6 +1325,21 @@ export default function PricingPage() {
                   className="manual-input"
                   style={{ border: `1px solid ${T.border}`, background: T.card, color: T.text }}
                 />
+              </label>
+
+              <label className="manual-label" style={{ color: T.muted }}>
+                Upload payment proof
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,application/pdf"
+                  onChange={handleProofChange}
+                  className="manual-input manual-file-input"
+                  style={{ border: `1px dashed ${T.border}`, background: T.card, color: T.text }}
+                />
+                <span className="manual-helper" style={{ color: T.dim }}>
+                  Accepted: PNG, JPG, WEBP, or PDF up to 6MB.
+                  {manualProofFile ? ` Selected: ${manualProofFile.name}` : ""}
+                </span>
               </label>
 
               <label className="manual-label" style={{ color: T.muted }}>
@@ -932,7 +1385,7 @@ export default function PricingPage() {
         }
         .manual-modal {
           position: relative;
-          width: min(100%, 520px);
+          width: min(100%, 620px);
           border-radius: 20px;
           overflow: hidden;
           box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
@@ -956,6 +1409,26 @@ export default function PricingPage() {
           gap: 0.3rem;
           font: 600 0.82rem "General Sans", sans-serif;
         }
+        .manual-methods {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.65rem;
+        }
+        .manual-method {
+          border-radius: 12px;
+          padding: 0.78rem 0.85rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.45rem;
+          font: 700 0.8rem "General Sans", sans-serif;
+          cursor: pointer;
+        }
+        .manual-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.75rem;
+        }
         .manual-label {
           display: grid;
           gap: 0.4rem;
@@ -967,6 +1440,13 @@ export default function PricingPage() {
           padding: 0.8rem 0.9rem;
           outline: none;
           font: 500 0.85rem "General Sans", sans-serif;
+        }
+        .manual-file-input {
+          padding: 0.7rem 0.9rem;
+        }
+        .manual-helper {
+          font: 500 0.72rem "General Sans", sans-serif;
+          line-height: 1.4;
         }
         .manual-actions {
           display: grid;
@@ -982,6 +1462,8 @@ export default function PricingPage() {
           font: 700 0.85rem "General Sans", sans-serif;
         }
         @media (max-width: 767px) {
+          .manual-methods,
+          .manual-grid,
           .manual-actions {
             grid-template-columns: 1fr;
           }

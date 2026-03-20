@@ -49,6 +49,7 @@ interface Payment {
   currency: string;
   status: "pending" | "completed" | "failed" | "refunded";
   payment_method: string | null;
+  provider?: string | null;
   provider_reference?: string | null;
   created_at: string;
   completed_at: string | null;
@@ -56,6 +57,10 @@ interface Payment {
   user_name?: string | null;
   user_subscription_tier?: string | null;
   user_role?: string;
+  manual_sender_name?: string | null;
+  manual_sender_phone?: string | null;
+  manual_note?: string | null;
+  manual_proof_url?: string | null;
 }
 
 export default function PaymentsPage() {
@@ -181,6 +186,33 @@ export default function PaymentsPage() {
       alert(error instanceof Error ? error.message : "Failed to update payment status.");
     } finally {
       setActionLoadingFor(null);
+    }
+  };
+
+  const handleApproveAndGrant = async (payment: Payment) => {
+    setActionLoadingFor(`${payment.id}:approve`);
+    try {
+      const accessToken = await getAdminActionAccessToken();
+      if (!accessToken) throw new Error("Admin access required.");
+      await updatePaymentStatus(accessToken, payment.id, "completed");
+      await grantUserProAccess(accessToken, { userId: payment.user_id, paymentId: payment.id });
+      await fetchPayments();
+    } catch (error) {
+      console.error("Error approving manual payment:", error);
+      alert(error instanceof Error ? error.message : "Failed to approve payment.");
+    } finally {
+      setActionLoadingFor(null);
+    }
+  };
+
+  const getPaymentMethodLabel = (paymentMethod: string | null) => {
+    switch (paymentMethod) {
+      case "manual_momo":
+        return "Manual MoMo";
+      case "manual_bank_transfer":
+        return "Manual bank transfer";
+      default:
+        return paymentMethod || "Card";
     }
   };
 
@@ -389,12 +421,33 @@ export default function PaymentsPage() {
                 <div style={{ minWidth: "140px" }}>
                   <p style={{ margin: 0, color: UI.text, fontWeight: 600 }}>{formatAmount(payment)}</p>
                   <p style={{ margin: 0, color: UI.textMuted, fontSize: "0.75rem" }}>
-                    {payment.payment_method || "Card"}
+                    {getPaymentMethodLabel(payment.payment_method)}
                   </p>
                   {payment.provider_reference && (
                     <p style={{ margin: "0.2rem 0 0", color: UI.textMuted, fontSize: "0.7rem", maxWidth: "220px", lineHeight: 1.35 }}>
                       Ref: {payment.provider_reference}
                     </p>
+                  )}
+                  {payment.manual_sender_name && (
+                    <p style={{ margin: "0.2rem 0 0", color: UI.textMuted, fontSize: "0.7rem", maxWidth: "240px", lineHeight: 1.35 }}>
+                      Sender: {payment.manual_sender_name}
+                      {payment.manual_sender_phone ? ` · ${payment.manual_sender_phone}` : ""}
+                    </p>
+                  )}
+                  {payment.manual_note && (
+                    <p style={{ margin: "0.2rem 0 0", color: UI.textMuted, fontSize: "0.7rem", maxWidth: "240px", lineHeight: 1.35 }}>
+                      Note: {payment.manual_note}
+                    </p>
+                  )}
+                  {payment.manual_proof_url && (
+                    <a
+                      href={payment.manual_proof_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ display: "inline-block", marginTop: "0.35rem", color: UI.info, fontSize: "0.72rem", fontWeight: 600 }}
+                    >
+                      View proof
+                    </a>
                   )}
                 </div>
 
@@ -414,6 +467,27 @@ export default function PaymentsPage() {
                   </p>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", minWidth: "170px" }}>
+                  {payment.status === "pending" && payment.provider === "manual-admin" && (
+                    <button
+                      onClick={() => void handleApproveAndGrant(payment)}
+                      disabled={actionLoadingFor !== null}
+                      title="Verify this manual payment and apply Pro access in one step."
+                      style={{
+                        padding: "0.6rem 0.95rem",
+                        borderRadius: "8px",
+                        border: "none",
+                        backgroundColor: actionLoadingFor === null ? UI.accent : UI.border,
+                        color: actionLoadingFor === null ? "#FFFFFF" : UI.textMuted,
+                        cursor: actionLoadingFor === null ? "pointer" : "not-allowed",
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        minWidth: "150px",
+                        boxShadow: actionLoadingFor === null ? `0 8px 18px ${UI.accent}30` : "none",
+                      }}
+                    >
+                      {actionLoadingFor === `${payment.id}:approve` ? "Approving..." : "Verify + Grant Pro"}
+                    </button>
+                  )}
                   {payment.status === "pending" && (
                     <button
                       onClick={() => void handleMarkSuccessful(payment)}

@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Home, BookOpen, Calendar, Image as ImageIcon, Users, DollarSign,
   User, Settings, LogOut, Sun, Moon,
-  ChevronRight, Menu, X, Sparkles, Mail, Instagram, Linkedin, Youtube, Trophy
+  ChevronRight, Menu, X, Sparkles, Mail, Instagram, Music2, Trophy
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getAccountHomePath, isStudioAccount } from "@/lib/accountRouting";
@@ -124,9 +124,8 @@ const FOOTER_GROUPS = [
 ];
 
 const FOOTER_SOCIALS = [
-  { label: "Instagram", href: "https://instagram.com", icon: Instagram },
-  { label: "YouTube", href: "https://youtube.com", icon: Youtube },
-  { label: "LinkedIn", href: "https://linkedin.com", icon: Linkedin },
+  { label: "Instagram", href: "https://instagram.com/p/DV9rdKzjKQw/", icon: Instagram },
+  { label: "TikTok", href: "https://www.tiktok.com/@the.animated.coll?is_from_webapp=1&sender_device=pc", icon: Music2 },
 ];
 
 const getInitialTheme = (): "dark" | "light" => {
