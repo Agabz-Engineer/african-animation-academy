@@ -530,7 +530,7 @@ export default function PricingPage() {
                   </>
                 ) : (
                   <>
-                    <span className="currency" style={{ color: T.text }}>GH?</span>
+                    <span className="currency" style={{ color: T.text }}>GHS</span>
                     <span className="amount" style={{ color: T.text }}>{plan.amount}</span>
                     <span className="period" style={{ color: T.dim }}>/ {plan.periodLabel}</span>
                   </>
@@ -719,7 +719,7 @@ export default function PricingPage() {
               <div className="manual-status-top">
                 <div>
                   <div style={{ color: T.text, fontWeight: 700 }}>
-                    {getPaymentMethodLabel(latestManualPayment.payment_method)} · {latestManualPayment.currency}{" "}
+                    {getPaymentMethodLabel(latestManualPayment.payment_method)} | {latestManualPayment.currency}{" "}
                     {Number(latestManualPayment.amount || 0).toFixed(2)}
                   </div>
                   <div style={{ color: T.muted, fontSize: "0.78rem", marginTop: "0.2rem" }}>
@@ -758,7 +758,7 @@ export default function PricingPage() {
                 {latestManualPayment.manual_sender_name && (
                   <span style={{ color: T.muted }}>
                     Sender: {latestManualPayment.manual_sender_name}
-                    {latestManualPayment.manual_sender_phone ? ` · ${latestManualPayment.manual_sender_phone}` : ""}
+                    {latestManualPayment.manual_sender_phone ? ` | ${latestManualPayment.manual_sender_phone}` : ""}
                   </span>
                 )}
                 {latestManualPayment.proofUrl && (
@@ -813,7 +813,7 @@ export default function PricingPage() {
               <div className="comparison-mobile-head" style={{ borderBottom: `1px solid ${T.border}` }}>
                 <h4 style={{ color: T.text }}>{plan.name}</h4>
                 <span style={{ color: T.accent }}>
-                  {plan.amount === 0 ? "Free" : `GH?${plan.amount}/${plan.periodLabel}`}
+                  {plan.amount === 0 ? "Free" : `GHS ${plan.amount}/${plan.periodLabel}`}
                 </span>
               </div>
 
@@ -1472,3 +1472,4 @@ export default function PricingPage() {
     </div>
   );
 }
+
