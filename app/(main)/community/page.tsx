@@ -105,6 +105,14 @@ type PublicAdminSettings = {
   notificationAlerts: boolean;
 };
 
+const COMMUNITY_POST_TTL_DAYS = 7;
+const COMMUNITY_POST_TTL_MS = COMMUNITY_POST_TTL_DAYS * 24 * 60 * 60 * 1000;
+
+const getCommunityCutoffIso = () => new Date(Date.now() - COMMUNITY_POST_TTL_MS).toISOString();
+
+const isFreshCommunityPost = (createdAt: string) =>
+  new Date(createdAt).getTime() >= Date.now() - COMMUNITY_POST_TTL_MS;
+
 const groupCommentsByPost = (comments: CommunityComment[]) => {
   return comments.reduce<Record<string, CommunityComment[]>>((acc, comment) => {
     if (!acc[comment.postId]) acc[comment.postId] = [];
@@ -301,15 +309,17 @@ export default function CommunityPage() {
 
   const userIdRef = useRef<string | null>(null);
   const likedRef = useRef<Set<string>>(new Set());
+  const postsRef = useRef<CommunityPost[]>([]);
   const commentsByPostRef = useRef<Record<string, CommunityComment[]>>({});
   const followedIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     userIdRef.current = user?.id ?? null;
     likedRef.current = liked;
+    postsRef.current = posts;
     commentsByPostRef.current = commentsByPost;
     followedIdsRef.current = followedIds;
-  }, [user, liked, commentsByPost, followedIds]);
+  }, [user, liked, posts, commentsByPost, followedIds]);
 
   useEffect(() => {
     let active = true;
@@ -354,11 +364,13 @@ export default function CommunityPage() {
       ] = await Promise.all([
         client.auth.getUser(),
         (() => {
+          const cutoffIso = getCommunityCutoffIso();
           let query = client
             .from("community_posts")
             .select("id, user_id, user_name, user_handle, content, tags, likes_count, comments_count, created_at, profiles!community_posts_user_id_fkey(followers_count, total_platform_likes, avatar_url)")
             .order("created_at", { ascending: false })
             .limit(40)
+            .gte("created_at", cutoffIso)
             .neq("status", "rejected");
 
           if (publicSettings?.postModeration) {
@@ -412,16 +424,23 @@ export default function CommunityPage() {
         setHasProAccess(false);
       }
 
-      const livePosts = Array.isArray(postData) ? (postData as DbPost[]).map(p => normalizePost(p, followedIds)) : [];
-      const liveComments = Array.isArray(commentData) ? (commentData as DbComment[]).map(normalizeComment) : [];
-      const livePostIds = livePosts.map((post) => post.id);
+      const livePosts = Array.isArray(postData)
+        ? (postData as DbPost[]).map((p) => normalizePost(p, followedIds)).filter((post) => isFreshCommunityPost(post.createdAt))
+        : [];
+      const livePostIds = new Set(livePosts.map((post) => post.id));
+      const liveComments = Array.isArray(commentData)
+        ? (commentData as DbComment[])
+            .map(normalizeComment)
+            .filter((comment) => livePostIds.has(comment.postId))
+        : [];
+      const livePostIdList = Array.from(livePostIds);
       let likeRows: DbLike[] = [];
 
-      if (!postError && livePostIds.length > 0) {
+      if (!postError && livePostIdList.length > 0) {
         const { data: likeData, error: likeError } = await client
           .from("community_post_likes")
           .select("post_id,user_id")
-          .in("post_id", livePostIds)
+          .in("post_id", livePostIdList)
           .limit(5000);
 
         if (likeError) {
@@ -470,7 +489,7 @@ export default function CommunityPage() {
         }));
         setSetupNeeded(false);
         setSubmitInfo("");
-        setPosts(mergePosts(livePostsWithLikes));
+        setPosts(mergePosts(livePostsWithLikes).filter((post) => isFreshCommunityPost(post.createdAt)));
       }
 
       if (commentError) {
@@ -523,11 +542,23 @@ export default function CommunityPage() {
               const normalized = data
                 ? normalizePost(data as DbPost, followedIdsRef.current)
                 : normalizePost(row, followedIdsRef.current);
-              setPosts((prev) => mergePosts([normalized], prev));
+              if (!isFreshCommunityPost(normalized.createdAt)) return;
+              setPosts((prev) => mergePosts([normalized], prev).filter((post) => isFreshCommunityPost(post.createdAt)));
               return;
             }
             if (eventType === "UPDATE") {
               const row = payload.new as DbPost;
+              if (!isFreshCommunityPost(row.created_at)) {
+                setPosts((prev) => prev.filter((post) => post.id !== row.id));
+                setCommentsByPost((prev) => {
+                  if (!prev[row.id]) return prev;
+                  const next = { ...prev };
+                  delete next[row.id];
+                  commentsByPostRef.current = next;
+                  return next;
+                });
+                return;
+              }
               const normalized = normalizePost(row, followedIdsRef.current);
               setPosts((prev) =>
                 prev.map((post) =>
@@ -553,12 +584,14 @@ export default function CommunityPage() {
                 if (!prev[row.id]) return prev;
                 const next = { ...prev };
                 delete next[row.id];
+                commentsByPostRef.current = next;
                 return next;
               });
               setLiked((prev) => {
                 if (!prev.has(row.id)) return prev;
                 const next = new Set(prev);
                 next.delete(row.id);
+                likedRef.current = next;
                 return next;
               });
             }
@@ -572,6 +605,7 @@ export default function CommunityPage() {
             const eventType = payload.eventType;
             if (eventType === "INSERT") {
               const row = payload.new as DbComment;
+              if (!postsRef.current.some((post) => post.id === row.post_id)) return;
               const existing = commentsByPostRef.current[row.post_id] || [];
               if (existing.some((comment) => comment.id === row.id)) return;
               const normalized = normalizeComment(row);
@@ -594,6 +628,7 @@ export default function CommunityPage() {
             }
             if (eventType === "UPDATE") {
               const row = payload.new as DbComment;
+              if (!postsRef.current.some((post) => post.id === row.post_id)) return;
               setCommentsByPost((prev) => {
                 const nextForPost = (prev[row.post_id] || []).map((comment) =>
                   comment.id === row.id ? normalizeComment(row) : comment
@@ -700,7 +735,7 @@ export default function CommunityPage() {
   }, [publicSettings?.postModeration]);
 
   const filteredPosts = useMemo(() => {
-    let next = [...posts];
+    let next = posts.filter((post) => isFreshCommunityPost(post.createdAt));
     if (filter === "Latest") {
       next.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
     }
@@ -718,6 +753,19 @@ export default function CommunityPage() {
     }
     return next;
   }, [filter, posts, search]);
+
+  const emptyFeedMessage = useMemo(() => {
+    if (posts.length === 0) {
+      return `No live posts in the last ${COMMUNITY_POST_TTL_DAYS} days yet. Share an update to kick off this week's conversation.`;
+    }
+    if (search.trim()) {
+      return "No posts match your search in this week's live feed.";
+    }
+    if (filter === "Following") {
+      return "No fresh posts from people you follow yet. Check back later or switch to Latest.";
+    }
+    return `No live posts in the last ${COMMUNITY_POST_TTL_DAYS} days yet. Share an update to kick off this week's conversation.`;
+  }, [filter, posts.length, search]);
 
   const trendingTags = useMemo<Array<[string, number]>>(() => {
     const map = new Map<string, number>();
@@ -885,7 +933,9 @@ export default function CommunityPage() {
     }
 
     if (!shouldModeratePost) {
-      setPosts((prev) => mergePosts([normalizePost(data as DbPost, followedIds)], prev));
+      setPosts((prev) =>
+        mergePosts([normalizePost(data as DbPost, followedIds)], prev).filter((post) => isFreshCommunityPost(post.createdAt))
+      );
     }
     setFilter("Latest");
     setPostText("");
@@ -1043,6 +1093,18 @@ export default function CommunityPage() {
             }}
           >
             Share WIP shots, ask for critique, and find collaborators. The feed is open to all signed-in creatives, and your updates show instantly.
+          </p>
+          <p
+            style={{
+              color: T.dim,
+              fontSize: "0.78rem",
+              lineHeight: 1.55,
+              maxWidth: "760px",
+              fontFamily: "'Satoshi', sans-serif",
+              marginTop: "0.45rem",
+            }}
+          >
+            Live community posts roll over every {COMMUNITY_POST_TTL_DAYS} days, so older updates drop off and new voices always have room in the feed.
           </p>
 
           <div className="community-metric-grid" style={{ marginTop: "0.95rem" }}>
@@ -1276,7 +1338,7 @@ export default function CommunityPage() {
                   submitInfo ||
                   (user && !hasProAccess
                     ? "Upgrade to Pro to publish posts, comment, and unlock reward-eligible community participation."
-                    : "Use tags to help people discover your post quickly.")}
+                    : `Use tags to help people discover your post quickly. Posts stay live for ${COMMUNITY_POST_TTL_DAYS} days.`)}
               </p>
             </div>
 
@@ -1338,6 +1400,10 @@ export default function CommunityPage() {
             {loading ? (
               <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.dim, fontFamily: "'Satoshi', sans-serif" }}>
                 Loading community feed...
+              </div>
+            ) : filteredPosts.length === 0 ? (
+              <div style={{ border: `1px solid ${T.border}`, borderRadius: "16px", backgroundColor: T.panel, padding: "1rem", color: T.dim, fontFamily: "'Satoshi', sans-serif", lineHeight: 1.6 }}>
+                {emptyFeedMessage}
               </div>
             ) : (
               <AnimatePresence mode="popLayout">

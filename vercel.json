@@ -4,6 +4,12 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/community/prune",
+      "schedule": "0 5 * * *"
+    }
+  ],
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://irehhfpanstticnsasmv.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_s60a72p25cfHvgLlFTqjjw_0dE0WIlC"
