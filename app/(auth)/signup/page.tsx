@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, ArrowLeft, Check, Briefcase, DollarSign, Palette, Building2, Sprout, Rocket, Zap, Film, Clapperboard } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
-import { getAccountHomePath, normalizeAccountType } from "@/lib/accountRouting";
+import { getEmailValidationError, normalizeEmailAddress } from "@/lib/authValidation";
 
 type SkillLevel = "beginner" | "intermediate" | "advanced" | null;
 type AccountType = "animator" | "studio" | null;
@@ -84,6 +83,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [signupsDisabled, setSignupsDisabled] = useState(false);
+  const [signupCompleteEmail, setSignupCompleteEmail] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -110,10 +110,17 @@ export default function SignupPage() {
 
   const handleStepOne = (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = normalizeEmailAddress(email);
+    const emailError = getEmailValidationError(normalizedEmail);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters");
       return;
     }
+    setEmail(normalizedEmail);
     setError("");
     setStep(2);
   };
@@ -123,11 +130,19 @@ export default function SignupPage() {
     setLoading(true);
     setError("");
 
+    const normalizedEmail = normalizeEmailAddress(email);
+    const emailError = getEmailValidationError(normalizedEmail);
+    if (emailError) {
+      setError(emailError);
+      setLoading(false);
+      return;
+    }
+
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email,
+        email: normalizedEmail,
         password,
         data: {
           full_name: name,
@@ -145,28 +160,9 @@ export default function SignupPage() {
       return;
     }
 
-    if (!supabase) {
-      setError("Authentication service not available");
-      setLoading(false);
-      return;
-    }
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message);
-      setLoading(false);
-      return;
-    }
-
-    const { data: currentUser } = await supabase.auth.getUser();
-    const resolvedAccountType = normalizeAccountType(
-      currentUser.user?.user_metadata?.account_type ?? accountType
-    );
-    window.location.href = getAccountHomePath(resolvedAccountType);
+    setEmail(normalizedEmail);
+    setSignupCompleteEmail(normalizedEmail);
+    setLoading(false);
   };
 
   const strengthColor = password.length === 0 ? C.border : password.length < 8 ? "#FF5722" : password.length < 12 ? "#FF9800" : "#4CAF50";
@@ -238,7 +234,43 @@ export default function SignupPage() {
         className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12"
       >
         <div style={{ width: "100%", maxWidth: "440px" }}>
-
+          {signupCompleteEmail ? (
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h1 style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "2rem", color: C.text, marginBottom: "0.75rem" }}>
+                Check your email
+              </h1>
+              <p style={{ color: C.muted, marginBottom: "1rem", fontFamily: "'General Sans',sans-serif", lineHeight: 1.7 }}>
+                We sent a confirmation link to <strong style={{ color: C.text }}>{signupCompleteEmail}</strong>.
+                Open that email to activate your account and finish signing in.
+              </p>
+              <div style={{ background: theme === "dark" ? "rgba(255,109,31,0.08)" : "rgba(255,109,31,0.10)", border: `1px solid ${theme === "dark" ? "rgba(255,109,31,0.25)" : "rgba(255,109,31,0.18)"}`, borderRadius: "16px", padding: "1rem 1.1rem", marginBottom: "1.5rem" }}>
+                <p style={{ color: C.muted, fontSize: "0.9rem", lineHeight: 1.6, fontFamily: "'General Sans',sans-serif", margin: 0 }}>
+                  If you do not see it in a few minutes, check spam or promotions, then try signing up again after your Supabase email settings are fully configured.
+                </p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                <Link href="/login" className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1rem", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}>
+                  Back to sign in <ArrowRight style={{ width: "16px", height: "16px" }} />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSignupCompleteEmail("");
+                    setStep(1);
+                    setError("");
+                  }}
+                  style={{ width: "100%", padding: "0.95rem 1rem", borderRadius: "12px", border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontFamily: "'General Sans',sans-serif", fontWeight: 600, cursor: "pointer" }}
+                >
+                  Use a different email
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <>
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-6 lg:hidden">
             <div style={{ width: "40px", height: "34px", backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -314,7 +346,7 @@ export default function SignupPage() {
                 </form>
 
                 <p style={{ textAlign: "center", color: C.dim, fontSize: "0.75rem", marginTop: "0.5rem", fontFamily: "'General Sans',sans-serif" }}>
-                  Your account will be ready immediately after signup.
+                  You&apos;ll confirm your email before your first sign-in.
                 </p>
 
                 <p style={{ textAlign: "center", color: C.muted, fontSize: "0.875rem", marginTop: "2rem", fontFamily: "'General Sans',sans-serif" }}>
@@ -495,6 +527,8 @@ export default function SignupPage() {
             )}
 
           </AnimatePresence>
+            </>
+          )}
         </div>
       </div>
 

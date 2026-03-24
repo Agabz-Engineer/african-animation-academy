@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAdminSettings } from "@/lib/adminSettings";
 import { normalizeAccountType } from "@/lib/accountRouting";
+import {
+  getEmailValidationError,
+  getSignupEmailRedirectUrl,
+  normalizeEmailAddress,
+} from "@/lib/authValidation";
 
 type SignupBody = {
   email?: string;
@@ -11,14 +16,13 @@ type SignupBody = {
 
 const getSignupClient = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (!supabaseUrl || !publishableKey) {
     return null;
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
+  return createClient(supabaseUrl, publishableKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -50,21 +54,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const email = (body.email || "").trim().toLowerCase();
+  const email = normalizeEmailAddress(body.email || "");
   const password = body.password || "";
-  const rawUserData = body.data || {};
+  const rawUserData =
+    typeof body.data === "object" && body.data !== null
+      ? (body.data as Record<string, unknown>)
+      : {};
   const userData = {
     ...rawUserData,
     account_type: normalizeAccountType(
-      typeof rawUserData === "object" && rawUserData !== null
-        ? (rawUserData as Record<string, unknown>).account_type
-        : undefined
+      rawUserData.account_type
     ),
   };
 
-  if (!email || !password) {
+  const emailError = getEmailValidationError(email);
+  if (emailError || !password) {
     return NextResponse.json(
-      { error: "Email and password are required." },
+      { error: emailError || "Email and password are required." },
       { status: 400 }
     );
   }
@@ -75,11 +81,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await client.auth.admin.createUser({
+  const { data, error } = await client.auth.signUp({
     email,
     password,
-    email_confirm: true,
-    user_metadata: userData,
+    options: {
+      data: userData,
+      emailRedirectTo: getSignupEmailRedirectUrl(request),
+    },
   });
 
   if (error) {
@@ -90,5 +98,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: msg }, { status: isConflict ? 409 : 400 });
   }
 
-  return NextResponse.json({ userId: data.user?.id || null }, { status: 201 });
+  return NextResponse.json(
+    {
+      userId: data.user?.id || null,
+      email,
+      requiresEmailConfirmation: true,
+    },
+    { status: 201 }
+  );
 }

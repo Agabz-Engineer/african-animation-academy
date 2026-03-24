@@ -3,6 +3,7 @@
 import nodemailer from "nodemailer";
 import { DEFAULT_ADMIN_SETTINGS, getAdminSettings as loadAdminSettings, saveAdminSettingsRecord, type AdminSettings } from "@/lib/adminSettings";
 import { normalizeAccountType } from "@/lib/accountRouting";
+import { getEmailValidationError, normalizeEmailAddress } from "@/lib/authValidation";
 import { assertAdminAccess } from "@/lib/serverAdminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { User } from "@supabase/supabase-js";
@@ -755,14 +756,15 @@ export async function createAdminUser(accessToken: string, input: {
   await assertAdminAccess(accessToken);
   const supabaseAdmin = getSupabaseAdmin();
 
-  const email = input.email.trim().toLowerCase();
+  const email = normalizeEmailAddress(input.email);
   const password = input.password.trim();
   const fullName = input.fullName?.trim() || null;
   const role = input.role || "user";
   const status = input.status || "active";
   const accountType = normalizeAccountType(input.accountType);
 
-  if (!email) throw new Error("Email is required.");
+  const emailError = getEmailValidationError(email);
+  if (emailError) throw new Error(emailError);
   if (password.length < 8) throw new Error("Password must be at least 8 characters.");
 
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
