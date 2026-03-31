@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, ArrowRight, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getPasswordRecoveryRedirectUrl, normalizeEmailAddress } from "@/lib/authValidation";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
@@ -42,6 +43,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    const normalizedEmail = normalizeEmailAddress(email);
 
     if (!supabase) {
       setError("Authentication service not available");
@@ -51,17 +53,11 @@ export default function ForgotPasswordPage() {
 
     // Always use the production URL so Supabase whitelist matches correctly.
     // Fall back to current origin for local dev if NEXT_PUBLIC_SITE_URL is not set.
-    const siteUrl =
-      (typeof window !== "undefined" ? window.location.origin : "") ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      "";
-
-    const redirectTo = siteUrl
-      ? `${siteUrl}/auth/callback?next=/update-password`
-      : undefined;
+    const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+    const redirectTo = getPasswordRecoveryRedirectUrl(currentOrigin) ?? undefined;
 
     const { error } = await supabase.auth.resetPasswordForEmail(
-      email,
+      normalizedEmail,
       redirectTo ? { redirectTo } : undefined
     );
 
@@ -76,7 +72,7 @@ export default function ForgotPasswordPage() {
         // Security best practice: don't reveal if the email exists
         setSuccess(true);
       } else if (msg.includes("redirect") || msg.includes("url") || msg.includes("allowed")) {
-        const hintSite = siteUrl || "your site URL";
+        const hintSite = currentOrigin || process.env.NEXT_PUBLIC_SITE_URL || "your site URL";
         setError(
           `Reset link failed because the redirect URL isn't allowed. In Supabase Auth settings, add: ${hintSite}/auth/callback and ${hintSite}/update-password`
         );
@@ -226,7 +222,10 @@ export default function ForgotPasswordPage() {
               </div>
               <h3 style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 600, fontSize: "1.1rem", marginBottom: "0.5rem", color: C.text }}>Check your email</h3>
               <p style={{ fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-                We&apos;ve sent a password reset link to <strong>{email}</strong>.
+                If an account exists for <strong>{normalizeEmailAddress(email)}</strong>, a password reset link is on its way.
+              </p>
+              <p style={{ fontSize: "0.8rem", color: C.muted, marginBottom: "1.25rem" }}>
+                Use the exact email you signed up with, and check spam or promotions if it does not appear soon.
               </p>
               <Link
                 href="/login"
@@ -255,6 +254,9 @@ export default function ForgotPasswordPage() {
                     style={{ paddingLeft: "2.75rem" }}
                   />
                 </div>
+                <p style={{ color: C.dim, fontSize: "0.8rem", marginTop: "0.65rem", fontFamily: "'General Sans', sans-serif" }}>
+                  Enter the exact email used during signup.
+                </p>
               </div>
 
               {/* Submit */}

@@ -6,6 +6,12 @@ const EMAIL_TLD_PATTERN = /^[A-Za-z]{2,63}$/;
 
 export const normalizeEmailAddress = (value: string) => value.trim().toLowerCase();
 
+const sanitizeBaseUrl = (value?: string | null) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/\/$/, "");
+};
+
 export const getEmailValidationError = (value: string) => {
   const email = normalizeEmailAddress(value);
 
@@ -62,7 +68,16 @@ export const getEmailValidationError = (value: string) => {
 };
 
 export const getSignupEmailRedirectUrl = (request: Request) => {
-  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  const baseUrl = configuredSiteUrl || new URL(request.url).origin;
+  const baseUrl = sanitizeBaseUrl(process.env.NEXT_PUBLIC_SITE_URL) || new URL(request.url).origin;
   return `${baseUrl.replace(/\/$/, "")}/auth/callback`;
+};
+
+export const getAuthCallbackRedirectUrl = (fallbackOrigin?: string | null) => {
+  const baseUrl = sanitizeBaseUrl(process.env.NEXT_PUBLIC_SITE_URL) || sanitizeBaseUrl(fallbackOrigin);
+  return baseUrl ? `${baseUrl}/auth/callback` : null;
+};
+
+export const getPasswordRecoveryRedirectUrl = (fallbackOrigin?: string | null) => {
+  const callbackUrl = getAuthCallbackRedirectUrl(fallbackOrigin);
+  return callbackUrl ? `${callbackUrl}?next=/update-password` : null;
 };

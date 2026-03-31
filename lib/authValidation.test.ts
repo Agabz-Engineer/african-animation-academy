@@ -1,5 +1,7 @@
 import {
+  getAuthCallbackRedirectUrl,
   getEmailValidationError,
+  getPasswordRecoveryRedirectUrl,
   getSignupEmailRedirectUrl,
   normalizeEmailAddress,
 } from "@/lib/authValidation";
@@ -41,6 +43,34 @@ describe("authValidation", () => {
     expect(
       getSignupEmailRedirectUrl(new Request("https://preview.example.com/api/auth/signup"))
     ).toBe("https://preview.example.com/auth/callback");
+
+    process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
+  });
+
+  it("builds password recovery redirects from the configured site url", () => {
+    const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.NEXT_PUBLIC_SITE_URL = "https://app.example.com/";
+
+    expect(getAuthCallbackRedirectUrl("https://preview.example.com")).toBe(
+      "https://app.example.com/auth/callback"
+    );
+    expect(getPasswordRecoveryRedirectUrl("https://preview.example.com")).toBe(
+      "https://app.example.com/auth/callback?next=/update-password"
+    );
+
+    process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
+  });
+
+  it("falls back to the provided origin when building password recovery redirects", () => {
+    const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+
+    expect(getAuthCallbackRedirectUrl("https://preview.example.com/")).toBe(
+      "https://preview.example.com/auth/callback"
+    );
+    expect(getPasswordRecoveryRedirectUrl("https://preview.example.com/")).toBe(
+      "https://preview.example.com/auth/callback?next=/update-password"
+    );
 
     process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
   });

@@ -26,6 +26,7 @@ export default function AuthCallbackPage() {
   const C = theme === "dark" ? DARK_UI : LIGHT_UI;
   const hasRun = useRef(false);
   const [error, setError] = useState("");
+  const [isRecoveryFlow, setIsRecoveryFlow] = useState(false);
 
   useEffect(() => {
     if (hasRun.current) return;
@@ -41,6 +42,10 @@ export default function AuthCallbackPage() {
         "email",
       ];
       const params = new URLSearchParams(window.location.search);
+      const nextPath = params.get("next");
+      const type = params.get("type");
+      const recoveryFlow = type === "recovery" || nextPath === "/update-password";
+      setIsRecoveryFlow(recoveryFlow);
 
       const providerError =
         params.get("error_description") || params.get("error");
@@ -50,7 +55,6 @@ export default function AuthCallbackPage() {
       }
 
       const tokenHash = params.get("token_hash");
-      const type = params.get("type");
       if (tokenHash && type && validOtpTypes.includes(type as EmailOtpType)) {
         if (!supabase) return;
         const { error } = await supabase.auth.verifyOtp({
@@ -71,7 +75,9 @@ export default function AuthCallbackPage() {
           const lowerMessage = error.message.toLowerCase();
           if (lowerMessage.includes("code verifier")) {
             setError(
-              "This sign-in link is invalid or expired. Request a new magic link and open the newest email link."
+              recoveryFlow
+                ? "This password reset link is invalid or expired. Request a new reset email and open the newest link."
+                : "This sign-in link is invalid or expired. Request a new magic link and open the newest email link."
             );
           } else {
             setError(error.message);
@@ -107,12 +113,13 @@ export default function AuthCallbackPage() {
       const session = await waitForSession();
       if (!session) {
         setError(
-          "Could not create a session. Please request a new login link and try again."
+          recoveryFlow
+            ? "Could not verify your password reset session. Please request a new reset email and try again."
+            : "Could not create a session. Please request a new login link and try again."
         );
         return;
       }
 
-      const nextPath = params.get("next");
       const accountType = session.user.user_metadata?.account_type as "animator" | "studio" | undefined;
       router.replace(nextPath && nextPath.startsWith("/") ? nextPath : getAccountHomePath(accountType));
     };
@@ -141,11 +148,11 @@ export default function AuthCallbackPage() {
               marginBottom: "0.75rem",
             }}
           >
-            Sign-in failed
+            {isRecoveryFlow ? "Password reset failed" : "Sign-in failed"}
           </h1>
           <p style={{ color: theme === "dark" ? "#FF6D1F" : "#E04D00", marginBottom: "1.5rem" }}>{error}</p>
           <Link
-            href="/login"
+            href={isRecoveryFlow ? "/forgot-password" : "/login"}
             style={{
               display: "inline-block",
               textDecoration: "none",
@@ -156,7 +163,7 @@ export default function AuthCallbackPage() {
               fontWeight: 600,
             }}
           >
-            Back to login
+            {isRecoveryFlow ? "Request another reset link" : "Back to login"}
           </Link>
         </div>
       </main>
@@ -184,9 +191,11 @@ export default function AuthCallbackPage() {
             marginBottom: "0.75rem",
           }}
         >
-          Finishing sign-in
+          {isRecoveryFlow ? "Opening password reset" : "Finishing sign-in"}
         </h1>
-        <p style={{ color: C.muted }}>Please wait...</p>
+        <p style={{ color: C.muted }}>
+          {isRecoveryFlow ? "Please wait while we verify your reset link..." : "Please wait..."}
+        </p>
       </div>
     </main>
   );

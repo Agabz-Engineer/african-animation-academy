@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getAccountHomePath } from "@/lib/accountRouting";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
@@ -41,24 +42,28 @@ export default function UpdatePasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [hasRecoverySession, setHasRecoverySession] = useState(false);
 
   // Check if we have a valid session before allowing password update
   useEffect(() => {
     const checkSession = async () => {
-      if (!supabase) return;
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // The user should have an active session created by the recovery link
-      // If none, the link may be expired or invalid
-      if (!session) {
-        // You might want to display an error or redirect, 
-        // but for implicit flow, the token might still be processing.
-        // The callback route usually handles implicit tokens in the hash.
-        console.log("No active session found. Password update might fail if not authenticated via recovery link.");
+      if (!supabase) {
+        setSessionChecked(true);
+        return;
       }
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        setError("This password reset link is invalid or expired. Request a new reset email and open the newest link.");
+      } else {
+        setHasRecoverySession(true);
+      }
+
+      setSessionChecked(true);
     };
-    
-    checkSession();
+
+    void checkSession();
   }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -92,12 +97,13 @@ export default function UpdatePasswordPage() {
       setError(error.message);
       setLoading(false);
     } else {
+      const { data } = await supabase.auth.getUser();
+      const accountType = data.user?.user_metadata?.account_type as "animator" | "studio" | undefined;
       setSuccess(true);
       setLoading(false);
       
-      // Redirect to dashboard after a short delay
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(getAccountHomePath(accountType));
       }, 2000);
     }
   };
@@ -227,6 +233,14 @@ export default function UpdatePasswordPage() {
             </div>
           )}
 
+          {!success && sessionChecked && error && (
+            <p style={{ color: C.muted, fontSize: "0.82rem", marginBottom: "1.5rem", fontFamily: "'General Sans', sans-serif" }}>
+              <Link href="/forgot-password" style={{ color: "#FF6D1F", fontWeight: 600, textDecoration: "none" }}>
+                Request another reset email
+              </Link>
+            </p>
+          )}
+
           {success ? (
             <div style={{
               background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)",
@@ -242,7 +256,7 @@ export default function UpdatePasswordPage() {
               </p>
               <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", alignItems: "center", color: C.muted, fontSize: "0.875rem" }}>
                 <div style={{ width: "16px", height: "16px", border: "2px solid rgba(255,109,31,0.3)", borderTopColor: "#FF6D1F", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                Redirecting to dashboard...
+                Redirecting to your workspace...
               </div>
             </div>
           ) : (
@@ -299,7 +313,7 @@ export default function UpdatePasswordPage() {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading || !password || !confirmPassword}
+                disabled={loading || !password || !confirmPassword || !sessionChecked || !hasRecoverySession}
                 className="btn-primary"
                 style={{ width: "100%", padding: "1rem", fontSize: "1rem", gap: "0.5rem", marginTop: "0.5rem" }}
               >
