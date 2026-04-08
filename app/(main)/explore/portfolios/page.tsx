@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import NextImage from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
-  Filter, 
   Grid3X3, 
   List as ListIcon, 
-  ChevronRight, 
   Play, 
   Users as UsersIcon,
   Sparkles,
@@ -109,7 +108,13 @@ function ProjectCard({ project, theme, viewMode, onFollowUpdate, currentUserId }
         flexShrink: 0
       }}>
         {project.thumbnail_url ? (
-          <img src={project.thumbnail_url} alt={project.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <NextImage
+            src={project.thumbnail_url}
+            alt={project.title}
+            fill
+            sizes={isGrid ? "(max-width: 768px) 100vw, 33vw" : "200px"}
+            style={{ objectFit: "cover" }}
+          />
         ) : (
           <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Play style={{ width: "32px", height: "32px", color: theme.accent, opacity: 0.6 }} />

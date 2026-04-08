@@ -1,23 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import NextImage from "next/image";
 import type { User } from "@supabase/supabase-js";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
-  Heart,
-  MessageCircle,
   Grid3X3,
   List,
   ChevronRight,
-  Eye,
   Clock,
   Plus,
   Upload,
   Hash,
   X,
-  Link as LinkIcon,
   Check
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
@@ -132,7 +129,13 @@ function GridCard({ project, C }: { project: Project; C: ThemeTokens }) {
       {/* Thumbnail */}
       <div style={{ position: "relative", paddingBottom: "56.25%", overflow: "hidden" }}>
         {project.thumbnail_url ? (
-          <img src={project.thumbnail_url} alt={project.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+          <NextImage
+            src={project.thumbnail_url}
+            alt={project.title}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            style={{ objectFit: "cover" }}
+          />
         ) : (
           <Thumbnail size={36} />
         )}
@@ -214,7 +217,13 @@ function ListCard({ project, C }: { project: Project; C: ThemeTokens }) {
       {/* Thumbnail */}
       <div style={{ position: "relative", width: "160px", height: "90px", flexShrink: 0, borderRadius: "8px", overflow: "hidden" }}>
         {project.thumbnail_url ? (
-          <img src={project.thumbnail_url} alt={project.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <NextImage
+            src={project.thumbnail_url}
+            alt={project.title}
+            fill
+            sizes="160px"
+            style={{ objectFit: "cover" }}
+          />
         ) : (
           <Thumbnail size={24} />
         )}

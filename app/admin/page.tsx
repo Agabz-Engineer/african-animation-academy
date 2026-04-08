@@ -8,20 +8,13 @@ import {
   CreditCard, 
   TrendingUp,
   UserPlus,
-  DollarSign,
-  Activity,
-  Eye,
   Clock,
-  Star,
-  AlertTriangle,
-  CheckCircle,
   BarChart3,
-  PieChart,
-  Calendar,
   Building2
 } from "lucide-react";
 import { getAdminDashboardData } from "@/app/admin/actions";
 import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
+import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -70,7 +63,7 @@ interface RecentActivity {
 }
 
 export default function AdminDashboard() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const theme = useThemeMode();
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalCourses: 0,

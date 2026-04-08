@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, Easing } from "framer-motion";
+import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { REMEMBER_ME_KEY, setRememberSessionPreference, supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";

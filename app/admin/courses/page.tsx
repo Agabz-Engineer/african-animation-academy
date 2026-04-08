@@ -4,26 +4,19 @@ import { useState, useEffect } from "react";
 import { 
   BookOpen, 
   Search, 
-  Filter, 
   Plus, 
   Edit, 
   Trash2, 
-  Eye, 
   Users,
   Clock,
   Star,
-  DollarSign,
-  MoreVertical,
   Play,
-  FileText,
-  Image,
-  Video,
-  Download,
-  Upload
+  FileText
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { publishCourse, draftCourse, archiveCourse, deleteCourse, getAdminCourses, saveCourse } from "@/app/admin/actions";
 import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
+import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
   bg: "#0F0F0F",
@@ -72,7 +65,7 @@ interface Course {
 }
 
 export default function CourseManagement() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const theme = useThemeMode();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");

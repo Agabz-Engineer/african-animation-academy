@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, type CSSProperties } from "react";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import { useRef } from "react";
+import { motion, useInView } from "framer-motion";
 import {
   ChevronLeft,
   Users,
@@ -41,32 +41,6 @@ const LIGHT_UI = {
   cardBorder: "rgba(231, 219, 189, 0.42)",
   navBg: "rgba(255, 255, 255, 0.78)",
 };
-
-const rollContainer = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.12,
-    },
-  },
-};
-
-const rollEase: [number, number, number, number] = [0.22, 1, 0.36, 1];
-
-const rollItem = {
-  hidden: { y: "120%", rotateX: 80, opacity: 0 },
-  show: {
-    y: 0,
-    rotateX: 0,
-    opacity: 1,
-    transition: {
-      type: "spring" as const,
-      damping: 30,
-      stiffness: 400,
-      ease: rollEase,
-    },
-  },
-} as const;
 
 // Premium animation variants
 const premiumContainer = {
@@ -134,20 +108,6 @@ const premiumText = {
     },
   },
 } as const;
-
-type RollLineProps = {
-  text: string;
-  className?: string;
-  style?: CSSProperties;
-};
-
-const RollLine = ({ text, className, style }: RollLineProps) => (
-  <span className="block overflow-hidden">
-    <motion.span className={className} style={{ display: "block", ...style }} variants={rollItem}>
-      {text}
-    </motion.span>
-  </span>
-);
 
 export default function AboutPage() {
   const theme = useThemeMode();

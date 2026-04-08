@@ -1,29 +1,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import NextImage from "next/image";
 import { 
   MessageSquare, 
   Search, 
-  Filter, 
   CheckCircle, 
   XCircle, 
   AlertTriangle, 
   Eye, 
   Trash2, 
   Flag,
-  MoreVertical,
   Heart,
   MessageCircle,
   Share2,
   Clock,
   User,
-  Image,
+  Image as ImageIcon,
   Video,
   FileText,
   RefreshCw
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { getAdminActionAccessToken } from "@/lib/adminClientAuth";
+import { useThemeMode } from "@/lib/useThemeMode";
 import { 
   approvePost, 
   rejectPost, 
@@ -83,7 +82,7 @@ type CommunityPostRow = CommunityPost & {
 };
 
 export default function CommunityManagement() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const theme = useThemeMode();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -231,7 +230,7 @@ export default function CommunityManagement() {
 
   const getMediaTypeIcon = (url: string) => {
     if (url.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-      return <Image style={{ width: "16px", height: "16px" }} />;
+      return <ImageIcon style={{ width: "16px", height: "16px" }} />;
     } else if (url.match(/\.(mp4|webm|mov)$/i)) {
       return <Video style={{ width: "16px", height: "16px" }} />;
     } else {
@@ -608,18 +607,24 @@ export default function CommunityManagement() {
                           border: `1px solid ${UI.border}`,
                           backgroundColor: UI.bg,
                         }}
-                      >
-                        {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          <img
-                            src={url}
-                            alt={`Media ${index + 1}`}
-                            style={{
-                              width: "100px",
-                              height: "100px",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
+	                      >
+	                        {url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+	                          <div
+	                            style={{
+	                              position: "relative",
+	                              width: "100px",
+	                              height: "100px",
+	                            }}
+	                          >
+	                            <NextImage
+	                              src={url}
+	                              alt={`Media ${index + 1}`}
+	                              fill
+	                              sizes="100px"
+	                              style={{ objectFit: "cover" }}
+	                            />
+	                          </div>
+	                        ) : (
                           <div style={{
                             width: "100px",
                             height: "100px",

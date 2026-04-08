@@ -1,5 +1,6 @@
 "use client";
 
+import NextImage from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -104,8 +105,6 @@ type StudioRequest = {
 
 const CREATOR_TABS = ["Overview", "Portfolio", "Compensation", "Security"];
 const STUDIO_TABS = ["Overview", "Talent Board", "Hiring", "Security"];
-
-const EMOJIS = ["😀", "😂", "🥰", "😎", "🤔", "🤩", "😊", "🔥", "✨", "🙌", "👍", "❤️"];
 
 const addCacheBuster = (url: string) =>
   `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
@@ -784,12 +783,18 @@ export default function ProfilePage() {
                   <div
                     onClick={() => document.getElementById("profile-avatar-upload")?.click()}
                     style={{ width: "80px", height: "80px", borderRadius: "24px", background: "linear-gradient(135deg, #FF6D1F, #E04D00)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", cursor: avatarUploading ? "progress" : "pointer" }}
-                  >
-                    {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt={`${profile.full_name || "Profile"} avatar`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <User size={40} color="#fff" />
-                    )}
+	                  >
+	                    {profile?.avatar_url ? (
+	                      <NextImage
+	                        src={profile.avatar_url}
+	                        alt={`${profile.full_name || "Profile"} avatar`}
+	                        fill
+	                        sizes="80px"
+	                        style={{ objectFit: "cover" }}
+	                      />
+	                    ) : (
+	                      <User size={40} color="#fff" />
+	                    )}
                     <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: "50%", background: T.accent, border: `3px solid ${T.cardBg}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>⚡</div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "0.6rem" }}>
@@ -1283,12 +1288,18 @@ export default function ProfilePage() {
                           whileHover={{ y: -5 }}
                           style={{ background: T.cardBg, borderRadius: "20px", overflow: "hidden", border: `1px solid ${T.border}`, boxShadow: T.shadow }}
                         >
-                          <div style={{ height: "160px", background: "#111", position: "relative", overflow: "hidden" }}>
-                            {project.thumbnail_url ? (
-                              <img src={project.thumbnail_url} alt={`${project.title} thumbnail`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            ) : (
-                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: T.accentSoft }}>
-                                <Play size={40} />
+	                          <div style={{ height: "160px", background: "#111", position: "relative", overflow: "hidden" }}>
+	                            {project.thumbnail_url ? (
+	                              <NextImage
+	                                src={project.thumbnail_url}
+	                                alt={`${project.title} thumbnail`}
+	                                fill
+	                                sizes="(max-width: 768px) 100vw, 280px"
+	                                style={{ objectFit: "cover" }}
+	                              />
+	                            ) : (
+	                              <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: T.accentSoft }}>
+	                                <Play size={40} />
                               </div>
                             )}
                             <div style={{ position: "absolute", top: "1rem", right: "1rem", padding: "0.4rem 0.8rem", borderRadius: "99px", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", fontSize: "0.7rem", fontWeight: 600, color: "#fff" }}>

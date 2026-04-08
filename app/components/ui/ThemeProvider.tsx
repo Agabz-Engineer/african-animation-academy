@@ -44,11 +44,14 @@ export function useTheme() {
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const label = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={label}
+      title={label}
       style={{
         width: "40px",
         height: "40px",

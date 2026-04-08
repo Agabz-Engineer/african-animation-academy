@@ -1,492 +1,844 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Clock, X, Lock, Play } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { ArrowRight, Clock3, Crown, Layers3, Lock, Search, Sparkles, Users2, X } from "lucide-react";
+import CourseArtwork from "@/app/components/courses/CourseArtwork";
+import { getCourseCreditLabel, getCourseInstructorLabel, getCourseSlug, type CourseRecord } from "@/lib/courseCatalog";
+import { useCourseLibrary } from "@/lib/useCourseLibrary";
+import { useThemeMode } from "@/lib/useThemeMode";
 
-type Course = {
-  id?: string;
-  title: string;
-  instructor: string;
-  level: string;
-  duration: string;
-  desc: string;
-  videoUrl?: string;
-  enrollUrl?: string;
-  access?: "free" | "pro";
-};
-
-type DbCourse = {
-  id: string;
-  title: string;
-  instructor: string;
-  level: string;
-  duration: number;
-  description: string;
-  thumbnail_url?: string | null;
-  access_tier?: "free" | "pro" | null;
-  price: number | string;
-  status: "published" | "draft" | "archived";
-};
-
-const FALLBACK_COURSES: Course[] = [
-  { title: "Quick Poses for Strong Silhouettes", instructor: "Zenock G.-A.", level: "Beginner", duration: "4h 30m", desc: "Master the core principles of designing compelling characters for animation.", videoUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", enrollUrl: "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10", access: "free" },
-  { title: "Expressive Walk Cycles: The Gathering Place Study", instructor: "Zenock G.-A.", level: "Beginner", duration: "TBD", desc: "Study rhythm, weight, and personality in walk cycles using a lively gathering‑place scene.", videoUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", enrollUrl: "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0", access: "free" },
-  { title: "Bouncing Ball with Tail — Moho Tutorial", instructor: "Zenock G.-A.", level: "Intermediate", duration: "TBD", desc: "Practice follow-through and overlap by animating a bouncing ball with a tail in Moho.", videoUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", enrollUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4", access: "pro" },
-  { title: "oon Boom Fundamentals", instructor: "Zenock G.-A.", level: "Intermediate", duration: "TBD", desc: "Core tools, timelines, and workflows to start animating confidently in Toon Boom.", videoUrl: "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb", enrollUrl: "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb", access: "pro" },
-];
-
-const COURSE_CREDIT_NAME = "Zenock G.-A.";
-
-const getCourseInstructorLabel = (instructor: string) => {
-  const normalized = instructor.trim();
-  if (!normalized || normalized.toLowerCase() === "tba") {
-    return COURSE_CREDIT_NAME;
-  }
-  return normalized;
-};
-
-const getCourseCreditLabel = (instructor: string) => {
-  const normalized = instructor.trim();
-  if (!normalized || normalized.toLowerCase() === "tba") {
-    return "Course craft: Zenock G.-A.";
-  }
-  if (normalized.toLowerCase().includes("zenock")) {
-    return "Original course craft by Zenock G.-A.";
-  }
-  return "Course craft with Zenock G.-A.";
-};
-
-const getCourseKey = (course: Pick<Course, "title" | "instructor">) =>
-  `${course.title.trim().toLowerCase()}::${course.instructor.trim().toLowerCase()}`;
-
-const ACCESSIBLE: Record<string, string[]> = {
-  beginner:     ["Beginner"],
-  intermediate: ["Beginner", "Intermediate"],
-  advanced:     ["Beginner", "Intermediate", "Advanced"],
-};
+type FilterKey = "all" | "available" | "locked" | "Beginner" | "Intermediate" | "Advanced";
 
 const DARK = {
-  pageBg:    "#222222",
-  cardBg:    "#2C2C2C",
-  surface:   "#333333",
-  border:    "#444444",
-  text:      "#FAF3E1",
-  textMuted: "#D2C9B8",
-  textDim:   "#9E9688",
-  accent:    "#FF6D1F",
-  accentText:"#222222",
-  accentSoft:"rgba(255,109,31,0.10)",
-  imgBg:     "#333333",
-  inputBg:   "#2C2C2C",
+  pageBg: "#171311",
+  shell: "rgba(33, 28, 24, 0.9)",
+  shellBorder: "rgba(255, 255, 255, 0.08)",
+  cardBg: "rgba(35, 31, 28, 0.94)",
+  cardBorder: "rgba(255, 255, 255, 0.08)",
+  text: "#FAF3E1",
+  textMuted: "#D4CABB",
+  textDim: "#9F968B",
+  accent: "#FF6D1F",
+  accentSoft: "rgba(255, 109, 31, 0.12)",
+  highlight: "#F4B860",
+  inputBg: "rgba(21, 19, 18, 0.94)",
 };
 
 const LIGHT = {
-  pageBg:    "#FAF3E1",
-  cardBg:    "#FFFFFF",
-  surface:   "#F5E7C6",
-  border:    "#E7DBBD",
-  text:      "#222222",
-  textMuted: "#555555",
-  textDim:   "#9E9688",
-  accent:    "#FF6D1F",
-  accentText:"#FFFFFF",
-  accentSoft:"rgba(255,109,31,0.10)",
-  imgBg:     "#F5E7C6",
-  inputBg:   "#FFFFFF",
+  pageBg: "#F6ECDC",
+  shell: "rgba(255, 250, 242, 0.88)",
+  shellBorder: "rgba(34, 34, 34, 0.08)",
+  cardBg: "rgba(255, 255, 255, 0.92)",
+  cardBorder: "rgba(34, 34, 34, 0.08)",
+  text: "#222222",
+  textMuted: "#5E564F",
+  textDim: "#8B8177",
+  accent: "#FF6D1F",
+  accentSoft: "rgba(255, 109, 31, 0.12)",
+  highlight: "#A65A18",
+  inputBg: "rgba(255, 255, 255, 0.94)",
 };
 
-const getInitialTheme = (): "dark" | "light" => {
-  if (typeof window === "undefined") return "dark";
-  const saved = localStorage.getItem("africafx-theme");
-  if (saved === "dark" || saved === "light") return saved;
-  const attr = document.documentElement.getAttribute("data-theme");
-  return attr === "light" ? "light" : "dark";
+const levelColors: Record<string, string> = {
+  Beginner: "#63D29D",
+  Intermediate: "#F4B860",
+  Advanced: "#B28CFF",
+};
+
+const filterOptions: Array<{ key: FilterKey; label: string }> = [
+  { key: "all", label: "All" },
+  { key: "available", label: "Available" },
+  { key: "locked", label: "Locked" },
+  { key: "Beginner", label: "Beginner" },
+  { key: "Intermediate", label: "Intermediate" },
+  { key: "Advanced", label: "Advanced" },
+];
+
+const getLockNotes = (
+  course: CourseRecord,
+  skillLevel: string,
+  hasProAccess: boolean,
+  accessibleLevels: string[]
+) => {
+  const notes: string[] = [];
+  if (course.access === "pro" && !hasProAccess) notes.push("Pro members only");
+  if (!accessibleLevels.includes(course.level)) notes.push(`Complete ${skillLevel} first`);
+  return notes;
 };
 
 export default function CoursesPage() {
-  const [theme, setTheme]       = useState<"dark"|"light">(getInitialTheme);
-  const [search, setSearch]     = useState("");
-  const [skillLevel, setSkill]  = useState("beginner");
-  const [hasProAccess, setHasProAccess] = useState(false);
-  const [subscriptionEndsAt, setSubscriptionEndsAt] = useState<string | null>(null);
-  const [subscriptionExpired, setSubscriptionExpired] = useState(false);
-  const [loading, setLoading]   = useState(true);
-  const [courses, setCourses]   = useState<Course[]>(FALLBACK_COURSES);
-  const [launchingCourseId, setLaunchingCourseId] = useState<string | null>(null);
-  const [launchError, setLaunchError] = useState("");
+  const theme = useThemeMode();
+  const T = theme === "dark" ? DARK : LIGHT;
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const {
+    loading,
+    courses,
+    skillLevel,
+    accessibleLevels,
+    hasProAccess,
+    subscriptionEndsAt,
+    subscriptionExpired,
+  } = useCourseLibrary();
 
-  const minutesToLabel = (minutes: number) => {
-    if (!Number.isFinite(minutes) || minutes <= 0) return "TBD";
-    const hrs = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hrs === 0) return `${mins}m`;
-    if (mins === 0) return `${hrs}h`;
-    return `${hrs}h ${mins}m`;
-  };
+  const normalizedSkill = skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1);
+  const expiryLabel =
+    subscriptionEndsAt && !Number.isNaN(new Date(subscriptionEndsAt).getTime())
+      ? new Date(subscriptionEndsAt).toLocaleDateString()
+      : null;
 
-  useEffect(() => {
-    const obs = new MutationObserver(() => {
-      const t = document.documentElement.getAttribute("data-theme") as "dark"|"light";
-      if (t) setTheme(t);
-    });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    const client = supabase;
-    if (client) {
-      client.auth.getUser().then(async ({ data: { user } }) => {
-        setSkill(user?.user_metadata?.skill_level || "beginner");
-        if (user?.id) {
-          const { data: profile } = await client
-            .from("profiles")
-            .select("subscription_tier")
-            .eq("id", user.id)
-            .single();
-          const profileHasPro =
-            profile?.subscription_tier === "pro" || profile?.subscription_tier === "team";
+  const isLocked = (course: CourseRecord) =>
+    !accessibleLevels.includes(course.level) || (course.access === "pro" && !hasProAccess);
 
-          let nextHasPro = profileHasPro;
-          let nextEndsAt: string | null = null;
-          let nextExpired = false;
+  const filteredCourses = courses.filter((course) => {
+    const matchesSearch =
+      course.title.toLowerCase().includes(search.toLowerCase()) ||
+      course.instructor.toLowerCase().includes(search.toLowerCase()) ||
+      course.desc.toLowerCase().includes(search.toLowerCase());
 
-          const { data: subscription } = await client
-            .from("subscriptions")
-            .select("plan, status, ends_at, created_at")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+    if (!matchesSearch) return false;
+    if (filter === "all") return true;
+    if (filter === "available") return !isLocked(course);
+    if (filter === "locked") return isLocked(course);
+    return course.level === filter;
+  });
 
-          if (subscription && (subscription.plan === "pro" || subscription.plan === "team")) {
-            nextEndsAt = subscription.ends_at ?? null;
-            if (subscription.status !== "active") {
-              nextHasPro = false;
-              nextExpired = true;
-            } else if (subscription.ends_at) {
-              const endsAtDate = new Date(subscription.ends_at);
-              if (!Number.isNaN(endsAtDate.getTime())) {
-                nextHasPro = endsAtDate > new Date();
-                nextExpired = !nextHasPro;
-              } else {
-                nextHasPro = true;
-              }
-            } else {
-              nextHasPro = true;
-            }
-          }
+  const availableCount = courses.filter((course) => !isLocked(course)).length;
+  const lockedCount = courses.filter((course) => isLocked(course)).length;
+  const premiumCount = courses.filter((course) => course.access === "pro").length;
 
-          setHasProAccess(nextHasPro);
-          setSubscriptionEndsAt(nextEndsAt);
-          setSubscriptionExpired(nextExpired);
-        }
-        setLoading(false);
-      });
-
-      client
-        .from("courses")
-        .select("id,title,instructor,level,duration,description,thumbnail_url,access_tier,price,status")
-        .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .then(({ data, error }) => {
-          if (error || !data || data.length === 0) return;
-
-          const liveCourses = (data as DbCourse[]).map((course) => ({
-            id: course.id,
-            title: course.title,
-            instructor: course.instructor,
-            level: course.level,
-            duration: minutesToLabel(course.duration),
-            desc: course.description,
-            access: course.access_tier === "pro" || Number(course.price || 0) > 0 ? ("pro" as const) : ("free" as const),
-          }));
-
-          const liveKeys = new Set(liveCourses.map(getCourseKey));
-          const mergedCourses = [
-            ...liveCourses,
-            ...FALLBACK_COURSES.filter((course) => !liveKeys.has(getCourseKey(course))),
-          ];
-
-          setCourses(mergedCourses);
-        });
-    } else {
-      // Small delay to avoid synchronous state update in effect
-      const timer = setTimeout(() => setLoading(false), 0);
-      return () => {
-        obs.disconnect();
-        clearTimeout(timer);
-      };
-    }
-    return () => obs.disconnect();
-  }, []);
-
-  const T          = theme === "dark" ? DARK : LIGHT;
-  const accessible = ACCESSIBLE[skillLevel] || ["Beginner"];
-  const filtered   = courses.filter(c =>
-    c.title.toLowerCase().includes(search.toLowerCase()) ||
-    c.instructor.toLowerCase().includes(search.toLowerCase()) ||
-    COURSE_CREDIT_NAME.toLowerCase().includes(search.toLowerCase())
-  );
-  const hasPro     = hasProAccess;
-  const expiryLabel = subscriptionEndsAt && !Number.isNaN(new Date(subscriptionEndsAt).getTime())
-    ? new Date(subscriptionEndsAt).toLocaleDateString()
-    : null;
-  const isLocked   = (course: Course) => {
-    const levelLocked = !accessible.includes(course.level);
-    const proLocked = (course.access ?? "free") === "pro" && !hasPro;
-    return levelLocked || proLocked;
-  };
-  const lockNotes  = (course: Course) => {
-    const notes: string[] = [];
-    if ((course.access ?? "free") === "pro" && !hasPro) notes.push("Pro members only");
-    if (!accessible.includes(course.level)) notes.push(`Complete ${skillLevel} first`);
-    return notes;
-  };
-
-  const levelColor = (l: string) =>
-    l === "Beginner"     ? "#4CAF50" :
-    l === "Intermediate" ? "#FF8C00" : "#888";
-
-  const launchCourse = async (course: Course) => {
-    setLaunchError("");
-
-    if (!course.id) {
-      const fallbackUrl = course.enrollUrl || course.videoUrl;
-      if (fallbackUrl) {
-        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
-        return;
-      }
-      setLaunchError("This course is not available to open right now.");
-      return;
-    }
-
-    if (!supabase) return;
-
-    if (isLocked(course)) {
-      if ((course.access ?? "free") === "pro" && !hasPro) {
-        window.location.href = "/pricing";
-      }
-      return;
-    }
-
-    setLaunchingCourseId(course.id);
-
-    try {
-      const { data } = await supabase.auth.getSession();
-      const accessToken = data.session?.access_token;
-
-      if (!accessToken) {
-        setLaunchError("Sign in again to open this course.");
-        return;
-      }
-
-      const response = await fetch(`/api/courses/${course.id}/launch`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      const payload = (await response.json()) as { url?: string; error?: string };
-
-      if (!response.ok || !payload.url) {
-        setLaunchError(payload.error || "Unable to open this course right now.");
-        return;
-      }
-
-      window.open(payload.url, "_blank", "noopener,noreferrer");
-    } catch {
-      setLaunchError("Unable to open this course right now.");
-    } finally {
-      setLaunchingCourseId(null);
-    }
-  };
-
-  if (loading) return (
-    <div style={{ backgroundColor: "#222222", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ width: "28px", height: "28px", border: "2px solid #444444", borderTopColor: "#FF6D1F", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          backgroundColor: T.pageBg,
+        }}
+      >
+        <div
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: "999px",
+            border: `2px solid ${T.cardBorder}`,
+            borderTopColor: T.accent,
+            animation: "spin 0.8s linear infinite",
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ backgroundColor: T.pageBg, minHeight: "100vh", color: T.text, transition: "background-color 0.3s" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: T.pageBg,
+        color: T.text,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: "0 auto auto -12%",
+          width: "38rem",
+          height: "38rem",
+          borderRadius: "999px",
+          background:
+            theme === "dark"
+              ? "radial-gradient(circle, rgba(255,109,31,0.18) 0%, rgba(255,109,31,0.02) 60%, transparent 72%)"
+              : "radial-gradient(circle, rgba(255,109,31,0.16) 0%, rgba(255,109,31,0.03) 58%, transparent 72%)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: "12rem -10% auto auto",
+          width: "30rem",
+          height: "30rem",
+          borderRadius: "999px",
+          background:
+            theme === "dark"
+              ? "radial-gradient(circle, rgba(244,184,96,0.12) 0%, rgba(244,184,96,0.02) 58%, transparent 70%)"
+              : "radial-gradient(circle, rgba(166,90,24,0.1) 0%, rgba(166,90,24,0.02) 58%, transparent 70%)",
+          pointerEvents: "none",
+        }}
+      />
 
-      {/* Header */}
-      <div style={{ padding: "3rem 2.5rem 0" }}>
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div style={{ width: "28px", height: "3px", background: "repeating-linear-gradient(90deg,#FF6D1F 0,#FF6D1F 8px,#222222 8px,#222222 16px)", borderRadius: "999px", marginBottom: "1.25rem" }} />
-          <h1 style={{ fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "2rem", color: T.text, marginBottom: "0.5rem", letterSpacing: "-0.02em" }}>
-            Your Courses
-          </h1>
-          <p style={{ fontSize: "0.875rem", color: T.textMuted, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.6, maxWidth: "400px" }}>
-            Courses matched to your level. Complete each stage to unlock the next.
-          </p>
+      <div className="courses-shell">
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          style={{
+            borderRadius: "32px",
+            border: `1px solid ${T.shellBorder}`,
+            background: T.shell,
+            backdropFilter: "blur(20px)",
+            padding: "1.3rem",
+            boxShadow:
+              theme === "dark"
+                ? "0 30px 80px rgba(0, 0, 0, 0.22)"
+                : "0 24px 60px rgba(69, 39, 10, 0.08)",
+          }}
+        >
+          <div className="courses-hero-grid">
+            <div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.55rem",
+                  padding: "0.5rem 0.85rem",
+                  borderRadius: "999px",
+                  border: `1px solid ${T.cardBorder}`,
+                  background: T.cardBg,
+                  color: T.highlight,
+                  fontSize: "0.74rem",
+                  fontWeight: 700,
+                  fontFamily: "'General Sans', sans-serif",
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <Sparkles size={14} />
+                Premium learning library
+              </div>
 
-          {/* Skill level badge */}
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginTop: "1rem", padding: "6px 14px", borderRadius: "8px", backgroundColor: T.surface, border: `1px solid ${T.border}` }}>
-            <div style={{ width: "7px", height: "7px", borderRadius: "50%", backgroundColor: levelColor(skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1)) }} />
-            <span style={{ fontSize: "0.775rem", fontFamily: "'General Sans',sans-serif", fontWeight: 600, color: T.text }}>
-              {skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1)} level
-            </span>
-            <span style={{ fontSize: "0.68rem", color: T.textDim, fontFamily: "'General Sans',sans-serif" }}>
-              · {accessible.join(" + ")} unlocked
-            </span>
+              <h1
+                style={{
+                  margin: "1rem 0 0",
+                  fontFamily: "'Clash Display', sans-serif",
+                  fontSize: "clamp(2.2rem, 6vw, 4.5rem)",
+                  lineHeight: 0.96,
+                  letterSpacing: "-0.05em",
+                  maxWidth: "10ch",
+                }}
+              >
+                Learn through bold, cover-first course worlds.
+              </h1>
+
+              <p
+                style={{
+                  margin: "1rem 0 0",
+                  maxWidth: "38rem",
+                  color: T.textMuted,
+                  fontSize: "0.98rem",
+                  lineHeight: 1.75,
+                  fontFamily: "'General Sans', sans-serif",
+                }}
+              >
+                Every course now opens into its own premium internal experience. Tap a cover, explore the lesson flow,
+                then launch the course from inside the dedicated page.
+              </p>
+
+              <div className="courses-toolbar">
+                <div className="courses-search">
+                  <Search size={16} style={{ color: T.textDim }} />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search by course, instructor, or topic"
+                    style={{
+                      width: "100%",
+                      border: "none",
+                      outline: "none",
+                      background: "transparent",
+                      color: T.text,
+                      fontSize: "0.92rem",
+                      fontFamily: "'General Sans', sans-serif",
+                    }}
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: T.textDim,
+                        cursor: "pointer",
+                        display: "grid",
+                        placeItems: "center",
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.55rem",
+                    borderRadius: "999px",
+                    border: `1px solid ${T.cardBorder}`,
+                    background: T.cardBg,
+                    padding: "0.78rem 1rem",
+                    color: T.textMuted,
+                    fontSize: "0.84rem",
+                    fontFamily: "'General Sans', sans-serif",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "0.6rem",
+                      height: "0.6rem",
+                      borderRadius: "999px",
+                      backgroundColor: levelColors[normalizedSkill] || T.accent,
+                      boxShadow: `0 0 12px ${T.accentSoft}`,
+                    }}
+                  />
+                  {normalizedSkill} path active
+                </div>
+              </div>
+            </div>
+
+            <div className="courses-stat-grid">
+              {[
+                {
+                  label: "Ready now",
+                  value: String(availableCount).padStart(2, "0"),
+                  icon: Layers3,
+                  note: "You can enter these today",
+                },
+                {
+                  label: "Premium vault",
+                  value: String(premiumCount).padStart(2, "0"),
+                  icon: Crown,
+                  note: "Pro-only deep dives",
+                },
+                {
+                  label: "Locked next",
+                  value: String(lockedCount).padStart(2, "0"),
+                  icon: Lock,
+                  note: "Unlock as you progress",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  style={{
+                    borderRadius: "24px",
+                    border: `1px solid ${T.cardBorder}`,
+                    background: T.cardBg,
+                    padding: "1.1rem",
+                    minHeight: "8.3rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "2.5rem",
+                      height: "2.5rem",
+                      borderRadius: "16px",
+                      background: T.accentSoft,
+                      display: "grid",
+                      placeItems: "center",
+                      color: T.accent,
+                    }}
+                  >
+                    <stat.icon size={18} />
+                  </div>
+                  <div>
+                    <p
+                      style={{
+                        margin: "0 0 0.25rem",
+                        fontFamily: "'Clash Display', sans-serif",
+                        fontSize: "2rem",
+                        letterSpacing: "-0.06em",
+                      }}
+                    >
+                      {stat.value}
+                    </p>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: "0.86rem" }}>{stat.label}</p>
+                    <p
+                      style={{
+                        margin: "0.25rem 0 0",
+                        color: T.textDim,
+                        fontSize: "0.76rem",
+                        lineHeight: 1.55,
+                        fontFamily: "'General Sans', sans-serif",
+                      }}
+                    >
+                      {stat.note}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {subscriptionExpired && (
-            <div style={{ marginTop: "1rem", padding: "0.7rem 0.9rem", borderRadius: "12px", border: `1px solid ${T.border}`, backgroundColor: T.surface, display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-              <div style={{ width: "30px", height: "30px", borderRadius: "10px", backgroundColor: T.accentSoft, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}` }}>
-                <Lock style={{ width: "14px", height: "14px", color: T.accent }} />
+            <div
+              style={{
+                marginTop: "1rem",
+                borderRadius: "20px",
+                border: `1px solid ${T.cardBorder}`,
+                background: T.cardBg,
+                padding: "0.95rem 1rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.85rem",
+                flexWrap: "wrap",
+              }}
+            >
+              <div
+                style={{
+                  width: "2.4rem",
+                  height: "2.4rem",
+                  borderRadius: "16px",
+                  background: T.accentSoft,
+                  color: T.accent,
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <Crown size={17} />
               </div>
-              <div style={{ fontSize: "0.8rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>
-                Your Pro access expired{expiryLabel ? ` on ${expiryLabel}` : ""}. Renew to unlock Pro courses.
+              <div style={{ flex: 1, minWidth: "16rem" }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "0.9rem" }}>Your Pro access needs renewal</p>
+                <p
+                  style={{
+                    margin: "0.18rem 0 0",
+                    color: T.textMuted,
+                    fontSize: "0.8rem",
+                    fontFamily: "'General Sans', sans-serif",
+                  }}
+                >
+                  Your previous Pro access expired{expiryLabel ? ` on ${expiryLabel}` : ""}. Renew to reopen premium lessons.
+                </p>
               </div>
               <Link
                 href="/pricing"
-                style={{ marginLeft: "auto", padding: "0.45rem 0.9rem", borderRadius: "8px", border: `1px solid ${T.accent}`, color: T.accent, textDecoration: "none", fontSize: "0.75rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, whiteSpace: "nowrap" }}
+                style={{
+                  textDecoration: "none",
+                  borderRadius: "999px",
+                  padding: "0.75rem 1rem",
+                  border: `1px solid ${T.accent}`,
+                  background: T.accentSoft,
+                  color: T.accent,
+                  fontWeight: 700,
+                  fontSize: "0.82rem",
+                  whiteSpace: "nowrap",
+                }}
               >
                 Renew Pro
               </Link>
             </div>
           )}
-        </motion.div>
-      </div>
+        </motion.section>
 
-      {/* Search bar */}
-      <div style={{ padding: "2rem 2.5rem 1.5rem", borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div style={{ position: "relative", flex: 1, maxWidth: "300px" }}>
-            <Search style={{ position: "absolute", left: "0.875rem", top: "50%", transform: "translateY(-50%)", width: "14px", height: "14px", color: T.textDim }} />
-            <input
-              type="text"
-              placeholder="Search courses..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ width: "100%", backgroundColor: T.inputBg, border: `1px solid ${T.border}`, borderRadius: "10px", padding: "0.6rem 2.25rem 0.6rem 2.4rem", color: T.text, fontSize: "0.825rem", outline: "none", fontFamily: "'General Sans',sans-serif" }}
-            />
-            {search && (
-              <button onClick={() => setSearch("")} style={{ position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: T.textDim, display: "flex" }}>
-                <X style={{ width: "13px", height: "13px" }} />
-              </button>
-            )}
-          </div>
-          <span style={{ fontSize: "0.775rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", marginLeft: "auto" }}>
-            {filtered.filter(c => !isLocked(c)).length} available · {filtered.filter(c => isLocked(c)).length} locked
-          </span>
-        </div>
-      </div>
-
-      {/* Course list */}
-      <div style={{ padding: "0 2.5rem 3rem" }}>
-        {filtered.map((course, i) => {
-          const locked = isLocked(course);
-          const thumbnail = (
-            <div style={{ width: "96px", height: "68px", borderRadius: "10px", backgroundColor: T.imgBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}`, position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", inset: 0, background: theme === "dark" ? "linear-gradient(135deg, rgba(255,109,31,0.2), rgba(34,34,34,0.8))" : "linear-gradient(135deg, rgba(255,109,31,0.18), rgba(255,255,255,0.9))" }} />
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ width: "34px", height: "34px", borderRadius: "999px", backgroundColor: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${T.border}` }}>
-                  {locked ? (
-                    <Lock style={{ width: "15px", height: "15px", color: T.text }} />
-                  ) : (
-                    <Play style={{ width: "16px", height: "16px", color: T.text }} />
-                  )}
-                </div>
-              </div>
-              <span style={{ position: "absolute", top: "6px", left: "6px", fontSize: "0.55rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: T.text, backgroundColor: theme === "dark" ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.7)", padding: "2px 6px", borderRadius: "6px", border: `1px solid ${T.border}` }}>
-                {(course.access ?? "free") === "pro" ? "Pro course" : "Course access"}
-              </span>
-              {locked && (
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: theme === "dark" ? "rgba(34,34,34,0.85)" : "rgba(250,243,225,0.85)" }}>
-                  <Lock style={{ width: "15px", height: "15px", color: T.textDim }} />
-                </div>
-              )}
-            </div>
-          );
-
-          return (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.04 }}
-              style={{ display: "flex", alignItems: "center", gap: "1.5rem", padding: "1.5rem 0", borderBottom: `1px solid ${T.border}`, cursor: locked ? "not-allowed" : "default", opacity: locked ? 0.4 : 1, transition: "opacity 0.2s" }}
+        <div className="courses-filter-row">
+          {filterOptions.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => setFilter(option.key)}
+              style={{
+                borderRadius: "999px",
+                border: `1px solid ${filter === option.key ? T.accent : T.cardBorder}`,
+                background: filter === option.key ? T.accentSoft : T.cardBg,
+                color: filter === option.key ? T.accent : T.textMuted,
+                padding: "0.72rem 1rem",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                fontFamily: "'General Sans', sans-serif",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
             >
-              {/* Thumbnail */}
-              {thumbnail}
+              {option.label}
+            </button>
+          ))}
+        </div>
 
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "0.25rem" }}>
-                  <span style={{ fontSize: "0.6rem", fontFamily: "'General Sans',sans-serif", fontWeight: 700, color: levelColor(course.level), backgroundColor: `${levelColor(course.level)}18`, padding: "2px 7px", borderRadius: "5px" }}>
-                    {course.level}
-                  </span>
-                  {locked && lockNotes(course).map((note) => (
-                    <span key={note} style={{ fontSize: "0.6rem", color: T.textDim, fontFamily: "'General Sans',sans-serif", padding: "2px 7px", borderRadius: "5px", backgroundColor: T.surface }}>
-                      {note}
-                    </span>
-                  ))}
-                </div>
-                <h3 style={{ fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: T.text, marginBottom: "0.2rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {course.title}
-                </h3>
-                <p style={{ fontSize: "0.72rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif", marginBottom: "0.32rem" }}>
-                  {getCourseInstructorLabel(course.instructor)}
-                </p>
-                <div className="hide-mobile" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", padding: "0.22rem 0.5rem", borderRadius: "999px", border: `1px solid ${T.accent}33`, backgroundColor: T.accentSoft, color: T.accent, fontSize: "0.62rem", fontFamily: "'Cabinet Grotesk',sans-serif", fontWeight: 700, letterSpacing: "0.02em", marginBottom: "0.4rem" }}>
-                  {getCourseCreditLabel(course.instructor)}
-                </div>
-                <p className="hide-mobile" style={{ fontSize: "0.7rem", color: T.textDim, fontFamily: "'Satoshi',sans-serif", lineHeight: 1.5 }}>
-                  {course.desc}
-                </p>
-              </div>
+        <section className="courses-gallery-grid">
+          {filteredCourses.map((course, index) => {
+            const locked = isLocked(course);
+            const lockNotes = getLockNotes(course, skillLevel, hasProAccess, accessibleLevels);
 
-              {/* Meta */}
-              <div className="hide-mobile" style={{ display: "flex", alignItems: "center", gap: "1.5rem", flexShrink: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Clock style={{ width: "12px", height: "12px", color: T.textDim }} />
-                  <span style={{ fontSize: "0.775rem", color: T.textMuted, fontFamily: "'General Sans',sans-serif" }}>{course.duration}</span>
-                </div>
-              </div>
+            return (
+              <Link
+                key={getCourseSlug(course)}
+                href={`/courses/library/${getCourseSlug(course)}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <motion.article
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.38, delay: index * 0.05 }}
+                  whileHover={{ y: -6 }}
+                  className="course-card"
+                  style={{
+                    borderRadius: "26px",
+                    border: `1px solid ${T.cardBorder}`,
+                    background: T.cardBg,
+                    overflow: "hidden",
+                    boxShadow:
+                      theme === "dark"
+                        ? "0 18px 46px rgba(0,0,0,0.16)"
+                        : "0 16px 38px rgba(110, 70, 24, 0.08)",
+                  }}
+                >
+                  <div className="course-card-art">
+                    <CourseArtwork
+                      course={course}
+                      locked={locked}
+                      priority={index < 2}
+                      variant="card"
+                      showOverlayDetails={false}
+                    />
+                  </div>
 
-              {/* Price + button */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem", flexShrink: 0 }}>
-                <span style={{ fontFamily: "'General Sans',sans-serif", fontWeight: 600, fontSize: "0.75rem", color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  {(course.access ?? "free") === "pro" ? "Pro members only" : "Included in subscription"}
-                </span>
-                {locked ? (
-                  <button
-                    disabled={!((course.access ?? "free") === "pro" && !hasPro)}
-                    onClick={() => {
-                      if ((course.access ?? "free") === "pro" && !hasPro) {
-                        window.location.href = "/pricing";
-                      }
-                    }}
-                    style={{ padding: "0.45rem 1.1rem", borderRadius: "8px", border: `1px solid ${T.border}`, backgroundColor: "transparent", color: T.textDim, fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.775rem", cursor: (course.access ?? "free") === "pro" && !hasPro ? "pointer" : "not-allowed", transition: "all 0.18s", whiteSpace: "nowrap" }}
-                  >
-                    {(course.access ?? "free") === "pro" && !hasPro ? "Upgrade" : "Locked"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void launchCourse(course)}
-                    style={{ padding: "0.45rem 1.1rem", borderRadius: "8px", border: `1px solid ${T.accent}`, backgroundColor: "transparent", color: T.accent, fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "0.775rem", cursor: "pointer", transition: "all 0.18s", whiteSpace: "nowrap", textDecoration: "none", display: "inline-flex" }}
-                    onMouseEnter={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.backgroundColor = T.accent; b.style.color = T.accentText; }}
-                    onMouseLeave={(e) => { const b = e.currentTarget as HTMLButtonElement; b.style.backgroundColor = "transparent"; b.style.color = T.accent; }}
-                  >
-                    {launchingCourseId === course.id ? "Opening..." : "Enrol"}
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
-        {launchError && (
-          <div style={{ marginTop: "1rem", color: "#E46464", fontSize: "0.82rem", fontFamily: "'General Sans',sans-serif" }}>
-            {launchError}
+                  <div className="course-card-copy">
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.85rem" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
+                        <span
+                          style={{
+                            padding: "0.35rem 0.7rem",
+                            borderRadius: "999px",
+                            background: `${levelColors[course.level] || T.accent}18`,
+                            color: levelColors[course.level] || T.accent,
+                            fontSize: "0.68rem",
+                            fontWeight: 700,
+                            fontFamily: "'General Sans', sans-serif",
+                          }}
+                        >
+                          {course.level}
+                        </span>
+                        <span
+                          style={{
+                            padding: "0.35rem 0.7rem",
+                            borderRadius: "999px",
+                            background: course.access === "pro" ? T.accentSoft : "transparent",
+                            border: `1px solid ${course.access === "pro" ? T.accent : T.cardBorder}`,
+                            color: course.access === "pro" ? T.accent : T.textMuted,
+                            fontSize: "0.68rem",
+                            fontWeight: 700,
+                            fontFamily: "'General Sans', sans-serif",
+                          }}
+                        >
+                          {course.access === "pro" ? "Pro" : "Open"}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          color: T.textDim,
+                          fontSize: "0.74rem",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <Users2 size={14} />
+                        {course.enrolledCount || "--"}
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: "1rem" }}>
+                      <h3
+                        style={{
+                          margin: 0,
+                          fontFamily: "'Clash Display', sans-serif",
+                          fontSize: "1.42rem",
+                          lineHeight: 1,
+                          letterSpacing: "-0.04em",
+                        }}
+                      >
+                        {course.title}
+                      </h3>
+                      <p
+                        style={{
+                          margin: "0.48rem 0 0",
+                          color: T.textMuted,
+                          fontSize: "0.84rem",
+                          fontFamily: "'General Sans', sans-serif",
+                        }}
+                      >
+                        {getCourseInstructorLabel(course.instructor)}
+                      </p>
+                      <p
+                        style={{
+                          margin: "0.38rem 0 0",
+                          width: "fit-content",
+                          borderRadius: "999px",
+                          padding: "0.28rem 0.55rem",
+                          background: T.accentSoft,
+                          color: T.accent,
+                          fontSize: "0.66rem",
+                          fontWeight: 700,
+                          fontFamily: "'General Sans', sans-serif",
+                        }}
+                      >
+                        {getCourseCreditLabel(course.instructor)}
+                      </p>
+                    </div>
+
+                    <p
+                      style={{
+                        margin: "0.9rem 0 0",
+                        color: T.textMuted,
+                        fontSize: "0.86rem",
+                        lineHeight: 1.7,
+                        fontFamily: "'General Sans', sans-serif",
+                      }}
+                    >
+                      {course.desc}
+                    </p>
+
+                    <div
+                      style={{
+                        marginTop: "1rem",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "0.6rem",
+                      }}
+                    >
+                      <span className="course-chip">
+                        <Clock3 size={14} />
+                        {course.durationLabel}
+                      </span>
+                      <span className="course-chip">
+                        <Layers3 size={14} />
+                        {course.lessons} lesson{course.lessons === 1 ? "" : "s"}
+                      </span>
+                      {lockNotes.map((note) => (
+                        <span key={note} className="course-chip" style={{ color: T.textDim }}>
+                          {note}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: "1.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "0.85rem",
+                      }}
+                    >
+                      <div>
+                        <p
+                          style={{
+                            margin: 0,
+                            color: T.textDim,
+                            fontSize: "0.72rem",
+                            fontFamily: "'General Sans', sans-serif",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.08em",
+                          }}
+                        >
+                          {locked ? "Preview course" : "Open internal course page"}
+                        </p>
+                        <p
+                          style={{
+                            margin: "0.24rem 0 0",
+                            color: T.textMuted,
+                            fontSize: "0.82rem",
+                            fontFamily: "'General Sans', sans-serif",
+                          }}
+                        >
+                          {locked ? "See the syllabus and unlock path" : "Review lessons, then launch from inside"}
+                        </p>
+                      </div>
+
+                      <div
+                        style={{
+                          width: "2.75rem",
+                          height: "2.75rem",
+                          borderRadius: "999px",
+                          background: T.accentSoft,
+                          color: T.accent,
+                          display: "grid",
+                          placeItems: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <ArrowRight size={18} />
+                      </div>
+                    </div>
+                  </div>
+                </motion.article>
+              </Link>
+            );
+          })}
+        </section>
+
+        {filteredCourses.length === 0 && (
+          <div
+            style={{
+              borderRadius: "26px",
+              border: `1px solid ${T.cardBorder}`,
+              background: T.cardBg,
+              padding: "2rem",
+              textAlign: "center",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "'Clash Display', sans-serif",
+                fontSize: "1.4rem",
+                letterSpacing: "-0.03em",
+              }}
+            >
+              No courses match that search yet
+            </p>
+            <p
+              style={{
+                margin: "0.55rem auto 0",
+                maxWidth: "34rem",
+                color: T.textMuted,
+                fontSize: "0.88rem",
+                lineHeight: 1.7,
+                fontFamily: "'General Sans', sans-serif",
+              }}
+            >
+              Try a broader keyword or switch filters. The gallery keeps your locked and unlocked paths visible so you can plan your next move.
+            </p>
           </div>
         )}
       </div>
 
+      <style jsx>{`
+        .courses-shell {
+          position: relative;
+          z-index: 1;
+          width: min(1200px, calc(100% - 2rem));
+          margin: 0 auto;
+          padding: 1.2rem 0 3rem;
+          display: grid;
+          gap: 1.2rem;
+        }
+
+        .courses-hero-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.85fr);
+          gap: 1rem;
+          align-items: stretch;
+        }
+
+        .courses-stat-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 0.8rem;
+        }
+
+        .courses-toolbar {
+          margin-top: 1.2rem;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 0.75rem;
+          align-items: center;
+        }
+
+        .courses-search {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          gap: 0.65rem;
+          align-items: center;
+          border-radius: 999px;
+          border: 1px solid ${T.cardBorder};
+          background: ${T.inputBg};
+          padding: 0.92rem 1rem;
+        }
+
+        .courses-filter-row {
+          display: flex;
+          gap: 0.7rem;
+          flex-wrap: wrap;
+        }
+
+        .courses-gallery-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 1rem;
+        }
+
+        .course-card {
+          height: 100%;
+          display: grid;
+          grid-template-rows: 250px minmax(0, 1fr);
+        }
+
+        .course-card-art {
+          padding: 0.85rem 0.85rem 0;
+        }
+
+        .course-card-copy {
+          padding: 1.1rem 1rem 1rem;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .course-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.42rem;
+          border-radius: 999px;
+          border: 1px solid ${T.cardBorder};
+          background: ${T.shell};
+          color: ${T.textMuted};
+          padding: 0.46rem 0.68rem;
+          font-size: 0.72rem;
+          font-family: "General Sans", sans-serif;
+        }
+
+        @media (max-width: 1023px) {
+          .courses-shell {
+            width: min(100%, calc(100% - 1.4rem));
+            padding-top: 0.9rem;
+          }
+
+          .courses-hero-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .courses-stat-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .courses-gallery-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 767px) {
+          .courses-shell {
+            width: min(100%, calc(100% - 1rem));
+            padding-bottom: 1.6rem;
+          }
+
+          .courses-stat-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .courses-toolbar {
+            grid-template-columns: 1fr;
+          }
+
+          .courses-gallery-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .course-card {
+            grid-template-rows: 220px minmax(0, 1fr);
+          }
+        }
+      `}</style>
     </div>
   );
 }
