@@ -70,6 +70,16 @@ const VISUAL_TONES: CourseVisualTone[] = [
   "sunset",
 ];
 
+const DEFAULT_COURSE_THUMBNAILS: Record<string, string> = {
+  "quick poses for strong silhouettes": "/images/courses/quick-poses.jpg",
+  "expressive walk cycles: the gathering place study": "/images/courses/walk-cycles.jpg",
+  "bouncing ball with tail - moho tutorial": "/images/courses/bouncing-ball.jpg",
+  "toon boom fundamentals": "/images/courses/toon-boom.jpg",
+};
+
+const getDefaultCourseThumbnail = (title: string) =>
+  DEFAULT_COURSE_THUMBNAILS[title.trim().toLowerCase()] || null;
+
 export const FALLBACK_COURSES: CourseRecord[] = [
   {
     title: "Quick Poses for Strong Silhouettes",
@@ -80,7 +90,7 @@ export const FALLBACK_COURSES: CourseRecord[] = [
     desc: "Build clear posing instincts, stronger staging, and silhouette readability that holds up in motion.",
     lessons: 6,
     access: "free",
-    thumbnailUrl: null,
+    thumbnailUrl: getDefaultCourseThumbnail("Quick Poses for Strong Silhouettes"),
     videoUrl:
       "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10",
     enrollUrl:
@@ -98,7 +108,7 @@ export const FALLBACK_COURSES: CourseRecord[] = [
     desc: "Study rhythm, balance, and personality through a warm walk-cycle exercise grounded in everyday movement.",
     lessons: 5,
     access: "free",
-    thumbnailUrl: null,
+    thumbnailUrl: getDefaultCourseThumbnail("Expressive Walk Cycles: The Gathering Place Study"),
     videoUrl:
       "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0",
     enrollUrl:
@@ -116,7 +126,7 @@ export const FALLBACK_COURSES: CourseRecord[] = [
     desc: "Sharpen your timing, arcs, and overlap by turning a simple mechanics exercise into a polished character motion study.",
     lessons: 4,
     access: "pro",
-    thumbnailUrl: null,
+    thumbnailUrl: getDefaultCourseThumbnail("Bouncing Ball with Tail - Moho Tutorial"),
     videoUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4",
     enrollUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4",
     rating: 0,
@@ -132,7 +142,7 @@ export const FALLBACK_COURSES: CourseRecord[] = [
     desc: "Learn the core tools, timeline habits, and scene-building workflow needed to move with confidence inside Toon Boom.",
     lessons: 7,
     access: "pro",
-    thumbnailUrl: null,
+    thumbnailUrl: getDefaultCourseThumbnail("Toon Boom Fundamentals"),
     videoUrl:
       "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb",
     enrollUrl:
@@ -200,7 +210,7 @@ export const normalizeDbCourse = (course: DbCourse, index: number): CourseRecord
   lessons: Math.max(1, course.lessons || 1),
   access:
     course.access_tier === "pro" || Number(course.price || 0) > 0 ? "pro" : "free",
-  thumbnailUrl: course.thumbnail_url || null,
+  thumbnailUrl: course.thumbnail_url || getDefaultCourseThumbnail(course.title),
   videoUrl: course.video_path || undefined,
   enrollUrl: course.video_path || undefined,
   rating: Number(course.rating || 0) || 0,

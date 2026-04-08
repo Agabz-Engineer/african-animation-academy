@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -342,32 +343,40 @@ export default function CoursesPage() {
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "space-between",
+                  overflow: "hidden",
                 }}
               >
                 <div
                   style={{
+                    position: "relative",
                     borderRadius: "22px",
-                    border: `1px dashed ${T.cardBorder}`,
+                    border: `1px solid ${T.cardBorder}`,
                     minHeight: "12rem",
                     background:
                       theme === "dark"
                         ? "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)"
                         : "linear-gradient(180deg, rgba(34,34,34,0.03) 0%, rgba(34,34,34,0.01) 100%)",
-                    display: "grid",
-                    placeItems: "center",
+                    overflow: "hidden",
                   }}
                 >
-                  <span
+                  <Image
+                    src="/images/courses/courses-feature.jpg"
+                    alt="Course feature"
+                    fill
+                    priority
+                    sizes="(max-width: 1023px) 100vw, 34vw"
+                    style={{ objectFit: "cover" }}
+                  />
+                  <div
                     style={{
-                      color: T.textDim,
-                      fontSize: "0.74rem",
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      fontFamily: "'General Sans', sans-serif",
+                      position: "absolute",
+                      inset: 0,
+                      background:
+                        theme === "dark"
+                          ? "linear-gradient(180deg, rgba(9,8,8,0.08) 0%, rgba(9,8,8,0.28) 54%, rgba(9,8,8,0.82) 100%)"
+                          : "linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(25,20,18,0.18) 56%, rgba(25,20,18,0.54) 100%)",
                     }}
-                  >
-                    Photo feature space
-                  </span>
+                  />
                 </div>
 
                 <div style={{ display: "grid", gap: "0.5rem" }}>
