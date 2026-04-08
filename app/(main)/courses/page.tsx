@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Clock3, Crown, Layers3, Lock, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, Clock3, Crown, Layers3, Search, Sparkles, X } from "lucide-react";
 import CourseArtwork from "@/app/components/courses/CourseArtwork";
 import {
   getCourseInstructorLabel,
@@ -113,10 +113,6 @@ export default function CoursesPage() {
     return course.level === filter;
   });
 
-  const availableCount = courses.filter((course) => !isLocked(course)).length;
-  const lockedCount = courses.filter((course) => isLocked(course)).length;
-  const premiumCount = courses.filter((course) => course.access === "pro").length;
-
   if (loading) {
     return (
       <div
@@ -185,7 +181,6 @@ export default function CoursesPage() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
-          className="courses-hero-panel"
           style={{
             borderRadius: "32px",
             border: `1px solid ${T.shellBorder}`,
@@ -198,12 +193,6 @@ export default function CoursesPage() {
                 : "0 24px 60px rgba(69, 39, 10, 0.08)",
           }}
         >
-          <div className="courses-hero-portrait" aria-hidden="true">
-            <div className="courses-hero-portrait-core" />
-            <div className="courses-hero-portrait-glow" />
-          </div>
-          <div className="courses-hero-texture" aria-hidden="true" />
-
           <div className="courses-hero-grid">
             <div>
               <div
@@ -318,79 +307,96 @@ export default function CoursesPage() {
               </div>
             </div>
 
-            <div className="courses-stat-grid">
-              {[
-                {
-                  label: "Ready now",
-                  value: String(availableCount).padStart(2, "0"),
-                  icon: Layers3,
-                  note: "You can enter these today",
-                },
-                {
-                  label: "Premium vault",
-                  value: String(premiumCount).padStart(2, "0"),
-                  icon: Crown,
-                  note: "Pro-only deep dives",
-                },
-                {
-                  label: "Locked next",
-                  value: String(lockedCount).padStart(2, "0"),
-                  icon: Lock,
-                  note: "Unlock as you progress",
-                },
-              ].map((stat) => (
+            <div className="courses-feature-card">
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  width: "fit-content",
+                  borderRadius: "999px",
+                  border: `1px solid ${T.cardBorder}`,
+                  background: "rgba(8, 8, 8, 0.14)",
+                  padding: "0.48rem 0.78rem",
+                  color: T.accent,
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <Sparkles size={14} />
+                Cover-first viewing
+              </div>
+
+              <div
+                style={{
+                  borderRadius: "28px",
+                  border: `1px solid ${T.cardBorder}`,
+                  background:
+                    theme === "dark"
+                      ? "linear-gradient(180deg, rgba(15, 12, 11, 0.96) 0%, rgba(12, 10, 8, 0.88) 100%)"
+                      : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,241,232,0.94) 100%)",
+                  minHeight: "21rem",
+                  padding: "1.2rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
+              >
                 <div
-                  key={stat.label}
                   style={{
-                    borderRadius: "24px",
-                    border: `1px solid ${T.cardBorder}`,
-                    background: T.cardBg,
-                    padding: "1.1rem",
-                    minHeight: "8.3rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
+                    borderRadius: "22px",
+                    border: `1px dashed ${T.cardBorder}`,
+                    minHeight: "12rem",
+                    background:
+                      theme === "dark"
+                        ? "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)"
+                        : "linear-gradient(180deg, rgba(34,34,34,0.03) 0%, rgba(34,34,34,0.01) 100%)",
+                    display: "grid",
+                    placeItems: "center",
                   }}
                 >
-                  <div
+                  <span
                     style={{
-                      width: "2.5rem",
-                      height: "2.5rem",
-                      borderRadius: "16px",
-                      background: T.accentSoft,
-                      display: "grid",
-                      placeItems: "center",
-                      color: T.accent,
+                      color: T.textDim,
+                      fontSize: "0.74rem",
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      fontFamily: "'General Sans', sans-serif",
                     }}
                   >
-                    <stat.icon size={18} />
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        margin: "0 0 0.25rem",
-                        fontFamily: "'Clash Display', sans-serif",
-                        fontSize: "2rem",
-                        letterSpacing: "-0.06em",
-                      }}
-                    >
-                      {stat.value}
-                    </p>
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: "0.86rem" }}>{stat.label}</p>
-                    <p
-                      style={{
-                        margin: "0.25rem 0 0",
-                        color: T.textDim,
-                        fontSize: "0.76rem",
-                        lineHeight: 1.55,
-                        fontFamily: "'General Sans', sans-serif",
-                      }}
-                    >
-                      {stat.note}
-                    </p>
-                  </div>
+                    Photo feature space
+                  </span>
                 </div>
-              ))}
+
+                <div style={{ display: "grid", gap: "0.5rem" }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontFamily: "'Clash Display', sans-serif",
+                      fontSize: "clamp(1.8rem, 3vw, 2.7rem)",
+                      lineHeight: 0.95,
+                      letterSpacing: "-0.05em",
+                      maxWidth: "9ch",
+                    }}
+                  >
+                    Tap a cover. Enter the course world.
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: T.textMuted,
+                      fontSize: "0.9rem",
+                      lineHeight: 1.7,
+                      fontFamily: "'General Sans', sans-serif",
+                      maxWidth: "28rem",
+                    }}
+                  >
+                    Bigger visuals here, shorter text, and the full lesson flow waiting inside each course page.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -517,7 +523,7 @@ export default function CoursesPage() {
                       locked={locked}
                       priority={index < 2}
                       variant="card"
-                      showOverlayDetails={false}
+                      showOverlayDetails
                     />
                   </div>
 
@@ -536,19 +542,6 @@ export default function CoursesPage() {
                           style={{
                             padding: "0.35rem 0.7rem",
                             borderRadius: "999px",
-                            background: `${levelColors[course.level] || T.accent}18`,
-                            color: levelColors[course.level] || T.accent,
-                            fontSize: "0.68rem",
-                            fontWeight: 700,
-                            fontFamily: "'General Sans', sans-serif",
-                          }}
-                        >
-                          {course.level}
-                        </span>
-                        <span
-                          style={{
-                            padding: "0.35rem 0.7rem",
-                            borderRadius: "999px",
                             background: course.access === "pro" ? T.accentSoft : "transparent",
                             border: `1px solid ${course.access === "pro" ? T.accent : T.cardBorder}`,
                             color: course.access === "pro" ? T.accent : T.textMuted,
@@ -558,6 +551,19 @@ export default function CoursesPage() {
                           }}
                         >
                           {course.access === "pro" ? "Pro" : "Open"}
+                        </span>
+                        <span
+                          style={{
+                            padding: "0.35rem 0.7rem",
+                            borderRadius: "999px",
+                            background: `${levelColors[course.level] || T.accent}18`,
+                            color: levelColors[course.level] || T.accent,
+                            fontSize: "0.68rem",
+                            fontWeight: 700,
+                            fontFamily: "'General Sans', sans-serif",
+                          }}
+                        >
+                          {course.level}
                         </span>
                       </div>
                       {liveAudience && (
@@ -574,33 +580,20 @@ export default function CoursesPage() {
                       )}
                     </div>
 
-                    <div style={{ marginTop: "0.9rem" }}>
-                      <h3
-                        style={{
-                          margin: 0,
-                          fontFamily: "'Clash Display', sans-serif",
-                          fontSize: "1.42rem",
-                          lineHeight: 1.02,
-                          letterSpacing: "-0.04em",
-                        }}
-                      >
-                        {course.title}
-                      </h3>
-                      <p
-                        style={{
-                          margin: "0.48rem 0 0",
-                          color: T.textMuted,
-                          fontSize: "0.84rem",
-                          fontFamily: "'General Sans', sans-serif",
-                        }}
-                      >
-                        {getCourseInstructorLabel(course.instructor)}
-                      </p>
-                    </div>
+                    <p
+                      style={{
+                        margin: "0.9rem 0 0",
+                        color: T.textMuted,
+                        fontSize: "0.88rem",
+                        fontFamily: "'General Sans', sans-serif",
+                      }}
+                    >
+                      {getCourseInstructorLabel(course.instructor)}
+                    </p>
 
                     <div
                       style={{
-                        marginTop: "1rem",
+                        marginTop: "0.9rem",
                         display: "flex",
                         flexWrap: "wrap",
                         gap: "0.6rem",
@@ -629,25 +622,23 @@ export default function CoursesPage() {
                         <p
                           style={{
                             margin: 0,
-                            color: T.textDim,
-                            fontSize: "0.72rem",
-                            fontFamily: "'General Sans', sans-serif",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.08em",
-                          }}
-                        >
-                          {locked ? "Preview course" : "Open course page"}
-                        </p>
-                        <p
-                          style={{
-                            margin: "0.24rem 0 0",
                             color: T.textMuted,
                             fontSize: "0.82rem",
+                            lineHeight: 1.6,
                             fontFamily: "'General Sans', sans-serif",
-                            maxWidth: "18rem",
                           }}
                         >
                           {primaryNote}
+                        </p>
+                        <p
+                          style={{
+                            margin: "0.22rem 0 0",
+                            color: T.textDim,
+                            fontSize: "0.72rem",
+                            fontFamily: "'General Sans', sans-serif",
+                          }}
+                        >
+                          {locked ? "Preview course page" : "Open course page"}
                         </p>
                       </div>
 
@@ -720,61 +711,6 @@ export default function CoursesPage() {
           gap: 1.2rem;
         }
 
-        .courses-hero-panel {
-          position: relative;
-          overflow: hidden;
-          isolation: isolate;
-        }
-
-        .courses-hero-panel > :not(.courses-hero-portrait):not(.courses-hero-texture) {
-          position: relative;
-          z-index: 1;
-        }
-
-        .courses-hero-portrait {
-          position: absolute;
-          inset: 0 0 0 auto;
-          width: min(30rem, 40%);
-          pointer-events: none;
-          opacity: ${theme === "dark" ? 0.96 : 0.34};
-          z-index: 0;
-        }
-
-        .courses-hero-portrait-core {
-          position: absolute;
-          inset: 1.1rem 1rem 1.1rem auto;
-          width: min(22rem, 100%);
-          border-radius: 28px;
-          background:
-            linear-gradient(270deg, rgba(0, 0, 0, 0.92) 4%, rgba(0, 0, 0, 0.48) 42%, transparent 100%),
-            radial-gradient(circle at 58% 34%, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.08) 8%, transparent 13%),
-            radial-gradient(circle at 48% 46%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 14%, transparent 26%),
-            radial-gradient(circle at 46% 56%, rgba(255, 255, 255, 0.16) 0%, transparent 22%),
-            linear-gradient(180deg, rgba(250, 250, 250, 0.18) 0%, rgba(12, 12, 12, 0.92) 26%, rgba(0, 0, 0, 0.98) 100%);
-          filter: grayscale(1) contrast(1.18);
-          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-        }
-
-        .courses-hero-portrait-glow {
-          position: absolute;
-          inset: 12% 15% auto auto;
-          width: 12rem;
-          height: 12rem;
-          border-radius: 999px;
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, transparent 72%);
-          filter: blur(16px);
-        }
-
-        .courses-hero-texture {
-          position: absolute;
-          inset: 0;
-          background:
-            linear-gradient(90deg, ${theme === "dark" ? "rgba(23, 19, 17, 0.96)" : "rgba(255, 250, 242, 0.9)"} 0%, ${theme === "dark" ? "rgba(23, 19, 17, 0.88)" : "rgba(255, 250, 242, 0.82)"} 50%, rgba(0, 0, 0, 0) 78%),
-            radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.06) 0%, transparent 22%);
-          z-index: 0;
-          pointer-events: none;
-        }
-
         .courses-hero-grid {
           display: grid;
           grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.85fr);
@@ -782,10 +718,10 @@ export default function CoursesPage() {
           align-items: stretch;
         }
 
-        .courses-stat-grid {
+        .courses-feature-card {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 0.8rem;
+          align-content: stretch;
         }
 
         .courses-toolbar {
@@ -822,7 +758,7 @@ export default function CoursesPage() {
         .course-card {
           height: 100%;
           display: grid;
-          grid-template-rows: 290px minmax(0, 1fr);
+          grid-template-rows: 320px minmax(0, 1fr);
         }
 
         .course-card-art {
@@ -854,16 +790,8 @@ export default function CoursesPage() {
             padding-top: 0.9rem;
           }
 
-          .courses-hero-portrait {
-            width: min(24rem, 42%);
-          }
-
           .courses-hero-grid {
             grid-template-columns: 1fr;
-          }
-
-          .courses-stat-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
           }
 
           .courses-gallery-grid {
@@ -877,32 +805,6 @@ export default function CoursesPage() {
             padding-bottom: 1.6rem;
           }
 
-          .courses-hero-panel {
-            padding-bottom: 0.1rem;
-          }
-
-          .courses-hero-portrait {
-            inset: auto 0 0 0;
-            width: 100%;
-            height: 16rem;
-            opacity: ${theme === "dark" ? 0.52 : 0.2};
-          }
-
-          .courses-hero-portrait-core {
-            inset: auto 0 0 auto;
-            width: 72%;
-            height: 100%;
-          }
-
-          .courses-hero-texture {
-            background:
-              linear-gradient(180deg, ${theme === "dark" ? "rgba(23, 19, 17, 0.96)" : "rgba(255, 250, 242, 0.94)"} 0%, ${theme === "dark" ? "rgba(23, 19, 17, 0.9)" : "rgba(255, 250, 242, 0.86)"} 64%, ${theme === "dark" ? "rgba(23, 19, 17, 0.98)" : "rgba(255, 250, 242, 0.92)"} 100%);
-          }
-
-          .courses-stat-grid {
-            grid-template-columns: 1fr;
-          }
-
           .courses-toolbar {
             grid-template-columns: 1fr;
           }
@@ -912,7 +814,7 @@ export default function CoursesPage() {
           }
 
           .course-card {
-            grid-template-rows: 240px minmax(0, 1fr);
+            grid-template-rows: 260px minmax(0, 1fr);
           }
         }
       `}</style>

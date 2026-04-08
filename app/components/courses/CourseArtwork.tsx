@@ -107,6 +107,8 @@ export default function CourseArtwork({
   const tone = TONES[course.visualTone];
   const Icon = tone.icon;
   const sizes = VARIANTS[variant];
+  const showPhotoPlaceholder = !course.thumbnailUrl && variant === "card";
+  const showFloatingIcon = !showPhotoPlaceholder;
 
   return (
     <div
@@ -142,57 +144,99 @@ export default function CourseArtwork({
         </>
       ) : (
         <>
-          <div
-            style={{
-              position: "absolute",
-              top: "-8%",
-              right: "-12%",
-              width: sizes.orbSize,
-              height: sizes.orbSize,
-              borderRadius: "999px",
-              background: tone.glow,
-              filter: "blur(12px)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: "-10%",
-              left: "-6%",
-              width: sizes.orbSize * 0.82,
-              height: sizes.orbSize * 0.82,
-              borderRadius: "999px",
-              background: "rgba(255, 255, 255, 0.1)",
-              filter: "blur(18px)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: "10% 8% auto auto",
-              width: variant === "hero" ? "32%" : "38%",
-              aspectRatio: "1 / 1",
-              borderRadius: "22px",
-              border: `1px solid ${tone.ring}`,
-              background: tone.panel,
-              backdropFilter: "blur(10px)",
-              transform: "rotate(9deg)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: "auto auto 14% 8%",
-              width: variant === "hero" ? "40%" : "48%",
-              aspectRatio: "1 / 1",
-              borderRadius: "26px",
-              border: `1px solid ${tone.ring}`,
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
-              backdropFilter: "blur(12px)",
-              transform: "rotate(-8deg)",
-            }}
-          />
+          {showPhotoPlaceholder ? (
+            <>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "0",
+                  background:
+                    "linear-gradient(180deg, rgba(12, 10, 8, 0.1) 0%, rgba(12, 10, 8, 0.2) 44%, rgba(12, 10, 8, 0.8) 100%)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "1rem",
+                  borderRadius: "18px",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "1.5rem",
+                  borderRadius: "16px",
+                  border: "1px dashed rgba(255,255,255,0.16)",
+                  display: "grid",
+                  placeItems: "center",
+                  color: "rgba(255, 247, 235, 0.62)",
+                  fontSize: "0.72rem",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  fontFamily: "'General Sans', sans-serif",
+                }}
+              >
+                Cover photo space
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  position: "absolute",
+                  top: "-8%",
+                  right: "-12%",
+                  width: sizes.orbSize,
+                  height: sizes.orbSize,
+                  borderRadius: "999px",
+                  background: tone.glow,
+                  filter: "blur(12px)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-10%",
+                  left: "-6%",
+                  width: sizes.orbSize * 0.82,
+                  height: sizes.orbSize * 0.82,
+                  borderRadius: "999px",
+                  background: "rgba(255, 255, 255, 0.1)",
+                  filter: "blur(18px)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "10% 8% auto auto",
+                  width: variant === "hero" ? "32%" : "38%",
+                  aspectRatio: "1 / 1",
+                  borderRadius: "22px",
+                  border: `1px solid ${tone.ring}`,
+                  background: tone.panel,
+                  backdropFilter: "blur(10px)",
+                  transform: "rotate(9deg)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "auto auto 14% 8%",
+                  width: variant === "hero" ? "40%" : "48%",
+                  aspectRatio: "1 / 1",
+                  borderRadius: "26px",
+                  border: `1px solid ${tone.ring}`,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
+                  backdropFilter: "blur(12px)",
+                  transform: "rotate(-8deg)",
+                }}
+              />
+            </>
+          )}
         </>
       )}
 
@@ -234,49 +278,53 @@ export default function CourseArtwork({
             {course.level}
           </span>
 
-          <div
-            style={{
-              width: variant === "hero" ? "3.25rem" : "2.65rem",
-              height: variant === "hero" ? "3.25rem" : "2.65rem",
-              borderRadius: variant === "hero" ? "18px" : "16px",
-              background: "rgba(8, 8, 8, 0.24)",
-              border: "1px solid rgba(255,255,255,0.18)",
-              display: "grid",
-              placeItems: "center",
-              backdropFilter: "blur(12px)",
-            }}
-          >
-            <Icon size={sizes.iconSize} style={{ color: "#FFF7EB" }} />
-          </div>
+          {showFloatingIcon && (
+            <div
+              style={{
+                width: variant === "hero" ? "3.25rem" : "2.65rem",
+                height: variant === "hero" ? "3.25rem" : "2.65rem",
+                borderRadius: variant === "hero" ? "18px" : "16px",
+                background: "rgba(8, 8, 8, 0.24)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                display: "grid",
+                placeItems: "center",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <Icon size={sizes.iconSize} style={{ color: "#FFF7EB" }} />
+            </div>
+          )}
         </div>
 
         {showOverlayDetails && (
           <div style={{ display: "grid", gap: "0.5rem" }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.45rem",
-                width: "fit-content",
-                borderRadius: "999px",
-                padding: "0.35rem 0.68rem",
-                background: "rgba(8,8,8,0.28)",
-                border: "1px solid rgba(255,255,255,0.14)",
-                fontSize: "0.68rem",
-                fontFamily: "'General Sans', sans-serif",
-                color: "rgba(255, 247, 235, 0.84)",
-              }}
-            >
-              <span>{course.lessons} lesson{course.lessons === 1 ? "" : "s"}</span>
-              <span style={{ opacity: 0.55 }}>.</span>
-              <span>{course.durationLabel}</span>
-            </div>
+            {variant !== "card" && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.45rem",
+                  width: "fit-content",
+                  borderRadius: "999px",
+                  padding: "0.35rem 0.68rem",
+                  background: "rgba(8,8,8,0.28)",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  fontSize: "0.68rem",
+                  fontFamily: "'General Sans', sans-serif",
+                  color: "rgba(255, 247, 235, 0.84)",
+                }}
+              >
+                <span>{course.lessons} lesson{course.lessons === 1 ? "" : "s"}</span>
+                <span style={{ opacity: 0.55 }}>.</span>
+                <span>{course.durationLabel}</span>
+              </div>
+            )}
 
             <div>
               <p
                 style={{
                   margin: 0,
-                  fontSize: sizes.titleSize,
+                  fontSize: variant === "card" ? "1.55rem" : sizes.titleSize,
                   lineHeight: 1.08,
                   letterSpacing: "-0.04em",
                   fontWeight: 700,
@@ -287,16 +335,18 @@ export default function CourseArtwork({
               >
                 {course.title}
               </p>
-              <p
-                style={{
-                  margin: "0.35rem 0 0",
-                  fontSize: variant === "hero" ? "0.82rem" : "0.72rem",
-                  color: "rgba(255, 247, 235, 0.76)",
-                  fontFamily: "'General Sans', sans-serif",
-                }}
-              >
-                With {course.instructor}
-              </p>
+              {variant !== "card" && (
+                <p
+                  style={{
+                    margin: "0.35rem 0 0",
+                    fontSize: variant === "hero" ? "0.82rem" : "0.72rem",
+                    color: "rgba(255, 247, 235, 0.76)",
+                    fontFamily: "'General Sans', sans-serif",
+                  }}
+                >
+                  With {course.instructor}
+                </p>
+              )}
             </div>
           </div>
         )}
