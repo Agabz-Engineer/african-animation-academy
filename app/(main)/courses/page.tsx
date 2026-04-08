@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Clock3, Crown, Layers3, Lock, Search, Sparkles, Users2, X } from "lucide-react";
+import { ArrowRight, Clock3, Crown, Layers3, Lock, Search, Sparkles, X } from "lucide-react";
 import CourseArtwork from "@/app/components/courses/CourseArtwork";
-import { getCourseCreditLabel, getCourseInstructorLabel, getCourseSlug, type CourseRecord } from "@/lib/courseCatalog";
+import {
+  getCourseInstructorLabel,
+  getCourseSlug,
+  hasLiveEnrollmentCount,
+  type CourseRecord,
+} from "@/lib/courseCatalog";
 import { useCourseLibrary } from "@/lib/useCourseLibrary";
 import { useThemeMode } from "@/lib/useThemeMode";
 
@@ -67,6 +72,9 @@ const getLockNotes = (
   if (!accessibleLevels.includes(course.level)) notes.push(`Complete ${skillLevel} first`);
   return notes;
 };
+
+const formatAudienceCount = (count: number) =>
+  `${count.toLocaleString()} learner${count === 1 ? "" : "s"}`;
 
 export default function CoursesPage() {
   const theme = useThemeMode();
@@ -177,6 +185,7 @@ export default function CoursesPage() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
+          className="courses-hero-panel"
           style={{
             borderRadius: "32px",
             border: `1px solid ${T.shellBorder}`,
@@ -189,6 +198,12 @@ export default function CoursesPage() {
                 : "0 24px 60px rgba(69, 39, 10, 0.08)",
           }}
         >
+          <div className="courses-hero-portrait" aria-hidden="true">
+            <div className="courses-hero-portrait-core" />
+            <div className="courses-hero-portrait-glow" />
+          </div>
+          <div className="courses-hero-texture" aria-hidden="true" />
+
           <div className="courses-hero-grid">
             <div>
               <div
@@ -235,8 +250,8 @@ export default function CoursesPage() {
                   fontFamily: "'General Sans', sans-serif",
                 }}
               >
-                Every course now opens into its own premium internal experience. Tap a cover, explore the lesson flow,
-                then launch the course from inside the dedicated page.
+                A quieter, more visual library. Open a cover, review the lesson flow, then launch the course from
+                inside its dedicated page.
               </p>
 
               <div className="courses-toolbar">
@@ -467,6 +482,11 @@ export default function CoursesPage() {
           {filteredCourses.map((course, index) => {
             const locked = isLocked(course);
             const lockNotes = getLockNotes(course, skillLevel, hasProAccess, accessibleLevels);
+            const liveAudience = hasLiveEnrollmentCount(course) && course.enrolledCount !== null
+              ? formatAudienceCount(course.enrolledCount)
+              : null;
+            const primaryNote =
+              lockNotes[0] || (locked ? "Preview the syllabus before you unlock it" : "Open the internal course page");
 
             return (
               <Link
@@ -502,7 +522,15 @@ export default function CoursesPage() {
                   </div>
 
                   <div className="course-card-copy">
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.85rem" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: "0.85rem",
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
                         <span
                           style={{
@@ -532,28 +560,27 @@ export default function CoursesPage() {
                           {course.access === "pro" ? "Pro" : "Open"}
                         </span>
                       </div>
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          color: T.textDim,
-                          fontSize: "0.74rem",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        <Users2 size={14} />
-                        {course.enrolledCount || "--"}
-                      </div>
+                      {liveAudience && (
+                        <span
+                          style={{
+                            color: T.textDim,
+                            fontSize: "0.74rem",
+                            whiteSpace: "nowrap",
+                            fontFamily: "'General Sans', sans-serif",
+                          }}
+                        >
+                          {liveAudience}
+                        </span>
+                      )}
                     </div>
 
-                    <div style={{ marginTop: "1rem" }}>
+                    <div style={{ marginTop: "0.9rem" }}>
                       <h3
                         style={{
                           margin: 0,
                           fontFamily: "'Clash Display', sans-serif",
                           fontSize: "1.42rem",
-                          lineHeight: 1,
+                          lineHeight: 1.02,
                           letterSpacing: "-0.04em",
                         }}
                       >
@@ -569,34 +596,7 @@ export default function CoursesPage() {
                       >
                         {getCourseInstructorLabel(course.instructor)}
                       </p>
-                      <p
-                        style={{
-                          margin: "0.38rem 0 0",
-                          width: "fit-content",
-                          borderRadius: "999px",
-                          padding: "0.28rem 0.55rem",
-                          background: T.accentSoft,
-                          color: T.accent,
-                          fontSize: "0.66rem",
-                          fontWeight: 700,
-                          fontFamily: "'General Sans', sans-serif",
-                        }}
-                      >
-                        {getCourseCreditLabel(course.instructor)}
-                      </p>
                     </div>
-
-                    <p
-                      style={{
-                        margin: "0.9rem 0 0",
-                        color: T.textMuted,
-                        fontSize: "0.86rem",
-                        lineHeight: 1.7,
-                        fontFamily: "'General Sans', sans-serif",
-                      }}
-                    >
-                      {course.desc}
-                    </p>
 
                     <div
                       style={{
@@ -614,16 +614,11 @@ export default function CoursesPage() {
                         <Layers3 size={14} />
                         {course.lessons} lesson{course.lessons === 1 ? "" : "s"}
                       </span>
-                      {lockNotes.map((note) => (
-                        <span key={note} className="course-chip" style={{ color: T.textDim }}>
-                          {note}
-                        </span>
-                      ))}
                     </div>
 
                     <div
                       style={{
-                        marginTop: "1.25rem",
+                        marginTop: "1rem",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -641,7 +636,7 @@ export default function CoursesPage() {
                             letterSpacing: "0.08em",
                           }}
                         >
-                          {locked ? "Preview course" : "Open internal course page"}
+                          {locked ? "Preview course" : "Open course page"}
                         </p>
                         <p
                           style={{
@@ -649,9 +644,10 @@ export default function CoursesPage() {
                             color: T.textMuted,
                             fontSize: "0.82rem",
                             fontFamily: "'General Sans', sans-serif",
+                            maxWidth: "18rem",
                           }}
                         >
-                          {locked ? "See the syllabus and unlock path" : "Review lessons, then launch from inside"}
+                          {primaryNote}
                         </p>
                       </div>
 
@@ -724,6 +720,61 @@ export default function CoursesPage() {
           gap: 1.2rem;
         }
 
+        .courses-hero-panel {
+          position: relative;
+          overflow: hidden;
+          isolation: isolate;
+        }
+
+        .courses-hero-panel > :not(.courses-hero-portrait):not(.courses-hero-texture) {
+          position: relative;
+          z-index: 1;
+        }
+
+        .courses-hero-portrait {
+          position: absolute;
+          inset: 0 0 0 auto;
+          width: min(30rem, 40%);
+          pointer-events: none;
+          opacity: ${theme === "dark" ? 0.96 : 0.34};
+          z-index: 0;
+        }
+
+        .courses-hero-portrait-core {
+          position: absolute;
+          inset: 1.1rem 1rem 1.1rem auto;
+          width: min(22rem, 100%);
+          border-radius: 28px;
+          background:
+            linear-gradient(270deg, rgba(0, 0, 0, 0.92) 4%, rgba(0, 0, 0, 0.48) 42%, transparent 100%),
+            radial-gradient(circle at 58% 34%, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.08) 8%, transparent 13%),
+            radial-gradient(circle at 48% 46%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 14%, transparent 26%),
+            radial-gradient(circle at 46% 56%, rgba(255, 255, 255, 0.16) 0%, transparent 22%),
+            linear-gradient(180deg, rgba(250, 250, 250, 0.18) 0%, rgba(12, 12, 12, 0.92) 26%, rgba(0, 0, 0, 0.98) 100%);
+          filter: grayscale(1) contrast(1.18);
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .courses-hero-portrait-glow {
+          position: absolute;
+          inset: 12% 15% auto auto;
+          width: 12rem;
+          height: 12rem;
+          border-radius: 999px;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, transparent 72%);
+          filter: blur(16px);
+        }
+
+        .courses-hero-texture {
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(90deg, ${theme === "dark" ? "rgba(23, 19, 17, 0.96)" : "rgba(255, 250, 242, 0.9)"} 0%, ${theme === "dark" ? "rgba(23, 19, 17, 0.88)" : "rgba(255, 250, 242, 0.82)"} 50%, rgba(0, 0, 0, 0) 78%),
+            radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.06) 0%, transparent 22%);
+          z-index: 0;
+          pointer-events: none;
+        }
+
         .courses-hero-grid {
           display: grid;
           grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.85fr);
@@ -771,7 +822,7 @@ export default function CoursesPage() {
         .course-card {
           height: 100%;
           display: grid;
-          grid-template-rows: 250px minmax(0, 1fr);
+          grid-template-rows: 290px minmax(0, 1fr);
         }
 
         .course-card-art {
@@ -779,7 +830,7 @@ export default function CoursesPage() {
         }
 
         .course-card-copy {
-          padding: 1.1rem 1rem 1rem;
+          padding: 0.95rem 1rem 1rem;
           display: flex;
           flex-direction: column;
         }
@@ -803,6 +854,10 @@ export default function CoursesPage() {
             padding-top: 0.9rem;
           }
 
+          .courses-hero-portrait {
+            width: min(24rem, 42%);
+          }
+
           .courses-hero-grid {
             grid-template-columns: 1fr;
           }
@@ -822,6 +877,28 @@ export default function CoursesPage() {
             padding-bottom: 1.6rem;
           }
 
+          .courses-hero-panel {
+            padding-bottom: 0.1rem;
+          }
+
+          .courses-hero-portrait {
+            inset: auto 0 0 0;
+            width: 100%;
+            height: 16rem;
+            opacity: ${theme === "dark" ? 0.52 : 0.2};
+          }
+
+          .courses-hero-portrait-core {
+            inset: auto 0 0 auto;
+            width: 72%;
+            height: 100%;
+          }
+
+          .courses-hero-texture {
+            background:
+              linear-gradient(180deg, ${theme === "dark" ? "rgba(23, 19, 17, 0.96)" : "rgba(255, 250, 242, 0.94)"} 0%, ${theme === "dark" ? "rgba(23, 19, 17, 0.9)" : "rgba(255, 250, 242, 0.86)"} 64%, ${theme === "dark" ? "rgba(23, 19, 17, 0.98)" : "rgba(255, 250, 242, 0.92)"} 100%);
+          }
+
           .courses-stat-grid {
             grid-template-columns: 1fr;
           }
@@ -835,7 +912,7 @@ export default function CoursesPage() {
           }
 
           .course-card {
-            grid-template-rows: 220px minmax(0, 1fr);
+            grid-template-rows: 240px minmax(0, 1fr);
           }
         }
       `}</style>

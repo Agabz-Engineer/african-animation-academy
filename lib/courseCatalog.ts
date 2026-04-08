@@ -22,7 +22,7 @@ export type CourseRecord = {
   videoUrl?: string;
   enrollUrl?: string;
   rating: number;
-  enrolledCount: number;
+  enrolledCount: number | null;
   visualTone: CourseVisualTone;
 };
 
@@ -85,8 +85,8 @@ export const FALLBACK_COURSES: CourseRecord[] = [
       "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10",
     enrollUrl:
       "https://www.canva.com/design/DAHD3nwYBvg/GZo8Ds7IPpm-D8lFgi4oQA/watch?utm_content=DAHD3nwYBvg&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h6f9a7dbd10",
-    rating: 4.8,
-    enrolledCount: 128,
+    rating: 0,
+    enrolledCount: null,
     visualTone: "ember",
   },
   {
@@ -103,8 +103,8 @@ export const FALLBACK_COURSES: CourseRecord[] = [
       "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0",
     enrollUrl:
       "https://www.canva.com/design/DAHD3m29zmY/lVC08kbRQRHEcrTBgHF8mA/watch?utm_content=DAHD3m29zmY&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h685ad4c8f0",
-    rating: 4.9,
-    enrolledCount: 96,
+    rating: 0,
+    enrolledCount: null,
     visualTone: "gold",
   },
   {
@@ -119,8 +119,8 @@ export const FALLBACK_COURSES: CourseRecord[] = [
     thumbnailUrl: null,
     videoUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4",
     enrollUrl: "https://drive.google.com/file/d/1CDqHpKXvK2GyXGRsoTtweWRBO5IrD8mH/view?ts=69b01be4",
-    rating: 4.7,
-    enrolledCount: 64,
+    rating: 0,
+    enrolledCount: null,
     visualTone: "lagoon",
   },
   {
@@ -137,8 +137,8 @@ export const FALLBACK_COURSES: CourseRecord[] = [
       "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb",
     enrollUrl:
       "https://www.canva.com/design/DAHD39i_yZs/hd3HNHIO-T3poAO-1K3DFQ/watch?utm_content=DAHD39i_yZs&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h25e241a9eb",
-    rating: 4.9,
-    enrolledCount: 82,
+    rating: 0,
+    enrolledCount: null,
     visualTone: "violet",
   },
 ];
@@ -186,6 +186,9 @@ export const getCourseSlug = (course: Pick<CourseRecord, "id" | "title">) => {
   return course.id ? `${base}-${course.id.slice(0, 8)}` : base;
 };
 
+export const hasLiveEnrollmentCount = (course: Pick<CourseRecord, "id" | "enrolledCount">) =>
+  typeof course.id === "string" && typeof course.enrolledCount === "number";
+
 export const normalizeDbCourse = (course: DbCourse, index: number): CourseRecord => ({
   id: course.id,
   title: course.title,
@@ -201,7 +204,10 @@ export const normalizeDbCourse = (course: DbCourse, index: number): CourseRecord
   videoUrl: course.video_path || undefined,
   enrollUrl: course.video_path || undefined,
   rating: Number(course.rating || 0) || 0,
-  enrolledCount: Number(course.enrolled_count || 0) || 0,
+  enrolledCount:
+    typeof course.enrolled_count === "number" && Number.isFinite(course.enrolled_count)
+      ? course.enrolled_count
+      : null,
   visualTone: VISUAL_TONES[index % VISUAL_TONES.length],
 });
 

@@ -23,6 +23,7 @@ import {
   findCourseBySlug,
   getCourseCreditLabel,
   getCourseInstructorLabel,
+  hasLiveEnrollmentCount,
   type CoursePlaylistItem,
   type CourseRecord,
 } from "@/lib/courseCatalog";
@@ -75,6 +76,9 @@ const getLockNotes = (
   if (!accessibleLevels.includes(course.level)) notes.push(`Complete ${skillLevel} first`);
   return notes;
 };
+
+const formatAudienceCount = (count: number) =>
+  `${count.toLocaleString()} learner${count === 1 ? "" : "s"}`;
 
 export default function CourseLibraryDetailPage() {
   const theme = useThemeMode();
@@ -310,6 +314,29 @@ export default function CourseLibraryDetailPage() {
 
   const locked = isLocked(course);
   const lockNotes = getLockNotes(course, skillLevel, hasProAccess, accessibleLevels);
+  const liveAudienceCount =
+    hasLiveEnrollmentCount(course) && course.enrolledCount !== null
+      ? formatAudienceCount(course.enrolledCount)
+      : null;
+
+  const detailKpis = [
+    {
+      icon: Clock3,
+      label: course.durationLabel,
+    },
+    {
+      icon: Layers3,
+      label: `${course.lessons} lesson${course.lessons === 1 ? "" : "s"}`,
+    },
+    ...(liveAudienceCount
+      ? [
+          {
+            icon: Users2,
+            label: liveAudienceCount,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div
@@ -443,18 +470,12 @@ export default function CourseLibraryDetailPage() {
               </p>
 
               <div className="course-kpi-row">
-                <div className="course-kpi-card">
-                  <Clock3 size={15} color={T.accent} />
-                  <span>{course.durationLabel}</span>
-                </div>
-                <div className="course-kpi-card">
-                  <Layers3 size={15} color={T.accent} />
-                  <span>{course.lessons} lessons</span>
-                </div>
-                <div className="course-kpi-card">
-                  <Users2 size={15} color={T.accent} />
-                  <span>{course.enrolledCount || "--"} learners</span>
-                </div>
+                {detailKpis.map((item) => (
+                  <div key={item.label} className="course-kpi-card">
+                    <item.icon size={15} color={T.accent} />
+                    <span>{item.label}</span>
+                  </div>
+                ))}
               </div>
 
               <div
