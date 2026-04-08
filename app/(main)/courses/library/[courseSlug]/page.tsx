@@ -429,10 +429,10 @@ export default function CourseLibraryDetailPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "0.85rem", flexWrap: "wrap" }}>
                   <div>
                     <p style={{ margin: 0, fontSize: "0.74rem", color: T.textDim, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                      Launch access
+                      Your access
                     </p>
                     <p style={{ margin: "0.3rem 0 0", fontWeight: 700 }}>
-                      {locked ? "Preview mode" : "Full course launch ready"}
+                      {locked ? "Preview available" : "Ready to start"}
                     </p>
                   </div>
                   {locked && course.access === "pro" && !hasProAccess && (
@@ -497,10 +497,10 @@ export default function CourseLibraryDetailPage() {
                   {locked
                     ? course.access === "pro" && !hasProAccess
                       ? "Upgrade to unlock"
-                      : "Locked for your current level"
+                      : "Complete the previous level first"
                     : launching
                       ? "Opening course..."
-                      : "Start course"}
+                      : "Start learning"}
                 </button>
               </div>
             </div>
@@ -547,7 +547,7 @@ export default function CourseLibraryDetailPage() {
                   fontFamily: "'General Sans', sans-serif",
                 }}
               >
-                Lesson chapters are not published here yet. For now, this page shows the real course information and the main launch point only.
+                Review the course, check your access, and start learning from here when you are ready.
               </p>
             </div>
 
@@ -574,7 +574,7 @@ export default function CourseLibraryDetailPage() {
                     letterSpacing: "0.08em",
                   }}
                 >
-                  Course access
+                  Course overview
                 </p>
                 <h2
                   style={{
@@ -586,7 +586,7 @@ export default function CourseLibraryDetailPage() {
                     maxWidth: "12ch",
                   }}
                 >
-                  {locked ? "Preview the course space before you unlock it." : "Open the real course session from here."}
+                  {locked ? "See what this course covers before you unlock it." : "Everything you need to start is here."}
                 </h2>
                 <p
                   style={{
@@ -598,8 +598,7 @@ export default function CourseLibraryDetailPage() {
                     maxWidth: "42rem",
                   }}
                 >
-                  This page now stays honest: no fake chapter list, no placeholder video breakdown. It holds the course cover,
-                  the real access point, and the key details only.
+                  Read the course overview, check the key details, and start the main session when you are ready.
                 </p>
               </div>
 
@@ -614,7 +613,7 @@ export default function CourseLibraryDetailPage() {
                       letterSpacing: "0.08em",
                     }}
                   >
-                    Main session
+                    Start this course
                   </p>
                   <p
                     style={{
@@ -639,9 +638,9 @@ export default function CourseLibraryDetailPage() {
                   >
                     {hasLaunchTarget
                       ? locked
-                        ? "You can review the course now. Unlock access when your level or plan allows it."
-                        : "Use the button to launch the actual course in a new tab."
-                      : "This course page is ready, but the launch link has not been connected yet."}
+                        ? "You can review the course now and unlock access when your level or plan allows it."
+                        : "Use the button to open the course and begin learning."
+                      : "This course is being prepared. The start link will be added soon."}
                   </p>
                 </div>
 
@@ -675,12 +674,12 @@ export default function CourseLibraryDetailPage() {
                   {locked
                     ? course.access === "pro" && !hasProAccess
                       ? "Upgrade to unlock"
-                      : "Locked for your level"
+                      : "Complete the previous level first"
                     : launching
                       ? "Opening course..."
                       : hasLaunchTarget
-                        ? "Open course"
-                        : "Launch unavailable"}
+                        ? "Start learning"
+                        : "Coming soon"}
                 </button>
               </div>
 
@@ -704,25 +703,6 @@ export default function CourseLibraryDetailPage() {
                 </div>
               )}
 
-              <div className="course-truth-grid">
-                <div className="course-truth-card">
-                  <p className="course-truth-label">Current format</p>
-                  <p className="course-truth-value">
-                    {hasLaunchTarget ? "One live course launch" : "Launch link pending"}
-                  </p>
-                  <p className="course-truth-copy">
-                    This course currently opens as a single real session, not a chapter-by-chapter playlist.
-                  </p>
-                </div>
-
-                <div className="course-truth-card">
-                  <p className="course-truth-label">Lesson chapters</p>
-                  <p className="course-truth-value">Not published yet</p>
-                  <p className="course-truth-copy">
-                    Separate lesson rows will only appear here once actual course videos are uploaded.
-                  </p>
-                </div>
-              </div>
             </div>
 
             {launchError && (
@@ -807,46 +787,6 @@ export default function CourseLibraryDetailPage() {
           align-items: center;
         }
 
-        .course-truth-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 0.9rem;
-        }
-
-        .course-truth-card {
-          border-radius: 22px;
-          border: 1px solid ${T.panelBorder};
-          background: ${T.secondaryPanel};
-          padding: 1rem;
-          display: grid;
-          gap: 0.45rem;
-        }
-
-        .course-truth-label {
-          margin: 0;
-          color: ${T.textDim};
-          font-size: 0.72rem;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-        }
-
-        .course-truth-value {
-          margin: 0;
-          color: ${T.text};
-          font-family: "Clash Display", sans-serif;
-          font-size: 1.2rem;
-          letter-spacing: -0.03em;
-          line-height: 1.05;
-        }
-
-        .course-truth-copy {
-          margin: 0;
-          color: ${T.textMuted};
-          font-size: 0.82rem;
-          line-height: 1.65;
-          font-family: "General Sans", sans-serif;
-        }
-
         @media (max-width: 1023px) {
           .course-detail-shell {
             width: min(100%, calc(100% - 1rem));
@@ -880,10 +820,6 @@ export default function CourseLibraryDetailPage() {
           }
 
           .course-kpi-row {
-            grid-template-columns: 1fr;
-          }
-
-          .course-truth-grid {
             grid-template-columns: 1fr;
           }
         }

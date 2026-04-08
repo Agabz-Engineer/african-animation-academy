@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import { ArrowRight, Clock3, Crown, Layers3, Search, Sparkles, X } from "lucide-react";
 import CourseArtwork from "@/app/components/courses/CourseArtwork";
 import {
-  getCourseInstructorLabel,
   getCourseSlug,
   hasLiveEnrollmentCount,
   type CourseRecord,
@@ -214,7 +213,7 @@ export default function CoursesPage() {
                 }}
               >
                 <Sparkles size={14} />
-                Premium learning library
+                Animation course library
               </div>
 
               <h1
@@ -227,7 +226,7 @@ export default function CoursesPage() {
                   maxWidth: "10ch",
                 }}
               >
-                Learn through bold, cover-first course worlds.
+                Choose your next animation course.
               </h1>
 
               <p
@@ -240,8 +239,8 @@ export default function CoursesPage() {
                   fontFamily: "'General Sans', sans-serif",
                 }}
               >
-                A quieter, more visual library. Open a cover, review the lesson flow, then launch the course from
-                inside its dedicated page.
+                Browse the course library, see what each class covers, and start learning from the courses available
+                on your plan.
               </p>
 
               <div className="courses-toolbar">
@@ -303,7 +302,7 @@ export default function CoursesPage() {
                       boxShadow: `0 0 12px ${T.accentSoft}`,
                     }}
                   />
-                  {normalizedSkill} path active
+                  {normalizedSkill} level selected
                 </div>
               </div>
             </div>
@@ -327,7 +326,7 @@ export default function CoursesPage() {
                 }}
               >
                 <Sparkles size={14} />
-                Cover-first viewing
+                Start here
               </div>
 
               <div
@@ -390,7 +389,7 @@ export default function CoursesPage() {
                       maxWidth: "9ch",
                     }}
                   >
-                    Tap a cover. Enter the course world.
+                    Open a course and see what you&apos;ll learn.
                   </p>
                   <p
                     style={{
@@ -402,7 +401,7 @@ export default function CoursesPage() {
                       maxWidth: "28rem",
                     }}
                   >
-                    Bigger visuals here, shorter text, and the full lesson flow waiting inside each course page.
+                    Each course gives you a clear overview, the key details, and a direct way to start when you are ready.
                   </p>
                 </div>
               </div>
@@ -501,7 +500,8 @@ export default function CoursesPage() {
               ? formatAudienceCount(course.enrolledCount)
               : null;
             const primaryNote =
-              lockNotes[0] || (locked ? "Preview the syllabus before you unlock it" : "Open the internal course page");
+              lockNotes[0] ||
+              (locked ? "See what this course covers before you unlock it." : "View the course details and start when you're ready.");
 
             return (
               <Link
@@ -589,20 +589,9 @@ export default function CoursesPage() {
                       )}
                     </div>
 
-                    <p
-                      style={{
-                        margin: "0.9rem 0 0",
-                        color: T.textMuted,
-                        fontSize: "0.88rem",
-                        fontFamily: "'General Sans', sans-serif",
-                      }}
-                    >
-                      {getCourseInstructorLabel(course.instructor)}
-                    </p>
-
                     <div
                       style={{
-                        marginTop: "0.9rem",
+                        marginTop: "0.95rem",
                         display: "flex",
                         flexWrap: "wrap",
                         gap: "0.6rem",
@@ -647,7 +636,7 @@ export default function CoursesPage() {
                             fontFamily: "'General Sans', sans-serif",
                           }}
                         >
-                          {locked ? "Preview course page" : "Open course page"}
+                          {locked ? "Preview course" : "View course"}
                         </p>
                       </div>
 
@@ -703,7 +692,7 @@ export default function CoursesPage() {
                 fontFamily: "'General Sans', sans-serif",
               }}
             >
-              Try a broader keyword or switch filters. The gallery keeps your locked and unlocked paths visible so you can plan your next move.
+              Try a broader keyword or change the filter to explore more courses in the library.
             </p>
           </div>
         )}
