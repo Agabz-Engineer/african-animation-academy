@@ -766,12 +766,14 @@ export default function CoursesPage() {
 
         .course-card {
           height: 100%;
-          display: grid;
-          grid-template-rows: 320px minmax(0, 1fr);
+          display: flex;
+          flex-direction: column;
         }
 
         .course-card-art {
           padding: 0.85rem 0.85rem 0;
+          height: 260px;
+          flex-shrink: 0;
         }
 
         .course-card-copy {
@@ -806,6 +808,10 @@ export default function CoursesPage() {
           .courses-gallery-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
+
+          .course-card-art {
+            height: 236px;
+          }
         }
 
         @media (max-width: 767px) {
@@ -822,8 +828,8 @@ export default function CoursesPage() {
             grid-template-columns: 1fr;
           }
 
-          .course-card {
-            grid-template-rows: 260px minmax(0, 1fr);
+          .course-card-art {
+            height: 240px;
           }
         }
       `}</style>

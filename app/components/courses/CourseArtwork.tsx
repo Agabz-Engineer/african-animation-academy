@@ -130,15 +130,30 @@ export default function CourseArtwork({
             alt={course.title}
             fill
             priority={priority}
-            sizes={variant === "hero" ? "(max-width: 1024px) 100vw, 42vw" : "(max-width: 768px) 100vw, 33vw"}
-            style={{ objectFit: "cover" }}
+            quality={96}
+            sizes={
+              variant === "hero"
+                ? "(max-width: 1024px) 100vw, 42vw"
+                : "(max-width: 767px) calc(100vw - 2rem), (max-width: 1023px) calc(50vw - 1.5rem), 360px"
+            }
+            style={{
+              objectFit: "cover",
+              objectPosition:
+                variant === "card"
+                  ? "center center"
+                  : course.title.toLowerCase().includes("toon boom")
+                    ? "center 36%"
+                    : "center center",
+            }}
           />
           <div
             style={{
               position: "absolute",
               inset: 0,
               background:
-                "linear-gradient(180deg, rgba(12, 10, 8, 0.1) 0%, rgba(12, 10, 8, 0.28) 48%, rgba(12, 10, 8, 0.86) 100%)",
+                variant === "card"
+                  ? "linear-gradient(180deg, rgba(12, 10, 8, 0.02) 0%, rgba(12, 10, 8, 0.1) 42%, rgba(12, 10, 8, 0.54) 100%)"
+                  : "linear-gradient(180deg, rgba(12, 10, 8, 0.08) 0%, rgba(12, 10, 8, 0.22) 46%, rgba(12, 10, 8, 0.74) 100%)",
             }}
           />
         </>
@@ -335,6 +350,18 @@ export default function CourseArtwork({
               >
                 {course.title}
               </p>
+              {variant === "card" && (
+                <p
+                  style={{
+                    margin: "0.3rem 0 0",
+                    fontSize: "0.74rem",
+                    color: "rgba(255, 247, 235, 0.82)",
+                    fontFamily: "'General Sans', sans-serif",
+                  }}
+                >
+                  {course.instructor}
+                </p>
+              )}
               {variant !== "card" && (
                 <p
                   style={{
