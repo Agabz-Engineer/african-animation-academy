@@ -352,6 +352,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const T = theme === "dark" ? DARK : LIGHT;
   const isDesktop = !isMobile && !isTablet;
   const sidebarW = expanded ? W_EXPANDED : W_COLLAPSED;
+  const isImmersiveCourseRoute = pathname?.startsWith("/courses/library/") ?? false;
   const accountType = user?.user_metadata?.account_type;
   const studioUser = isStudioAccount(accountType);
   const navLinks = studioUser ? STUDIO_NAV_LINKS : NAV_LINKS;
@@ -672,7 +673,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           - Only this div controls the width
           - CSS transition only (no Framer Motion) = zero scroll flicker
           - SidebarInner fills width: 100% of this container */}
-      {isDesktop && (
+      {isDesktop && !isImmersiveCourseRoute && (
         <div style={{
           position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 20, overflow: "visible",
           width: sidebarW,
@@ -718,13 +719,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           - No Framer Motion = no scroll flicker */}
       <div style={{
         flex: 1, display: "flex", flexDirection: "column", minWidth: 0,
-        marginLeft: isDesktop ? sidebarW : 0,
-        paddingBottom: (isMobile || isTablet) ? 72 : 0,
+        marginLeft: isDesktop && !isImmersiveCourseRoute ? sidebarW : 0,
+        paddingBottom: (isMobile || isTablet) && !isImmersiveCourseRoute ? 72 : 0,
         transition: "margin-left 0.28s cubic-bezier(0.4,0,0.2,1)",
         backgroundColor: "transparent",
       }}>
         {/* Mobile topbar */}
-        {(isMobile || isTablet) && (
+        {(isMobile || isTablet) && !isImmersiveCourseRoute && (
           <div style={{ position: "sticky", top: 0, zIndex: 19, backgroundColor: T.topbarBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `1px solid ${T.border}`, padding: "0.75rem 1.25rem", display: "flex", alignItems: "center", gap: "0.875rem" }}>
             <button onClick={handleOpenMobileMenu}
               style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
@@ -740,7 +741,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
         <main style={{ flex: 1, overflowX: "hidden" }}>
-          {!hasProfileDetails && (
+          {!hasProfileDetails && !isImmersiveCourseRoute && (
             <div
               style={{
                 margin: "0.9rem 1.1rem 0",
@@ -780,6 +781,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
           {children}
         </main>
+        {!isImmersiveCourseRoute && (
         <footer
           style={{
             marginTop: "1.1rem",
@@ -886,10 +888,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </p>
           </div>
         </footer>
+        )}
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      {(isMobile || isTablet) && (
+      {(isMobile || isTablet) && !isImmersiveCourseRoute && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20, backgroundColor: T.bottomNavBg, borderTop: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-around", padding: "0.5rem 0 calc(0.625rem + env(safe-area-inset-bottom))", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
           {bottomNavLinks.map(link => {
             const active = isRouteActive(pathname, link.href);

@@ -1,37 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  BookOpen,
-  CirclePlay,
   Clock3,
   Crown,
-  ExternalLink,
   Layers3,
   Lock,
   Play,
-  Sparkles,
   Users2,
 } from "lucide-react";
 import CourseArtwork from "@/app/components/courses/CourseArtwork";
 import {
-  buildCoursePlaylist,
   findCourseBySlug,
   getCourseCreditLabel,
   getCourseInstructorLabel,
   hasLiveEnrollmentCount,
-  type CoursePlaylistItem,
   type CourseRecord,
 } from "@/lib/courseCatalog";
 import { useCourseLibrary } from "@/lib/useCourseLibrary";
 import { supabase } from "@/lib/supabase";
 import { useThemeMode } from "@/lib/useThemeMode";
-
-type PlaylistTab = "all" | "lesson" | "lab" | "resource";
 
 const DARK = {
   pageBg: "#161211",
@@ -85,8 +77,6 @@ export default function CourseLibraryDetailPage() {
   const T = theme === "dark" ? DARK : LIGHT;
   const params = useParams<{ courseSlug: string }>();
   const courseSlug = params?.courseSlug || "";
-  const [tab, setTab] = useState<PlaylistTab>("all");
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
   const [launchError, setLaunchError] = useState("");
   const {
@@ -99,21 +89,9 @@ export default function CourseLibraryDetailPage() {
   } = useCourseLibrary();
 
   const course = findCourseBySlug(courses, courseSlug);
-  const playlist = course ? buildCoursePlaylist(course) : [];
-  const firstLessonId = playlist[0]?.id ?? null;
-
-  useEffect(() => {
-    setSelectedLessonId(firstLessonId);
-  }, [courseSlug, firstLessonId]);
 
   const isLocked = (target: CourseRecord) =>
     !accessibleLevels.includes(target.level) || (target.access === "pro" && !hasProAccess);
-
-  const selectedLesson =
-    playlist.find((item) => item.id === selectedLessonId) || playlist[0] || null;
-
-  const visiblePlaylist =
-    tab === "all" ? playlist : playlist.filter((item) => item.kind === tab);
 
   const expiryLabel =
     subscriptionEndsAt && !Number.isNaN(new Date(subscriptionEndsAt).getTime())
@@ -176,54 +154,6 @@ export default function CourseLibraryDetailPage() {
     } finally {
       setLaunching(false);
     }
-  };
-
-  const renderLessonAction = (target: CoursePlaylistItem, currentCourse: CourseRecord) => {
-    const locked = isLocked(currentCourse);
-
-    if (locked) {
-      return (
-        <button
-          type="button"
-          onClick={() => {
-            if (currentCourse.access === "pro" && !hasProAccess) {
-              window.location.href = "/pricing";
-            }
-          }}
-          style={{
-            borderRadius: "999px",
-            border: `1px solid ${T.panelBorder}`,
-            background: "transparent",
-            color: T.textDim,
-            padding: "0.62rem 0.9rem",
-            fontSize: "0.74rem",
-            fontWeight: 700,
-            cursor: currentCourse.access === "pro" && !hasProAccess ? "pointer" : "not-allowed",
-          }}
-        >
-          {currentCourse.access === "pro" && !hasProAccess ? "Upgrade" : "Locked"}
-        </button>
-      );
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={() => void launchCourse(currentCourse)}
-        style={{
-          borderRadius: "999px",
-          border: `1px solid ${T.accent}`,
-          background: T.accentSoft,
-          color: T.accent,
-          padding: "0.62rem 0.9rem",
-          fontSize: "0.74rem",
-          fontWeight: 700,
-          cursor: "pointer",
-        }}
-      >
-        {target.isLaunchLesson ? "Play session" : "Open course"}
-      </button>
-    );
   };
 
   if (loading) {
@@ -318,6 +248,7 @@ export default function CourseLibraryDetailPage() {
     hasLiveEnrollmentCount(course) && course.enrolledCount !== null
       ? formatAudienceCount(course.enrolledCount)
       : null;
+  const hasLaunchTarget = Boolean(course.id || course.enrollUrl || course.videoUrl);
 
   const detailKpis = [
     {
@@ -374,7 +305,11 @@ export default function CourseLibraryDetailPage() {
               border: `1px solid ${T.panelBorder}`,
               background: T.panel,
               padding: "1rem",
-              backdropFilter: "blur(20px)",
+              backdropFilter: "blur(24px)",
+              boxShadow:
+                theme === "dark"
+                  ? "0 24px 80px rgba(0,0,0,0.24)"
+                  : "0 18px 54px rgba(121, 84, 38, 0.12)",
             }}
           >
             <Link
@@ -482,7 +417,10 @@ export default function CourseLibraryDetailPage() {
                 style={{
                   borderRadius: "24px",
                   border: `1px solid ${T.panelBorder}`,
-                  background: T.secondaryPanel,
+                  background:
+                    theme === "dark"
+                      ? "linear-gradient(180deg, rgba(42, 36, 32, 0.96) 0%, rgba(28, 24, 21, 0.92) 100%)"
+                      : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(250,244,236,0.94) 100%)",
                   padding: "1rem",
                   display: "grid",
                   gap: "0.75rem",
@@ -572,259 +510,219 @@ export default function CourseLibraryDetailPage() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.42, delay: 0.05 }}
+            className="course-detail-main"
             style={{
               borderRadius: "32px",
               border: `1px solid ${T.panelBorder}`,
               background: T.panel,
-              padding: "1rem",
-              backdropFilter: "blur(20px)",
+              padding: "1.1rem",
+              backdropFilter: "blur(22px)",
               display: "grid",
               gap: "1rem",
               alignContent: "start",
+              boxShadow:
+                theme === "dark"
+                  ? "0 24px 80px rgba(0,0,0,0.2)"
+                  : "0 18px 54px rgba(121, 84, 38, 0.1)",
             }}
           >
             <div
+              className="course-detail-note"
               style={{
-                borderRadius: "24px",
+                borderRadius: "20px",
                 border: `1px solid ${T.panelBorder}`,
-                background: T.secondaryPanel,
-                padding: "1rem",
-                display: "flex",
-                justifyContent: "space-between",
-                gap: "1rem",
-                alignItems: "center",
-                flexWrap: "wrap",
+                background:
+                  theme === "dark"
+                    ? "rgba(36, 31, 28, 0.96)"
+                    : "rgba(255,255,255,0.95)",
+                padding: "0.95rem 1rem",
               }}
             >
-              <div>
-                <p style={{ margin: 0, color: T.textDim, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  Playlist mode
-                </p>
-                <p style={{ margin: "0.25rem 0 0", fontFamily: "'Clash Display', sans-serif", fontSize: "1.35rem", letterSpacing: "-0.03em" }}>
-                  Internal course page now active
-                </p>
+              <p
+                style={{
+                  margin: 0,
+                  color: T.textMuted,
+                  fontSize: "0.84rem",
+                  lineHeight: 1.7,
+                  fontFamily: "'General Sans', sans-serif",
+                }}
+              >
+                Lesson chapters are not published here yet. For now, this page shows the real course information and the main launch point only.
+              </p>
+            </div>
+
+            <div
+              style={{
+                borderRadius: "28px",
+                border: `1px solid ${T.panelBorder}`,
+                background:
+                  theme === "dark"
+                    ? "linear-gradient(180deg, rgba(33, 28, 25, 0.98) 0%, rgba(24, 21, 18, 0.96) 100%)"
+                    : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(250,244,236,0.96) 100%)",
+                padding: "1.2rem",
+                display: "grid",
+                gap: "1rem",
+              }}
+            >
+              <div style={{ display: "grid", gap: "0.45rem" }}>
                 <p
                   style={{
-                    margin: "0.35rem 0 0",
-                    color: T.textMuted,
-                    fontSize: "0.84rem",
-                    lineHeight: 1.65,
-                    fontFamily: "'General Sans', sans-serif",
-                    maxWidth: "38rem",
+                    margin: 0,
+                    color: T.textDim,
+                    fontSize: "0.72rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
                   }}
                 >
-                  This new view gives each course a premium destination. As lesson-level uploads are expanded later, they will slot directly into this playlist layout.
+                  Course access
                 </p>
-              </div>
-
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.45rem",
-                  padding: "0.7rem 0.9rem",
-                  borderRadius: "999px",
-                  border: `1px solid ${T.panelBorder}`,
-                  background: T.panel,
-                  color: T.accent,
-                  fontWeight: 700,
-                  fontSize: "0.82rem",
-                }}
-              >
-                <Sparkles size={15} />
-                Premium course preview
-              </div>
-            </div>
-
-            <div className="playlist-tab-row">
-              {[
-                { key: "all" as PlaylistTab, label: "All" },
-                { key: "lesson" as PlaylistTab, label: "Lessons" },
-                { key: "lab" as PlaylistTab, label: "Labs" },
-                { key: "resource" as PlaylistTab, label: "Resources" },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setTab(item.key)}
+                <h2
                   style={{
-                    borderRadius: "999px",
-                    border: `1px solid ${tab === item.key ? T.accent : T.panelBorder}`,
-                    background: tab === item.key ? T.accentSoft : T.secondaryPanel,
-                    color: tab === item.key ? T.accent : T.textMuted,
-                    padding: "0.72rem 0.95rem",
-                    fontSize: "0.8rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
+                    margin: 0,
+                    fontFamily: "'Clash Display', sans-serif",
+                    fontSize: "clamp(1.9rem, 3.5vw, 2.8rem)",
+                    letterSpacing: "-0.04em",
+                    lineHeight: 0.98,
+                    maxWidth: "12ch",
                   }}
                 >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            {selectedLesson && (
-              <div
-                style={{
-                  borderRadius: "26px",
-                  border: `1px solid ${T.panelBorder}`,
-                  background: T.secondaryPanel,
-                  padding: "1rem",
-                  display: "grid",
-                  gap: "0.7rem",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start", flexWrap: "wrap" }}>
-                  <div>
-                    <p style={{ margin: 0, color: T.textDim, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                      Selected module
-                    </p>
-                    <p style={{ margin: "0.28rem 0 0", fontFamily: "'Clash Display', sans-serif", fontSize: "1.45rem", letterSpacing: "-0.03em" }}>
-                      {selectedLesson.title}
-                    </p>
-                  </div>
-                  <span
-                    style={{
-                      padding: "0.45rem 0.72rem",
-                      borderRadius: "999px",
-                      background: T.chip,
-                      border: `1px solid ${T.panelBorder}`,
-                      color: T.textMuted,
-                      fontSize: "0.76rem",
-                    }}
-                  >
-                    {selectedLesson.durationLabel}
-                  </span>
-                </div>
-
+                  {locked ? "Preview the course space before you unlock it." : "Open the real course session from here."}
+                </h2>
                 <p
                   style={{
                     margin: 0,
                     color: T.textMuted,
-                    fontSize: "0.86rem",
-                    lineHeight: 1.7,
+                    fontSize: "0.9rem",
+                    lineHeight: 1.75,
                     fontFamily: "'General Sans', sans-serif",
+                    maxWidth: "42rem",
                   }}
                 >
-                  {selectedLesson.synopsis}
+                  This page now stays honest: no fake chapter list, no placeholder video breakdown. It holds the course cover,
+                  the real access point, and the key details only.
                 </p>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "0.7rem", flexWrap: "wrap" }}>
-                  {renderLessonAction(selectedLesson, course)}
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.45rem",
-                      color: T.textDim,
-                      fontSize: "0.76rem",
-                    }}
-                  >
-                    <ExternalLink size={14} />
-                    Launches the course player in a new tab
-                  </span>
-                </div>
               </div>
-            )}
 
-            <div className="playlist-list">
-              {visiblePlaylist.map((item) => {
-                const active = item.id === selectedLessonId;
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSelectedLessonId(item.id)}
+              <div className="course-access-card">
+                <div style={{ minWidth: 0 }}>
+                  <p
                     style={{
-                      width: "100%",
-                      textAlign: "left",
-                      borderRadius: "24px",
-                      border: `1px solid ${active ? T.accent : T.panelBorder}`,
-                      background: active ? T.accentSoft : T.secondaryPanel,
-                      padding: "1rem",
-                      display: "grid",
-                      gridTemplateColumns: "auto minmax(0, 1fr) auto",
-                      gap: "0.9rem",
-                      alignItems: "center",
-                      cursor: "pointer",
+                      margin: 0,
+                      color: T.textDim,
+                      fontSize: "0.72rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
                     }}
                   >
-                    <div
-                      style={{
-                        width: "2.5rem",
-                        height: "2.5rem",
-                        borderRadius: "16px",
-                        background: active ? "rgba(255,255,255,0.18)" : T.chip,
-                        border: `1px solid ${active ? "rgba(255,255,255,0.18)" : T.panelBorder}`,
-                        display: "grid",
-                        placeItems: "center",
-                        fontWeight: 700,
-                        color: active ? T.accent : T.textMuted,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {item.order}
-                    </div>
+                    Main session
+                  </p>
+                  <p
+                    style={{
+                      margin: "0.28rem 0 0",
+                      fontFamily: "'Clash Display', sans-serif",
+                      fontSize: "1.5rem",
+                      letterSpacing: "-0.03em",
+                      lineHeight: 1.02,
+                    }}
+                  >
+                    {course.title}
+                  </p>
+                  <p
+                    style={{
+                      margin: "0.42rem 0 0",
+                      color: T.textMuted,
+                      fontSize: "0.86rem",
+                      lineHeight: 1.7,
+                      fontFamily: "'General Sans', sans-serif",
+                      maxWidth: "34rem",
+                    }}
+                  >
+                    {hasLaunchTarget
+                      ? locked
+                        ? "You can review the course now. Unlock access when your level or plan allows it."
+                        : "Use the button to launch the actual course in a new tab."
+                      : "This course page is ready, but the launch link has not been connected yet."}
+                  </p>
+                </div>
 
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-                        <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem", color: T.text }}>
-                          {item.title}
-                        </p>
-                        <span
-                          style={{
-                            padding: "0.28rem 0.55rem",
-                            borderRadius: "999px",
-                            background: T.chip,
-                            color: T.textDim,
-                            fontSize: "0.68rem",
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {item.kind}
-                        </span>
-                      </div>
-                      <p
-                        style={{
-                          margin: "0.35rem 0 0",
-                          color: T.textMuted,
-                          fontSize: "0.8rem",
-                          lineHeight: 1.65,
-                          fontFamily: "'General Sans', sans-serif",
-                        }}
-                      >
-                        {item.synopsis}
-                      </p>
-                    </div>
+                <button
+                  type="button"
+                  onClick={() => void launchCourse(course)}
+                  disabled={!hasLaunchTarget && !locked}
+                  style={{
+                    borderRadius: "18px",
+                    border: `1px solid ${locked || !hasLaunchTarget ? T.panelBorder : T.accent}`,
+                    background: locked || !hasLaunchTarget ? "transparent" : T.accentSoft,
+                    color: locked || !hasLaunchTarget ? T.textDim : T.accent,
+                    padding: "0.95rem 1.08rem",
+                    fontSize: "0.9rem",
+                    fontWeight: 700,
+                    cursor:
+                      locked && !(course.access === "pro" && !hasProAccess)
+                        ? "not-allowed"
+                        : !hasLaunchTarget && !locked
+                          ? "not-allowed"
+                          : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.55rem",
+                    whiteSpace: "nowrap",
+                    minWidth: "12rem",
+                  }}
+                >
+                  {locked ? <Lock size={17} /> : <Play size={17} />}
+                  {locked
+                    ? course.access === "pro" && !hasProAccess
+                      ? "Upgrade to unlock"
+                      : "Locked for your level"
+                    : launching
+                      ? "Opening course..."
+                      : hasLaunchTarget
+                        ? "Open course"
+                        : "Launch unavailable"}
+                </button>
+              </div>
 
-                    <div
+              {lockNotes.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.55rem" }}>
+                  {lockNotes.map((note) => (
+                    <span
+                      key={note}
                       style={{
-                        display: "grid",
-                        justifyItems: "end",
-                        gap: "0.35rem",
+                        padding: "0.45rem 0.68rem",
+                        borderRadius: "999px",
+                        background: T.chip,
+                        border: `1px solid ${T.panelBorder}`,
                         color: T.textDim,
                         fontSize: "0.74rem",
-                        flexShrink: 0,
                       }}
                     >
-                      <span>{item.durationLabel}</span>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.35rem",
-                          color: item.isLaunchLesson ? T.accent : T.textDim,
-                          fontWeight: item.isLaunchLesson ? 700 : 500,
-                        }}
-                      >
-                        {item.isLaunchLesson ? <CirclePlay size={14} /> : <BookOpen size={14} />}
-                        {item.isLaunchLesson ? "Launches course" : "Playlist view"}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
+                      {note}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="course-truth-grid">
+                <div className="course-truth-card">
+                  <p className="course-truth-label">Current format</p>
+                  <p className="course-truth-value">
+                    {hasLaunchTarget ? "One live course launch" : "Launch link pending"}
+                  </p>
+                  <p className="course-truth-copy">
+                    This course currently opens as a single real session, not a chapter-by-chapter playlist.
+                  </p>
+                </div>
+
+                <div className="course-truth-card">
+                  <p className="course-truth-label">Lesson chapters</p>
+                  <p className="course-truth-value">Not published yet</p>
+                  <p className="course-truth-copy">
+                    Separate lesson rows will only appear here once actual course videos are uploaded.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {launchError && (
@@ -849,15 +747,15 @@ export default function CourseLibraryDetailPage() {
         .course-detail-shell {
           position: relative;
           z-index: 1;
-          width: min(1240px, calc(100% - 2rem));
+          width: min(1360px, calc(100% - 1.6rem));
           margin: 0 auto;
-          padding: 1.2rem 0 2.6rem;
+          padding: 1rem 0 2.2rem;
         }
 
         .course-detail-grid {
           display: grid;
-          grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.25fr);
-          gap: 1rem;
+          grid-template-columns: minmax(310px, 0.82fr) minmax(0, 1.42fr);
+          gap: 1.15rem;
           align-items: start;
         }
 
@@ -868,8 +766,12 @@ export default function CourseLibraryDetailPage() {
           gap: 1rem;
         }
 
+        .course-detail-main {
+          min-height: calc(100vh - 2rem);
+        }
+
         .course-hero-art {
-          height: 390px;
+          height: 430px;
         }
 
         .course-kpi-row {
@@ -890,20 +792,64 @@ export default function CourseLibraryDetailPage() {
           color: ${T.textMuted};
         }
 
-        .playlist-tab-row {
-          display: flex;
-          gap: 0.7rem;
-          flex-wrap: wrap;
+        .course-detail-note {
+          max-width: 100%;
         }
 
-        .playlist-list {
+        .course-access-card {
+          border-radius: 24px;
+          border: 1px solid ${T.panelBorder};
+          background: ${T.secondaryPanel};
+          padding: 1rem;
           display: grid;
-          gap: 0.85rem;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 1rem;
+          align-items: center;
+        }
+
+        .course-truth-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.9rem;
+        }
+
+        .course-truth-card {
+          border-radius: 22px;
+          border: 1px solid ${T.panelBorder};
+          background: ${T.secondaryPanel};
+          padding: 1rem;
+          display: grid;
+          gap: 0.45rem;
+        }
+
+        .course-truth-label {
+          margin: 0;
+          color: ${T.textDim};
+          font-size: 0.72rem;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .course-truth-value {
+          margin: 0;
+          color: ${T.text};
+          font-family: "Clash Display", sans-serif;
+          font-size: 1.2rem;
+          letter-spacing: -0.03em;
+          line-height: 1.05;
+        }
+
+        .course-truth-copy {
+          margin: 0;
+          color: ${T.textMuted};
+          font-size: 0.82rem;
+          line-height: 1.65;
+          font-family: "General Sans", sans-serif;
         }
 
         @media (max-width: 1023px) {
           .course-detail-shell {
-            width: min(100%, calc(100% - 1.4rem));
+            width: min(100%, calc(100% - 1rem));
           }
 
           .course-detail-grid {
@@ -913,29 +859,32 @@ export default function CourseLibraryDetailPage() {
           .course-detail-sidebar {
             position: static;
           }
+
+          .course-detail-main {
+            min-height: auto;
+          }
+
+          .course-access-card {
+            grid-template-columns: 1fr;
+          }
         }
 
         @media (max-width: 767px) {
           .course-detail-shell {
             width: min(100%, calc(100% - 1rem));
-            padding-bottom: 1.6rem;
+            padding-bottom: 1rem;
           }
 
           .course-hero-art {
-            height: 290px;
+            height: 310px;
           }
 
           .course-kpi-row {
             grid-template-columns: 1fr;
           }
 
-          .playlist-list :global(button) {
-            grid-template-columns: auto minmax(0, 1fr);
-          }
-
-          .playlist-list :global(button) > :last-child {
-            grid-column: 2;
-            justify-items: start !important;
+          .course-truth-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
