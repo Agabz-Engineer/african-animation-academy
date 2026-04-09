@@ -84,6 +84,9 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preload" as="image" href="/images/bg-mobile-web.jpg" media="(max-width: 767px)" />
+        <link rel="preload" as="image" href="/images/bg-desktop-web.jpg" media="(min-width: 768px)" />
+        <link rel="preload" as="image" href="/images/visual-storytelling-workshop-web.jpg" />
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body

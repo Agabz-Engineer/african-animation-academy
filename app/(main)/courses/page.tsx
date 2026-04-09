@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock3, Crown, Layers3, Search, Sparkles, X } from "lucide-react";
 import CourseArtwork from "@/app/components/courses/CourseArtwork";
+import SurfaceImage from "@/app/components/ui/SurfaceImage";
 import {
   getCourseSlug,
   hasLiveEnrollmentCount,
@@ -358,13 +358,20 @@ export default function CoursesPage() {
                     overflow: "hidden",
                   }}
                 >
-                  <Image
+                  <SurfaceImage
                     src="/images/courses/courses-feature.jpg"
                     alt="Course feature"
                     fill
                     priority
+                    fetchPriority="high"
                     sizes="(max-width: 1023px) 100vw, 34vw"
-                    style={{ objectFit: "cover" }}
+                    placeholderStyle={{
+                      background:
+                        theme === "dark"
+                          ? "linear-gradient(135deg, rgba(255,109,31,0.22), rgba(15,12,11,0.96))"
+                          : "linear-gradient(135deg, rgba(255,109,31,0.14), rgba(255,255,255,0.96))",
+                    }}
+                    imageStyle={{ objectFit: "cover" }}
                   />
                   <div
                     style={{

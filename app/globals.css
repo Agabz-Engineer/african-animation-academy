@@ -325,6 +325,25 @@ html.theme-init *::after {
     z-index: 1;
   }
 
+  .media-skeleton {
+    overflow: hidden;
+  }
+
+  .media-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255,255,255,0.08) 42%,
+      rgba(255,255,255,0.18) 50%,
+      transparent 58%
+    );
+    animation: media-shimmer 1.2s ease-in-out infinite;
+  }
+
   [data-theme="light"] .image-fade-bridge {
     background: linear-gradient(
       to bottom,
@@ -530,6 +549,12 @@ html.theme-init *::after {
   .font-ui       { font-family: 'General Sans', sans-serif; }
   .font-brand    { font-family: 'Tahalonia', sans-serif; }
   .font-mono     { font-family: 'JetBrains Mono', monospace; }
+}
+
+@keyframes media-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @layer utilities {

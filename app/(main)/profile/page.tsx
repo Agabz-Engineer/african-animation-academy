@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
 import { supabase } from "@/lib/supabase";
+import { getAvatarMetadata, resolveAvatarDisplayUrl } from "@/lib/avatar";
+import SurfaceImage from "@/app/components/ui/SurfaceImage";
 import { isStudioAccount } from "@/lib/accountRouting";
 
 // ─── Types ─────────────────────────────────────────────────
@@ -105,28 +107,6 @@ type StudioRequest = {
 
 const CREATOR_TABS = ["Overview", "Portfolio", "Compensation", "Security"];
 const STUDIO_TABS = ["Overview", "Talent Board", "Hiring", "Security"];
-
-const resolveAvatarDisplayUrl = async (
-  avatarPath: string | null,
-  avatarPublicUrl: string | null
-) => {
-  if (avatarPath && supabase) {
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from("avatars")
-      .createSignedUrl(avatarPath, 60 * 60);
-
-    if (!signedError && signedData?.signedUrl) {
-      return signedData.signedUrl;
-    }
-
-    const { data: publicData } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(avatarPath);
-    if (publicData?.publicUrl) return publicData.publicUrl;
-  }
-
-  return avatarPublicUrl;
-};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -248,6 +228,9 @@ export default function ProfilePage() {
         data: { publicUrl },
       } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
+      setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
+      setEditData((prev) => ({ ...prev, avatar_url: publicUrl }));
+
       const { data: signedData } = await supabase.storage
         .from("avatars")
         .createSignedUrl(filePath, 60 * 60);
@@ -362,20 +345,22 @@ export default function ProfilePage() {
       
       if (prof) {
         const metadata = user.user_metadata || {};
-        const avatarPath =
-          typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
-        const avatarPublicUrl =
-          typeof metadata.avatar_url === "string" ? metadata.avatar_url : prof.avatar_url;
-        const displayAvatarUrl = await resolveAvatarDisplayUrl(
-          avatarPath,
-          avatarPublicUrl
-        );
+        const { avatarPath, avatarPublicUrl } = getAvatarMetadata(metadata);
+        const initialAvatarUrl = avatarPublicUrl || prof.avatar_url;
         const profileWithDisplayAvatar = {
           ...prof,
-          avatar_url: displayAvatarUrl,
+          avatar_url: initialAvatarUrl,
         };
         setProfile(profileWithDisplayAvatar);
         setEditData(profileWithDisplayAvatar);
+        const displayAvatarUrl = await resolveAvatarDisplayUrl(
+          avatarPath,
+          initialAvatarUrl
+        );
+        if (displayAvatarUrl) {
+          setProfile((prev) => (prev ? { ...prev, avatar_url: displayAvatarUrl } : prev));
+          setEditData((prev) => ({ ...prev, avatar_url: displayAvatarUrl }));
+        }
       }
 
       if (nextAccountType === "studio") {
@@ -821,12 +806,19 @@ export default function ProfilePage() {
                     style={{ width: "80px", height: "80px", borderRadius: "24px", background: "linear-gradient(135deg, #FF6D1F, #E04D00)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", cursor: avatarUploading ? "progress" : "pointer" }}
 	                  >
 	                    {profile?.avatar_url ? (
-	                      <NextImage
+	                      <SurfaceImage
 	                        src={profile.avatar_url}
 	                        alt={`${profile.full_name || "Profile"} avatar`}
 	                        fill
 	                        sizes="80px"
-	                        style={{ objectFit: "cover" }}
+                          unoptimized
+                          loading="eager"
+                          fetchPriority="high"
+                          placeholderStyle={{
+                            borderRadius: "24px",
+                            background: "linear-gradient(135deg, rgba(255,109,31,0.55), rgba(224,77,0,0.18))",
+                          }}
+	                        imageStyle={{ objectFit: "cover" }}
 	                      />
 	                    ) : (
 	                      <User size={40} color="#fff" />

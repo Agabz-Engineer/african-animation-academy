@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -11,6 +10,8 @@ import {
   ChevronRight, Menu, X, Sparkles, Mail, Instagram, Music2, Trophy
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getAvatarMetadata, resolveAvatarDisplayUrl } from "@/lib/avatar";
+import SurfaceImage from "@/app/components/ui/SurfaceImage";
 import { getAccountHomePath, isStudioAccount } from "@/lib/accountRouting";
 
 // ─── Nav links ───────────────────────────────────────────
@@ -136,28 +137,6 @@ const getInitialTheme = (): "dark" | "light" => {
   return attr === "light" ? "light" : "dark";
 };
 
-const resolveAvatarDisplayUrl = async (
-  avatarPath: string | null,
-  avatarPublicUrl: string | null
-) => {
-  if (avatarPath && supabase) {
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from("avatars")
-      .createSignedUrl(avatarPath, 60 * 60);
-
-    if (!signedError && signedData?.signedUrl) {
-      return signedData.signedUrl;
-    }
-
-    const { data: publicData } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(avatarPath);
-    if (publicData?.publicUrl) return publicData.publicUrl;
-  }
-
-  return avatarPublicUrl;
-};
-
 const getViewportFlags = () => {
   if (typeof window === "undefined") return { isMobile: false, isTablet: false };
   const width = window.innerWidth;
@@ -234,15 +213,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
 
       const metadata = authUser.user_metadata || {};
-      const avatarPath =
-        typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
-      const avatarPublicUrl =
-        typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
+      const { avatarPath, avatarPublicUrl } = getAvatarMetadata(metadata);
+      setAvatarUrl(avatarPublicUrl);
+      setAvatarLoadError(false);
       const resolvedAvatarUrl = await resolveAvatarDisplayUrl(
         avatarPath,
         avatarPublicUrl
       );
-      setAvatarUrl(resolvedAvatarUrl);
+      setAvatarUrl(resolvedAvatarUrl || avatarPublicUrl);
       setAvatarLoadError(false);
       setAuthStatus("authenticated");
     } catch (error) {
@@ -439,21 +417,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div style={{ padding: wide ? "0.875rem 1.25rem" : "0.875rem 0", borderBottom: `1px solid ${T.sidebarBorder}`, display: "flex", alignItems: "center", justifyContent: wide ? "flex-start" : "center", gap: 10 }}>
         <div style={{ position: "relative", flexShrink: 0 }}>
           {avatarUrl && !avatarLoadError ? (
-            <Image
-              src={avatarUrl}
-              alt="Profile"
-              width={32}
-              height={32}
-              unoptimized
-              onError={() => setAvatarLoadError(true)}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                objectFit: "cover",
-                boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}`,
-              }}
-            />
+            <div style={{ position: "relative", width: 32, height: 32 }}>
+              <SurfaceImage
+                src={avatarUrl}
+                alt="Profile"
+                fill
+                sizes="32px"
+                unoptimized
+                loading="eager"
+                fetchPriority="high"
+                onError={() => setAvatarLoadError(true)}
+                placeholderStyle={{
+                  borderRadius: "50%",
+                  background: `linear-gradient(135deg, ${T.accent}40, ${T.sidebarBg})`,
+                  boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}`,
+                }}
+                imageStyle={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}`,
+                }}
+              />
+            </div>
           ) : (
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${T.accent}, #E04D00)`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Clash Display',sans-serif", fontWeight: 700, fontSize: "0.82rem", color: "#fff", boxShadow: `0 0 0 2px ${T.sidebarBg}, 0 0 0 3.5px ${T.avatarRing}` }}>
               {initial}

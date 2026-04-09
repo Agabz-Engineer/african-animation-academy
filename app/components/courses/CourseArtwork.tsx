@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
-import Image from "next/image";
 import { Clapperboard, Layers3, Lock, Orbit, Sparkles, Wand2, Zap } from "lucide-react";
 import type { CourseRecord, CourseVisualTone } from "@/lib/courseCatalog";
+import SurfaceImage from "@/app/components/ui/SurfaceImage";
 
 type CourseArtworkProps = {
   course: CourseRecord;
@@ -125,18 +125,22 @@ export default function CourseArtwork({
     >
       {course.thumbnailUrl ? (
         <>
-          <Image
+          <SurfaceImage
             src={course.thumbnailUrl}
             alt={course.title}
             fill
             priority={priority}
             quality={82}
+            fetchPriority={priority ? "high" : undefined}
             sizes={
               variant === "hero"
                 ? "(max-width: 1024px) 100vw, 42vw"
                 : "(max-width: 767px) calc(100vw - 2rem), (max-width: 1023px) calc(50vw - 1.5rem), 360px"
             }
-            style={{
+            placeholderStyle={{
+              background: tone.gradient,
+            }}
+            imageStyle={{
               objectFit: "cover",
               objectPosition:
                 variant === "card"

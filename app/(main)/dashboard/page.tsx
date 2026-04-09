@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useGamification } from "@/lib/useGamification";
+import SurfaceImage from "@/app/components/ui/SurfaceImage";
 
 const FILTER_TABS = ["Hot", "New", "Event"];
 
@@ -473,14 +473,19 @@ export default function DashboardPage() {
           className="dash-hero"
           style={{ width: "100%", height: "230px", borderRadius: "20px", border: `1px solid ${T.border}`, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", marginBottom: "1.25rem", position: "relative", overflow: "hidden", cursor: "pointer" }}
         >
-          <Image
+          <SurfaceImage
             src="/images/visual-storytelling-workshop-web.jpg"
             alt="Visual storytelling workshop"
             fill
             priority
+            fetchPriority="high"
             quality={80}
             sizes="(max-width: 768px) 100vw, 75vw"
-            style={{ objectFit: "cover", objectPosition: "center center" }}
+            placeholderStyle={{
+              background:
+                "linear-gradient(135deg, rgba(255,109,31,0.32), rgba(34,34,34,0.88))",
+            }}
+            imageStyle={{ objectFit: "cover", objectPosition: "center center" }}
           />
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(12,10,8,0.18), rgba(12,10,8,0.72))" }} />
           <div style={{ position: "absolute", inset: 0, background: theme === "dark" ? "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(10,8,6,0.70) 100%)" : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(34,34,34,0.58) 100%)" }} />
@@ -559,14 +564,18 @@ export default function DashboardPage() {
               >
                 {/* Image placeholder */}
                 <div style={{ width: "100%", height: "145px", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", position: "relative", overflow: "hidden" }}>
-                  <Image
+                  <SurfaceImage
                     src={card.image}
                     alt={card.title}
                     fill
                     priority={i === 0}
                     quality={78}
                     sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
-                    style={{ objectFit: "cover", objectPosition: card.imagePosition }}
+                    placeholderStyle={{
+                      background:
+                        "linear-gradient(135deg, rgba(255,109,31,0.24), rgba(34,34,34,0.82))",
+                    }}
+                    imageStyle={{ objectFit: "cover", objectPosition: card.imagePosition }}
                   />
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,8,8,0.04) 0%, rgba(8,8,8,0.72) 100%)" }} />
                   <Camera style={{ width: "22px", height: "22px", color: "#FAF3E1", opacity: 0, marginBottom: "5px" }} />

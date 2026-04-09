@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User, Lock, Bell, Palette,
@@ -9,6 +8,8 @@ import {
   Eye, EyeOff, Save, Trash2
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getAvatarMetadata, resolveAvatarDisplayUrl } from "@/lib/avatar";
+import SurfaceImage from "@/app/components/ui/SurfaceImage";
 
 /* ── Palette ── */
 const DARK = {
@@ -95,28 +96,6 @@ const getInitialLanguage = (): LanguageId => {
   return match?.id || "en-GB";
 };
 
-const resolveAvatarDisplayUrl = async (
-  avatarPath: string | null,
-  avatarPublicUrl: string | null
-) => {
-  if (avatarPath && supabase) {
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from("avatars")
-      .createSignedUrl(avatarPath, 60 * 60);
-
-    if (!signedError && signedData?.signedUrl) {
-      return signedData.signedUrl;
-    }
-
-    const { data: publicData } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(avatarPath);
-    if (publicData?.publicUrl) return publicData.publicUrl;
-  }
-
-  return avatarPublicUrl;
-};
-
 export default function SettingsPage() {
   const [theme, setTheme]   = useState<"dark"|"light">(getInitialTheme);
   const [tab, setTab]       = useState("profile");
@@ -174,8 +153,7 @@ export default function SettingsPage() {
 
       if (user) {
         const metadata = user.user_metadata || {};
-        const avatarPath = typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
-        const avatarPublicUrl = typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
+        const { avatarPath, avatarPublicUrl } = getAvatarMetadata(metadata);
 
         setEmail(user.email || "");
         setFullName(metadata.full_name || "");
@@ -183,10 +161,12 @@ export default function SettingsPage() {
         setBio(metadata.bio || "");
         setSkillLevel(metadata.skill_level || "beginner");
         setGoal(metadata.goal || GOALS[0]);
+        setAvatarUrl(avatarPublicUrl);
+        setAvatarLoadError(false);
 
         const displayAvatarUrl = await resolveAvatarDisplayUrl(avatarPath, avatarPublicUrl);
         if (!mounted) return;
-        setAvatarUrl(displayAvatarUrl);
+        setAvatarUrl(displayAvatarUrl || avatarPublicUrl);
         setAvatarLoadError(false);
       }
 
@@ -290,6 +270,7 @@ export default function SettingsPage() {
         await supabase.storage.from("avatars").remove([previousAvatarPath]);
       }
 
+      setAvatarUrl(publicUrl || null);
       setAvatarUrl(signedData?.signedUrl || publicUrl || null);
       setAvatarLoadError(false);
       showSavedToast();
@@ -412,15 +393,30 @@ export default function SettingsPage() {
             <div style={{ position: "relative", flexShrink: 0 }}>
               {/* Avatar image or initial fallback */}
               {avatarUrl && !avatarLoadError ? (
-                <Image
-                  src={avatarUrl}
-                  alt="Profile"
-                  width={64}
-                  height={64}
-                  unoptimized
-                  onError={() => setAvatarLoadError(true)}
-                  style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}
-                />
+                <div style={{ position: "relative", width: 64, height: 64 }}>
+                  <SurfaceImage
+                    src={avatarUrl}
+                    alt="Profile"
+                    fill
+                    sizes="64px"
+                    unoptimized
+                    loading="eager"
+                    fetchPriority="high"
+                    onError={() => setAvatarLoadError(true)}
+                    placeholderStyle={{
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg,#FF6D1F55,#2C2C2C)",
+                      boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44`,
+                    }}
+                    imageStyle={{
+                      width: "64px",
+                      height: "64px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44`,
+                    }}
+                  />
+                </div>
               ) : (
                 <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "linear-gradient(135deg,#FF6D1F,#E04D00)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'General Sans',sans-serif", fontWeight: 700, fontSize: "1.5rem", color: "#FFFFFF", boxShadow: `0 0 0 3px ${T.pageBg}, 0 0 0 4.5px ${T.accent}44` }}>
                   {(fullName || email).charAt(0).toUpperCase()}
