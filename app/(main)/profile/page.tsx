@@ -106,6 +106,28 @@ type StudioRequest = {
 const CREATOR_TABS = ["Overview", "Portfolio", "Compensation", "Security"];
 const STUDIO_TABS = ["Overview", "Talent Board", "Hiring", "Security"];
 
+const resolveAvatarDisplayUrl = async (
+  avatarPath: string | null,
+  avatarPublicUrl: string | null
+) => {
+  if (avatarPath && supabase) {
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(avatarPath, 60 * 60);
+
+    if (!signedError && signedData?.signedUrl) {
+      return signedData.signedUrl;
+    }
+
+    const { data: publicData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(avatarPath);
+    if (publicData?.publicUrl) return publicData.publicUrl;
+  }
+
+  return avatarPublicUrl;
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const tabContentRef = useRef<HTMLDivElement | null>(null);
@@ -226,6 +248,10 @@ export default function ProfilePage() {
         data: { publicUrl },
       } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
+      const { data: signedData } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(filePath, 60 * 60);
+
       const { error: authError } = await supabase.auth.updateUser({
         data: { avatar_url: publicUrl, avatar_path: filePath },
       });
@@ -239,8 +265,9 @@ export default function ProfilePage() {
 
       if (profileError) throw profileError;
 
-      setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
-      setEditData((prev) => ({ ...prev, avatar_url: publicUrl }));
+      const displayAvatarUrl = signedData?.signedUrl || publicUrl;
+      setProfile((prev) => (prev ? { ...prev, avatar_url: displayAvatarUrl } : prev));
+      setEditData((prev) => ({ ...prev, avatar_url: displayAvatarUrl }));
     } catch (err) {
       console.error("Avatar upload error:", err);
       alert("Failed to upload profile photo.");
@@ -334,8 +361,21 @@ export default function ProfilePage() {
         .single();
       
       if (prof) {
-        setProfile(prof);
-        setEditData(prof);
+        const metadata = user.user_metadata || {};
+        const avatarPath =
+          typeof metadata.avatar_path === "string" ? metadata.avatar_path : null;
+        const avatarPublicUrl =
+          typeof metadata.avatar_url === "string" ? metadata.avatar_url : prof.avatar_url;
+        const displayAvatarUrl = await resolveAvatarDisplayUrl(
+          avatarPath,
+          avatarPublicUrl
+        );
+        const profileWithDisplayAvatar = {
+          ...prof,
+          avatar_url: displayAvatarUrl,
+        };
+        setProfile(profileWithDisplayAvatar);
+        setEditData(profileWithDisplayAvatar);
       }
 
       if (nextAccountType === "studio") {

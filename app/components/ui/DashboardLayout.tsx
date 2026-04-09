@@ -140,14 +140,7 @@ const resolveAvatarDisplayUrl = async (
   avatarPath: string | null,
   avatarPublicUrl: string | null
 ) => {
-  if (avatarPublicUrl) return avatarPublicUrl;
-
   if (avatarPath && supabase) {
-    const { data: publicData } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(avatarPath);
-    if (publicData?.publicUrl) return publicData.publicUrl;
-
     const { data: signedData, error: signedError } = await supabase.storage
       .from("avatars")
       .createSignedUrl(avatarPath, 60 * 60);
@@ -155,9 +148,14 @@ const resolveAvatarDisplayUrl = async (
     if (!signedError && signedData?.signedUrl) {
       return signedData.signedUrl;
     }
+
+    const { data: publicData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(avatarPath);
+    if (publicData?.publicUrl) return publicData.publicUrl;
   }
 
-  return null;
+  return avatarPublicUrl;
 };
 
 const getViewportFlags = () => {
