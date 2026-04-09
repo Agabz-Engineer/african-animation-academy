@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -14,10 +15,10 @@ import { useGamification } from "@/lib/useGamification";
 const FILTER_TABS = ["Hot", "New", "Event"];
 
 const SHOWCASE_CARDS = [
-  { title: "Character Design", category: "Colorimetry", note: "Included in your learning path", tag: "Hot", image: "/images/bg-desktop.jpg", imagePosition: "center 22%" },
+  { title: "Character Design", category: "Colorimetry", note: "Included in your learning path", tag: "Hot", image: "/images/bg-desktop-web.jpg", imagePosition: "center 22%" },
   { title: "Background Art",   category: "Background",  note: "Studio-ready visual worldbuilding", tag: "New", image: "/images/community-bg-dark.webp", imagePosition: "center center" },
-  { title: "Texture: Afro",    category: "Texturing",   note: "Build richer surfaces and detail", tag: "Hot", image: "/images/texture-afro.jpg", imagePosition: "center 28%" },
-  { title: "Clothing Design",  category: "Clothing",    note: "Live critique and styling workshop", tag: "Event", image: "/images/bg-desktop.jpg", imagePosition: "center 72%" },
+  { title: "Texture: Afro",    category: "Texturing",   note: "Build richer surfaces and detail", tag: "Hot", image: "/images/texture-afro-web.jpg", imagePosition: "center 28%" },
+  { title: "Clothing Design",  category: "Clothing",    note: "Live critique and styling workshop", tag: "Event", image: "/images/bg-desktop-web.jpg", imagePosition: "center 72%" },
 ];
 
 /* ══════════════════════════════════════════════
@@ -470,8 +471,18 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="dash-hero"
-          style={{ width: "100%", height: "230px", borderRadius: "20px", border: `1px solid ${T.border}`, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", marginBottom: "1.25rem", position: "relative", overflow: "hidden", cursor: "pointer", backgroundImage: `linear-gradient(135deg, rgba(12,10,8,0.18), rgba(12,10,8,0.72)), url('/images/visual-storytelling-workshop.jpg')`, backgroundSize: "cover", backgroundPosition: "center center" }}
+          style={{ width: "100%", height: "230px", borderRadius: "20px", border: `1px solid ${T.border}`, display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", marginBottom: "1.25rem", position: "relative", overflow: "hidden", cursor: "pointer" }}
         >
+          <Image
+            src="/images/visual-storytelling-workshop-web.jpg"
+            alt="Visual storytelling workshop"
+            fill
+            priority
+            quality={80}
+            sizes="(max-width: 768px) 100vw, 75vw"
+            style={{ objectFit: "cover", objectPosition: "center center" }}
+          />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(12,10,8,0.18), rgba(12,10,8,0.72))" }} />
           <div style={{ position: "absolute", inset: 0, background: theme === "dark" ? "linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(10,8,6,0.70) 100%)" : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(34,34,34,0.58) 100%)" }} />
           {/* Corner markers */}
           {([[true,true],[true,false],[false,true],[false,false]] as [boolean,boolean][]).map(([top,left],i) => (
@@ -547,7 +558,17 @@ export default function DashboardPage() {
                 style={{ backgroundColor: T.cardBg, border: `1px solid ${T.border}`, borderRadius: "16px", overflow: "hidden", cursor: "pointer", transition: "all 0.2s" }}
               >
                 {/* Image placeholder */}
-                <div style={{ width: "100%", height: "145px", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", position: "relative", backgroundImage: `linear-gradient(180deg, rgba(8,8,8,0.04) 0%, rgba(8,8,8,0.72) 100%), url('${card.image}')`, backgroundSize: "cover", backgroundPosition: card.imagePosition }}>
+                <div style={{ width: "100%", height: "145px", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-end", position: "relative", overflow: "hidden" }}>
+                  <Image
+                    src={card.image}
+                    alt={card.title}
+                    fill
+                    priority={i === 0}
+                    quality={78}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
+                    style={{ objectFit: "cover", objectPosition: card.imagePosition }}
+                  />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,8,8,0.04) 0%, rgba(8,8,8,0.72) 100%)" }} />
                   <Camera style={{ width: "22px", height: "22px", color: "#FAF3E1", opacity: 0, marginBottom: "5px" }} />
                   <span style={{ fontSize: "0.6rem", color: "transparent", fontFamily: "'Satoshi',sans-serif" }}>{card.note}</span>
                   {/* FIX 1: tag uses tokenised colours */}

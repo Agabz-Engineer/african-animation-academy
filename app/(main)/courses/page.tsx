@@ -530,7 +530,7 @@ export default function CoursesPage() {
                     <CourseArtwork
                       course={course}
                       locked={locked}
-                      priority={index < 2}
+                      priority={index === 0}
                       variant="card"
                       showOverlayDetails
                     />

@@ -71,10 +71,10 @@ const VISUAL_TONES: CourseVisualTone[] = [
 ];
 
 const DEFAULT_COURSE_THUMBNAILS: Record<string, string> = {
-  "quick poses for strong silhouettes": "/images/courses/quick-poses.jpg",
-  "expressive walk cycles: the gathering place study": "/images/courses/walk-cycles.jpg",
-  "bouncing ball with tail - moho tutorial": "/images/courses/bouncing-ball.jpg",
-  "toon boom fundamentals": "/images/courses/toon-boom.jpg",
+  "quick poses for strong silhouettes": "/images/courses/quick-poses-web.jpg",
+  "expressive walk cycles: the gathering place study": "/images/courses/walk-cycles-web.jpg",
+  "bouncing ball with tail - moho tutorial": "/images/courses/bouncing-ball-web.jpg",
+  "toon boom fundamentals": "/images/courses/toon-boom-web.jpg",
 };
 
 const getDefaultCourseThumbnail = (title: string) =>

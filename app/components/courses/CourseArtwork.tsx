@@ -130,7 +130,7 @@ export default function CourseArtwork({
             alt={course.title}
             fill
             priority={priority}
-            quality={96}
+            quality={82}
             sizes={
               variant === "hero"
                 ? "(max-width: 1024px) 100vw, 42vw"

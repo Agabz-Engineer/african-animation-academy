@@ -106,9 +106,6 @@ type StudioRequest = {
 const CREATOR_TABS = ["Overview", "Portfolio", "Compensation", "Security"];
 const STUDIO_TABS = ["Overview", "Talent Board", "Hiring", "Security"];
 
-const addCacheBuster = (url: string) =>
-  `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
-
 export default function ProfilePage() {
   const router = useRouter();
   const tabContentRef = useRef<HTMLDivElement | null>(null);
@@ -503,9 +500,8 @@ export default function ProfilePage() {
       const { error } = await supabase.from("profiles").update({ cover_url: publicUrl }).eq("id", profile.id);
       if (error) throw error;
 
-      const freshUrl = addCacheBuster(publicUrl);
-      setProfile(prev => prev ? { ...prev, cover_url: freshUrl } : null);
-      setEditData(prev => ({ ...prev, cover_url: freshUrl }));
+      setProfile(prev => prev ? { ...prev, cover_url: publicUrl } : null);
+      setEditData(prev => ({ ...prev, cover_url: publicUrl }));
     } catch (err) {
       console.error("Cover upload error:", err);
       const message = err instanceof Error ? err.message : "Unknown error.";

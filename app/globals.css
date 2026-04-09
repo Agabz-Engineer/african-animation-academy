@@ -177,7 +177,7 @@ html.theme-init *::after {
     background-color: #222222;
     background-image:
       linear-gradient(rgba(34,34,34,0.90), rgba(34,34,34,0.90)),
-      url('/images/bg-mobile.jpg');
+      url('/images/bg-mobile-web.jpg');
     background-size: cover;
     background-position: center 18%;
     background-repeat: no-repeat;
@@ -194,7 +194,7 @@ html.theme-init *::after {
     body {
       background-image:
         linear-gradient(rgba(34,34,34,0.90), rgba(34,34,34,0.90)),
-        url('/images/bg-desktop.jpg');
+        url('/images/bg-desktop-web.jpg');
       background-position: center 10%;
     }
   }
@@ -204,14 +204,14 @@ html.theme-init *::after {
     background-color: #FAF3E1;
     background-image:
       linear-gradient(rgba(245,231,198,0.88), rgba(245,231,198,0.88)),
-      url('/images/bg-mobile.jpg');
+      url('/images/bg-mobile-web.jpg');
   }
 
   @media (min-width: 768px) {
     [data-theme="light"] body {
       background-image:
         linear-gradient(rgba(245,231,198,0.88), rgba(245,231,198,0.88)),
-        url('/images/bg-desktop.jpg');
+        url('/images/bg-desktop-web.jpg');
       background-position: center 10%;
     }
   }
@@ -222,7 +222,7 @@ html.theme-init *::after {
   body.auth-page {
     background-image:
       linear-gradient(rgba(34,34,34,0.60), rgba(34,34,34,0.60)),
-      url('/images/bg-mobile.jpg');
+      url('/images/bg-mobile-web.jpg');
     background-position: center 16%;
     transition: background-image 0.35s ease, background-position 0.35s ease;
   }
@@ -231,7 +231,7 @@ html.theme-init *::after {
     body.auth-page {
       background-image:
         linear-gradient(rgba(34,34,34,0.54), rgba(34,34,34,0.54)),
-        url('/images/bg-desktop.jpg');
+        url('/images/bg-desktop-web.jpg');
       background-position: center 14%;
     }
   }
@@ -239,7 +239,7 @@ html.theme-init *::after {
   [data-theme="light"] body.auth-page {
     background-image:
       linear-gradient(rgba(245,231,198,0.72), rgba(245,231,198,0.72)),
-      url('/images/bg-mobile.jpg');
+      url('/images/bg-mobile-web.jpg');
     background-position: center 16%;
   }
 
@@ -247,7 +247,7 @@ html.theme-init *::after {
     [data-theme="light"] body.auth-page {
       background-image:
         linear-gradient(rgba(245,231,198,0.66), rgba(245,231,198,0.66)),
-        url('/images/bg-desktop.jpg');
+        url('/images/bg-desktop-web.jpg');
       background-position: center 14%;
     }
   }

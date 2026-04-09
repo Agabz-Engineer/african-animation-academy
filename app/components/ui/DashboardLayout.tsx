@@ -136,29 +136,28 @@ const getInitialTheme = (): "dark" | "light" => {
   return attr === "light" ? "light" : "dark";
 };
 
-const addCacheBuster = (url: string) =>
-  `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
-
 const resolveAvatarDisplayUrl = async (
   avatarPath: string | null,
   avatarPublicUrl: string | null
 ) => {
+  if (avatarPublicUrl) return avatarPublicUrl;
+
   if (avatarPath && supabase) {
+    const { data: publicData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(avatarPath);
+    if (publicData?.publicUrl) return publicData.publicUrl;
+
     const { data: signedData, error: signedError } = await supabase.storage
       .from("avatars")
       .createSignedUrl(avatarPath, 60 * 60);
 
     if (!signedError && signedData?.signedUrl) {
-      return addCacheBuster(signedData.signedUrl);
+      return signedData.signedUrl;
     }
-
-    const { data: publicData } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(avatarPath);
-    if (publicData?.publicUrl) return addCacheBuster(publicData.publicUrl);
   }
 
-  return avatarPublicUrl ? addCacheBuster(avatarPublicUrl) : null;
+  return null;
 };
 
 const getViewportFlags = () => {

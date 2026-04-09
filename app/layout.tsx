@@ -11,6 +11,7 @@ const clashDisplay = localFont({
   ],
   variable: "--font-clash-display",
   display: "swap",
+  preload: false,
 });
 
 const cabinetGrotesk = localFont({
@@ -22,6 +23,7 @@ const cabinetGrotesk = localFont({
   ],
   variable: "--font-cabinet-grotesk",
   display: "swap",
+  preload: false,
 });
 
 const satoshi = localFont({

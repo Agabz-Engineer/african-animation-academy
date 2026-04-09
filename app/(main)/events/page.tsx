@@ -334,7 +334,7 @@ export default function EventsPage() {
     const [from, to] = swatches[index % swatches.length];
     const veil = theme === "dark" ? "rgba(15,13,11,0.20)" : "rgba(255,255,255,0.28)";
     return {
-      backgroundImage: `linear-gradient(135deg, ${from}, ${to}), linear-gradient(0deg, ${veil}, ${veil}), url('/images/bg-desktop.jpg')`,
+      backgroundImage: `linear-gradient(135deg, ${from}, ${to}), linear-gradient(0deg, ${veil}, ${veil}), url('/images/bg-desktop-web.jpg')`,
       backgroundSize: "cover, cover, cover",
       backgroundPosition: "center, center, center",
       color: theme === "dark" ? "#FAF3E1" : "#222222",
