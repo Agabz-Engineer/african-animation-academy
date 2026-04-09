@@ -1,206 +1,188 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import {
-  ChevronLeft,
-  Users,
-  Target,
-  Sparkles,
-  ArrowRight,
-  Star,
-  Award,
-  Heart,
-  Zap,
-} from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { motion, useInView } from "framer-motion";
+import { ArrowRight, ChevronLeft, Sparkles, Target, Users, Zap } from "lucide-react";
 import { useThemeMode } from "@/lib/useThemeMode";
 
 const DARK_UI = {
   text: "#FAF3E1",
-  muted: "#D2C9B8",
-  line: "#444444",
-  softPanelBg: "rgba(44, 44, 44, 0.75)",
-  softPanelBorder: "rgba(68, 68, 68, 0.6)",
-  ghostBg: "rgba(34, 34, 34, 0.45)",
-  ghostBorder: "rgba(68, 68, 68, 0.8)",
-  cardBg: "rgba(51, 51, 51, 0.60)",
-  cardBorder: "rgba(68, 68, 68, 0.40)",
-  navBg: "rgba(44, 44, 44, 0.55)",
+  muted: "#CFC3B3",
+  line: "rgba(255, 255, 255, 0.14)",
+  navBg: "rgba(18, 18, 18, 0.74)",
+  heroBg: "linear-gradient(135deg, rgba(23, 23, 23, 0.96) 0%, rgba(30, 25, 22, 0.98) 100%)",
+  heroOverlay:
+    "radial-gradient(circle at 82% 18%, rgba(255, 109, 31, 0.18), transparent 34%), radial-gradient(circle at 12% 22%, rgba(255, 255, 255, 0.06), transparent 26%)",
+  heroBorder: "rgba(255, 255, 255, 0.12)",
+  heroShadow: "0 28px 90px rgba(0, 0, 0, 0.36)",
+  figureShell: "linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))",
+  figureBorder: "rgba(255, 255, 255, 0.09)",
+  heroGlow: "rgba(255, 132, 35, 0.34)",
+  cutOverlay: "rgba(18, 18, 18, 0.96)",
+  panelBg: "rgba(40, 40, 40, 0.62)",
+  panelBorder: "rgba(255, 255, 255, 0.09)",
+  panelShadow: "0 18px 50px rgba(0, 0, 0, 0.2)",
+  statBg: "rgba(255, 255, 255, 0.04)",
+  accentBg: "rgba(255, 109, 31, 0.12)",
 };
 
 const LIGHT_UI = {
   text: "#222222",
-  muted: "#555555",
-  line: "#E7DBBD",
-  softPanelBg: "rgba(255, 255, 255, 0.78)",
-  softPanelBorder: "rgba(231, 219, 189, 0.48)",
-  ghostBg: "rgba(255, 255, 255, 0.72)",
-  ghostBorder: "rgba(231, 219, 189, 0.58)",
-  cardBg: "rgba(255, 255, 255, 0.80)",
-  cardBorder: "rgba(231, 219, 189, 0.42)",
-  navBg: "rgba(255, 255, 255, 0.78)",
+  muted: "#5B5348",
+  line: "rgba(136, 120, 98, 0.24)",
+  navBg: "rgba(255, 249, 239, 0.8)",
+  heroBg: "linear-gradient(135deg, rgba(255, 251, 245, 0.98) 0%, rgba(250, 240, 224, 0.96) 100%)",
+  heroOverlay:
+    "radial-gradient(circle at 82% 18%, rgba(255, 109, 31, 0.14), transparent 32%), radial-gradient(circle at 12% 22%, rgba(255, 255, 255, 0.7), transparent 24%)",
+  heroBorder: "rgba(208, 188, 157, 0.42)",
+  heroShadow: "0 28px 90px rgba(189, 156, 118, 0.18)",
+  figureShell: "linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(252, 244, 231, 0.78))",
+  figureBorder: "rgba(208, 188, 157, 0.38)",
+  heroGlow: "rgba(255, 149, 74, 0.28)",
+  cutOverlay: "rgba(255, 249, 239, 0.98)",
+  panelBg: "rgba(255, 255, 255, 0.72)",
+  panelBorder: "rgba(208, 188, 157, 0.34)",
+  panelShadow: "0 18px 50px rgba(189, 156, 118, 0.14)",
+  statBg: "rgba(255, 255, 255, 0.7)",
+  accentBg: "rgba(255, 109, 31, 0.1)",
 };
 
-// Premium animation variants
-const premiumContainer = {
+const containerMotion = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.2,
-    },
-  },
-};
-
-const premiumCard = {
-  hidden: { 
-    opacity: 0, 
-    y: 40,
-    scale: 0.95,
-    rotateY: 15
-  },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    rotateY: 0,
-    transition: {
-      type: "spring" as const,
-      damping: 20,
-      stiffness: 300,
-      duration: 0.8,
+      staggerChildren: 0.12,
+      delayChildren: 0.08,
     },
   },
 } as const;
 
-const premiumImage = {
-  hidden: { 
-    opacity: 0,
-    scale: 0.8,
-    filter: "blur(10px)"
-  },
+const itemMotion = {
+  hidden: { opacity: 0, y: 24 },
   show: {
     opacity: 1,
-    scale: 1,
-    filter: "blur(0px)",
+    y: 0,
     transition: {
-      duration: 1.2,
+      duration: 0.75,
       ease: [0.22, 1, 0.36, 1] as const,
     },
   },
 } as const;
 
-const premiumText = {
-  hidden: { 
-    opacity: 0,
-    y: 20,
-    filter: "blur(4px)"
-  },
+const imageMotion = {
+  hidden: { opacity: 0, y: 28, scale: 0.96 },
   show: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
+    scale: 1,
     transition: {
-      duration: 0.8,
-      delay: 0.3,
+      duration: 0.9,
+      ease: [0.22, 1, 0.36, 1] as const,
     },
   },
 } as const;
+
+const teamMembers = [
+  {
+    name: "Stella Nyamekye Anyebayaaka Appiok",
+    role: "CEO",
+    bio: "Sets the vision, strategy, and partnerships for AfricaFX.",
+    focus: "Leadership and partnerships",
+  },
+  {
+    name: "Anais Theresa Bengala Nyangono",
+    role: "CTO",
+    bio: "Leads the platform architecture and product engineering.",
+    focus: "Technology and product systems",
+  },
+  {
+    name: "Agaba Great John",
+    role: "Engineering Lead",
+    bio: "Builds the learning experience and performance of the product.",
+    focus: "Experience and performance",
+  },
+  {
+    name: "Kofi Baffour Ossei-Quaidoo",
+    role: "CFO",
+    bio: "Oversees finance, planning, and sustainable growth.",
+    focus: "Finance and long-term growth",
+  },
+  {
+    name: "Erica Maame Akua Boakye",
+    role: "CMO",
+    bio: "Drives brand strategy and creator growth campaigns.",
+    focus: "Brand and creator growth",
+  },
+  {
+    name: "Joan Naa Momo Affotey",
+    role: "CSO",
+    bio: "Leads strategy, operations, and execution.",
+    focus: "Strategy and execution",
+  },
+  {
+    name: "Graziella Xoese Abla Amenuvor",
+    role: "Operations & People",
+    bio: "Strengthens team culture and day-to-day operations.",
+    focus: "Operations and people",
+  },
+];
+
+const storyPillars = [
+  {
+    label: "Built for creatives",
+    copy: "Industry-ready learning designed for African animation talent.",
+  },
+  {
+    label: "Rooted in community",
+    copy: "A platform that connects artists, mentors, and studios.",
+  },
+  {
+    label: "Focused on outcomes",
+    copy: "Training, visibility, and real opportunities in one place.",
+  },
+];
+
+const problemLines = [
+  "Animators often struggle to find quality training and structured growth pathways.",
+  "Studios still lose time trying to discover talent that is truly production-ready.",
+];
+
+const solutionLines = [
+  "AfricaFX brings learning, talent development, and discovery into one calm, modern platform.",
+  "We help creatives grow with confidence and help studios hire with greater clarity.",
+];
 
 export default function AboutPage() {
   const theme = useThemeMode();
   const C = theme === "dark" ? DARK_UI : LIGHT_UI;
 
   const aboutRef = useRef<HTMLElement | null>(null);
-  const aboutInView = useInView(aboutRef, { once: true, amount: 0.1 });
-
-  const sectionTransition = { duration: 0.7, ease: "easeOut" as const };
-
-  const teamMembers = [
-    {
-      name: "Stella Nyamekye Anyebayaaka Appiok",
-      role: "CEO",
-      bio: "Sets the vision, strategy, and partnerships for AfricaFX.",
-      focus: "Leadership",
-      initials: "SA",
-    },
-    {
-      name: "Anais Theresa Bengala Nyangono",
-      role: "CTO",
-      bio: "Leads the platform architecture and product engineering.",
-      focus: "Technology",
-      initials: "AT",
-    },
-    {
-      name: "Agaba Great John",
-      role: "Engineering Lead",
-      bio: "Builds the learning experience and performance of the product.",
-      focus: "Product Engineering",
-      initials: "AG",
-    },
-    {
-      name: "Kofi Baffour Ossei-Quaidoo",
-      role: "CFO",
-      bio: "Oversees finance, planning, and sustainable growth.",
-      focus: "Finance",
-      initials: "KO",
-    },
-    {
-      name: "Erica Maame Akua Boakye",
-      role: "CMO",
-      bio: "Drives brand strategy and creator growth campaigns.",
-      focus: "Marketing",
-      initials: "EB",
-    },
-    {
-      name: "Joan Naa Momo Affotey",
-      role: "CSO",
-      bio: "Leads strategy, operations, and execution.",
-      focus: "Strategy",
-      initials: "JA",
-    },
-    {
-      name: "Graziella Xoese Abla Amenuvor",
-      role: "Operations & People",
-      bio: "Strengthens team culture and day-to-day operations.",
-      focus: "Operations",
-      initials: "GA",
-    },
-  ];
-
-  const problemLines = [
-    "Today, animators struggle to access quality training resources,",
-    "costing them money, time, and real employment opportunities.",
-    "Animation studios also struggle to find skilled talent",
-    "that meets industry standards, costing them clients and revenue.",
-  ];
-
-  const solutionLines = [
-    "AfricaFX is fixing outdated training, animator unemployment,",
-    "and recruitment challenges for animation studios in Africa.",
-  ];
+  const aboutInView = useInView(aboutRef, { once: true, amount: 0.12 });
 
   return (
     <div style={{ minHeight: "100vh", transition: "color 0.3s ease, background-color 0.3s ease" }}>
-      {/* Navigation */}
-      <div style={{ 
-        padding: "1rem 2rem", 
-        borderBottom: `1px solid ${C.line}`,
-        backgroundColor: theme === "dark" ? "rgba(34, 34, 34, 0.8)" : "rgba(250, 243, 225, 0.8)",
-        backdropFilter: "blur(8px)"
-      }}>
-        <Link 
-          href="/login" 
-          style={{ 
-            color: C.text, 
+      <div
+        style={{
+          padding: "1rem 2rem",
+          borderBottom: `1px solid ${C.line}`,
+          backgroundColor: C.navBg,
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        <Link
+          href="/login"
+          style={{
+            color: C.text,
             textDecoration: "none",
             fontFamily: "General Sans, sans-serif",
             fontWeight: 600,
             display: "flex",
             alignItems: "center",
-            gap: "0.5rem"
+            gap: "0.5rem",
+            width: "fit-content",
           }}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -211,323 +193,305 @@ export default function AboutPage() {
       <motion.section
         id="about"
         ref={aboutRef}
-        initial={{ opacity: 0, y: 30 }}
-        animate={aboutInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={sectionTransition}
-        className="py-24 px-4 md:px-8"
-        style={{ background: "transparent" }}
+        className="px-4 md:px-8 py-10 md:py-14"
+        initial="hidden"
+        animate={aboutInView ? "show" : "hidden"}
+        variants={containerMotion}
       >
-        <div className="max-w-7xl mx-auto">
-          {/* Premium Hero Section */}
-          <motion.div 
-            className="text-center mb-20"
-            variants={premiumContainer}
-            initial="hidden"
-            animate={aboutInView ? "show" : "hidden"}
-          >
-            <motion.div variants={premiumText} className="mb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border" 
-                style={{ 
-                  background: C.ghostBg, 
-                  borderColor: C.cardBorder,
-                  backdropFilter: "blur(8px)"
-                }}>
-                <Sparkles className="w-4 h-4" style={{ color: "#FF6D1F" }} />
-                <span className="text-xs font-semibold tracking-widest uppercase" 
-                  style={{ color: "#FF6D1F", fontFamily: "General Sans, sans-serif" }}>
-                  Our Story
-                </span>
-              </div>
-            </motion.div>
-            
-            <motion.h1 
-              variants={premiumText}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 px-4"
-              style={{ 
-                fontFamily: "Clash Display, sans-serif", 
-                letterSpacing: "-0.02em",
-                background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent"
-              }}
-            >
-              Empowering African
-              <br />
-              Animation Excellence
-            </motion.h1>
-            
-            <motion.p 
-              variants={premiumText}
-              className="text-lg sm:text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed px-4"
-              style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}
-            >
-              We&apos;re revolutionizing animation education across Africa by bridging the gap between 
-              talented creators and world-class opportunities.
-            </motion.p>
-          </motion.div>
-
-          {/* Premium Problem & Solution Cards */}
-          <motion.div 
-            className="grid md:grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 mb-16 md:mb-24"
-            variants={premiumContainer}
-            initial="hidden"
-            animate={aboutInView ? "show" : "hidden"}
-          >
-            {/* Problem Card */}
-            <motion.div 
-              variants={premiumCard}
-              className="group relative rounded-2xl md:rounded-3xl p-6 md:p-10 border overflow-hidden hover:shadow-2xl transition-all duration-500"
-              style={{ 
-                background: C.cardBg, 
-                border: `1px solid ${C.cardBorder}`,
-                backdropFilter: "blur(12px)"
-              }}
-            >
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ 
-                  background: "linear-gradient(135deg, rgba(255,109,31,0.08) 0%, transparent 60%)",
-                  pointerEvents: "none"
-                }}
-              />
-              
-              <div className="relative z-10">
-                <motion.div variants={premiumImage} className="mb-8">
-                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, rgba(255,109,31,0.2), rgba(224,77,0,0.2))" }}>
-                    <Target className="w-8 h-8" style={{ color: "#FF6D1F" }} />
-                  </div>
-                </motion.div>
-                
-                <motion.h2 variants={premiumText} 
-                  className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6"
-                  style={{ 
-                    color: "#FF6D1F", 
-                    fontFamily: "Clash Display, sans-serif", 
-                    letterSpacing: "-0.02em" 
-                  }}
-                >
-                  The Challenge
-                </motion.h2>
-                
-                <motion.div variants={premiumText} className="space-y-4">
-                  {problemLines.map((line, index) => (
-                    <p key={index} className="text-base md:text-lg lg:text-xl leading-relaxed"
-                      style={{ color: C.text, fontFamily: "Satoshi, sans-serif" }}>
-                      {line}
-                    </p>
-                  ))}
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Solution Card */}
-            <motion.div 
-              variants={premiumCard}
-              className="group relative rounded-3xl p-10 border overflow-hidden hover:shadow-2xl transition-all duration-500"
-              style={{ 
-                background: C.ghostBg, 
-                border: `1px solid ${C.ghostBorder}`,
-                backdropFilter: "blur(12px)"
-              }}
-            >
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ 
-                  background: "linear-gradient(135deg, rgba(255,109,31,0.08) 0%, transparent 60%)",
-                  pointerEvents: "none"
-                }}
-              />
-              
-              <div className="relative z-10">
-                <motion.div variants={premiumImage} className="mb-8">
-                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                    style={{ background: "linear-gradient(135deg, rgba(255,109,31,0.2), rgba(224,77,0,0.2))" }}>
-                    <Zap className="w-8 h-8" style={{ color: "#FF6D1F" }} />
-                  </div>
-                </motion.div>
-                
-                <motion.h2 variants={premiumText}
-                  className="text-4xl md:text-5xl font-bold mb-6"
-                  style={{ 
-                    color: "#FF6D1F", 
-                    fontFamily: "Clash Display, sans-serif", 
-                    letterSpacing: "-0.02em" 
-                  }}
-                >
-                  Our Solution
-                </motion.h2>
-                
-                <motion.div variants={premiumText} className="space-y-4">
-                  {solutionLines.map((line, index) => (
-                    <p key={index} className="text-lg md:text-xl leading-relaxed"
-                      style={{ color: C.text, fontFamily: "Satoshi, sans-serif" }}>
-                      {line}
-                    </p>
-                  ))}
-                </motion.div>
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Premium Team Section */}
+        <div className="max-w-7xl mx-auto space-y-16 md:space-y-24">
           <motion.div
-            variants={premiumContainer}
-            initial="hidden"
-            animate={aboutInView ? "show" : "hidden"}
-            className="mt-24"
+            variants={itemMotion}
+            className="relative overflow-hidden rounded-[2rem] md:rounded-[3rem] border"
+            style={{
+              background: C.heroBg,
+              border: `1px solid ${C.heroBorder}`,
+              boxShadow: C.heroShadow,
+            }}
           >
-            {/* Team Header */}
-            <motion.div variants={premiumText} className="text-center mb-16">
-              <div className="inline-flex items-center gap-3 mb-6">
-                <div className="w-12 h-px" style={{ backgroundColor: C.line }} />
-                <Users className="w-5 h-5" style={{ color: "#FF6D1F" }} />
-                <div className="w-12 h-px" style={{ backgroundColor: C.line }} />
-              </div>
-              
-              <h2 className="text-4xl md:text-6xl font-bold mb-6" style={{ fontFamily: "Clash Display, sans-serif" }}>
-                <span style={{ color: C.text }}>Meet the </span>
-                <span
-                  style={{
-                    background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
-                    WebkitBackgroundClip: "text",
-                    backgroundClip: "text",
-                    color: "transparent",
-                  }}
-                >
-                  Visionaries
-                </span>
-              </h2>
-              
-              <p className="text-xl max-w-2xl mx-auto" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
-                The passionate team building Africa&apos;s animation future
-              </p>
-            </motion.div>
+            <div className="absolute inset-0" style={{ background: C.heroOverlay }} />
+            <div
+              className="absolute -left-16 top-14 h-44 w-44 rounded-full blur-3xl"
+              style={{ background: C.heroGlow, opacity: theme === "dark" ? 0.32 : 0.45 }}
+            />
+            <div
+              className="absolute -right-10 top-12 h-52 w-52 rounded-full blur-3xl"
+              style={{ background: C.heroGlow, opacity: theme === "dark" ? 0.28 : 0.34 }}
+            />
 
-            {/* Premium Team Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-              {teamMembers.map((member, index) => (
-                <motion.div
-                  key={member.name}
-                  variants={premiumCard}
-                  className="group relative"
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div 
-                    className="rounded-2xl md:rounded-3xl p-6 md:p-8 border transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 overflow-hidden"
+            <div className="relative z-10 grid items-center gap-10 px-6 pb-24 pt-8 md:px-10 md:pb-32 md:pt-12 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-4 lg:px-14 lg:pt-16">
+              <motion.div variants={containerMotion} className="max-w-2xl">
+                <motion.div variants={itemMotion} className="mb-6">
+                  <div
+                    className="inline-flex items-center gap-2 rounded-full border px-4 py-2"
                     style={{
-                      background: C.cardBg,
-                      border: `1px solid ${C.cardBorder}`,
-                      backdropFilter: "blur(12px)",
+                      background: C.statBg,
+                      borderColor: C.panelBorder,
+                      backdropFilter: "blur(8px)",
                     }}
                   >
-                    {/* Hover Effect Background */}
-                    <div 
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      style={{ 
-                        background: "linear-gradient(135deg, rgba(255,109,31,0.05) 0%, transparent 60%)",
-                        pointerEvents: "none"
-                      }}
-                    />
-
-                    <div className="relative z-10">
-                      {/* Photo Space */}
-                      <motion.div variants={premiumImage} className="mb-4 md:mb-6">
-                        <div className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto">
-                          {/* Placeholder for team photo */}
-                          <div 
-                            className="w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden"
-                            style={{ 
-                              background: "linear-gradient(135deg, rgba(255,109,31,0.15), rgba(224,77,0,0.15))",
-                              border: `2px solid ${C.cardBorder}`
-                            }}
-                          >
-                            {/* Initials as fallback */}
-                            <span className="text-xl sm:text-2xl font-bold" style={{ 
-                              color: "#FF6D1F", 
-                              fontFamily: "Clash Display, sans-serif" 
-                            }}>
-                              {member.initials}
-                            </span>
-                            
-                            {/* Photo upload indicator */}
-                            <div className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                              <Award className="w-3 h-3 text-white" />
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-
-                      {/* Team Info */}
-                      <motion.div variants={premiumText}>
-                        <h3 className="text-lg sm:text-xl font-bold mb-2 text-center" 
-                          style={{ 
-                            color: C.text, 
-                            fontFamily: "Clash Display, sans-serif" 
-                          }}>
-                          {member.name}
-                        </h3>
-                        
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                          <Star className="w-4 h-4" style={{ color: "#FF6D1F" }} />
-                          <p className="text-sm font-semibold text-center" 
-                            style={{ 
-                              color: "#FF6D1F", 
-                              fontFamily: "General Sans, sans-serif" 
-                            }}>
-                            {member.role}
-                          </p>
-                          <Star className="w-4 h-4" style={{ color: "#FF6D1F" }} />
-                        </div>
-                        
-                        <p className="text-xs sm:text-sm leading-relaxed mb-3 md:mb-4 text-center" 
-                          style={{ 
-                            color: C.muted, 
-                            fontFamily: "Satoshi, sans-serif" 
-                          }}>
-                          {member.bio}
-                        </p>
-                        
-                        <div className="flex items-center justify-center">
-                          <div
-                            className="inline-flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border"
-                            style={{ 
-                              background: "rgba(255,109,31,0.08)", 
-                              borderColor: "rgba(255,109,31,0.2)",
-                              color: "#FF6D1F", 
-                              fontFamily: "General Sans, sans-serif",
-                              fontSize: "0.625rem sm:text-xs",
-                              fontWeight: 600
-                            }}
-                          >
-                            <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                            <span className="truncate">{member.focus}</span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    </div>
+                    <Sparkles className="h-4 w-4" style={{ color: "#FF6D1F" }} />
+                    <span
+                      className="text-xs font-semibold uppercase tracking-[0.28em]"
+                      style={{ color: "#FF6D1F", fontFamily: "General Sans, sans-serif" }}
+                    >
+                      Our Story
+                    </span>
                   </div>
                 </motion.div>
-              ))}
+
+                <motion.h1
+                  variants={itemMotion}
+                  className="text-4xl font-bold leading-tight sm:text-5xl md:text-6xl lg:text-7xl"
+                  style={{
+                    color: C.text,
+                    fontFamily: "Clash Display, sans-serif",
+                    letterSpacing: "-0.03em",
+                  }}
+                >
+                  A calmer way to grow
+                  <br />
+                  Africa&apos;s animation future.
+                </motion.h1>
+
+                <motion.p
+                  variants={itemMotion}
+                  className="mt-6 max-w-xl text-lg leading-relaxed md:text-xl"
+                  style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}
+                >
+                  AfricaFX exists to help African animators learn with structure, build with confidence, and
+                  connect with real opportunities without losing the warmth of community.
+                </motion.p>
+
+                <motion.div variants={itemMotion} className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <Link
+                    href="/signup"
+                    className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-transform duration-300 hover:-translate-y-0.5"
+                    style={{
+                      background: "linear-gradient(135deg, #FF6D1F, #E04D00)",
+                      color: "#FAF3E1",
+                      fontFamily: "General Sans, sans-serif",
+                    }}
+                  >
+                    Start your journey
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+
+                  <div
+                    className="inline-flex items-center rounded-full border px-4 py-3 text-sm"
+                    style={{
+                      borderColor: C.panelBorder,
+                      background: C.statBg,
+                      color: C.muted,
+                      fontFamily: "Satoshi, sans-serif",
+                    }}
+                  >
+                    Learning, community, and studio visibility in one place.
+                  </div>
+                </motion.div>
+
+                <motion.div variants={itemMotion} className="mt-10 grid gap-3 sm:grid-cols-3">
+                  {storyPillars.map((pillar) => (
+                    <div
+                      key={pillar.label}
+                      className="rounded-[1.5rem] border p-4"
+                      style={{
+                        background: C.statBg,
+                        borderColor: C.panelBorder,
+                      }}
+                    >
+                      <p
+                        className="text-[0.68rem] font-semibold uppercase tracking-[0.24em]"
+                        style={{ color: "#FF6D1F", fontFamily: "General Sans, sans-serif" }}
+                      >
+                        {pillar.label}
+                      </p>
+                      <p className="mt-2 text-sm leading-6" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
+                        {pillar.copy}
+                      </p>
+                    </div>
+                  ))}
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                variants={imageMotion}
+                className="relative flex min-h-[320px] items-end justify-center lg:min-h-[500px] lg:justify-end"
+              >
+                <div
+                  className="absolute inset-x-4 bottom-6 top-6 rounded-[2rem] md:inset-x-10"
+                  style={{
+                    background: C.figureShell,
+                    border: `1px solid ${C.figureBorder}`,
+                  }}
+                />
+                <div
+                  className="absolute inset-x-12 bottom-10 top-14 rounded-full blur-3xl md:inset-x-24"
+                  style={{ background: C.heroGlow, opacity: theme === "dark" ? 0.4 : 0.32 }}
+                />
+                <div className="relative z-10 aspect-[1/1.02] w-full max-w-[530px]">
+                  <Image
+                    src="/images/about-hero-character.png"
+                    alt="Illustrated African animation heroine in motion"
+                    fill
+                    priority
+                    sizes="(min-width: 1024px) 460px, (min-width: 768px) 55vw, 88vw"
+                    className="pointer-events-none select-none object-contain object-center"
+                  />
+                </div>
+              </motion.div>
             </div>
 
-            {/* Call to Action */}
-            <motion.div 
-              variants={premiumText}
-              className="text-center mt-16 md:mt-20 px-4"
+            <div
+              className="absolute inset-x-0 bottom-0 h-20 md:h-28"
+              style={{
+                background: C.cutOverlay,
+                clipPath: "polygon(0 34%, 50% 0, 100% 34%, 100% 100%, 0 100%)",
+              }}
+            />
+          </motion.div>
+
+          <motion.div variants={itemMotion} className="grid gap-6 lg:grid-cols-2">
+            <div
+              className="rounded-[1.75rem] border p-6 md:p-8"
+              style={{
+                background: C.panelBg,
+                border: `1px solid ${C.panelBorder}`,
+                boxShadow: C.panelShadow,
+              }}
             >
-              <div className="inline-flex flex-col sm:flex-row items-center gap-3 sm:gap-4 px-6 py-3 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl border max-w-md mx-auto"
-                style={{
-                  background: C.ghostBg,
-                  borderColor: C.cardBorder,
-                  backdropFilter: "blur(12px)"
-                }}
+              <div
+                className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl"
+                style={{ background: C.accentBg }}
               >
-                <span className="text-base sm:text-lg font-semibold text-center" style={{ color: C.text, fontFamily: "General Sans, sans-serif" }}>
-                  Join our mission to transform African animation
-                </span>
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" style={{ color: "#FF6D1F" }} />
+                <Target className="h-6 w-6" style={{ color: "#FF6D1F" }} />
               </div>
-            </motion.div>
+              <p
+                className="text-xs font-semibold uppercase tracking-[0.28em]"
+                style={{ color: "#FF6D1F", fontFamily: "General Sans, sans-serif" }}
+              >
+                The challenge
+              </p>
+              <div className="mt-4 space-y-4">
+                {problemLines.map((line) => (
+                  <p key={line} className="text-base leading-7 md:text-lg" style={{ color: C.text, fontFamily: "Satoshi, sans-serif" }}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="rounded-[1.75rem] border p-6 md:p-8"
+              style={{
+                background: C.panelBg,
+                border: `1px solid ${C.panelBorder}`,
+                boxShadow: C.panelShadow,
+              }}
+            >
+              <div
+                className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl"
+                style={{ background: C.accentBg }}
+              >
+                <Zap className="h-6 w-6" style={{ color: "#FF6D1F" }} />
+              </div>
+              <p
+                className="text-xs font-semibold uppercase tracking-[0.28em]"
+                style={{ color: "#FF6D1F", fontFamily: "General Sans, sans-serif" }}
+              >
+                Our solution
+              </p>
+              <div className="mt-4 space-y-4">
+                {solutionLines.map((line) => (
+                  <p key={line} className="text-base leading-7 md:text-lg" style={{ color: C.text, fontFamily: "Satoshi, sans-serif" }}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div variants={itemMotion} className="grid gap-10 lg:grid-cols-[0.78fr_1.22fr] lg:gap-14">
+            <div className="lg:sticky lg:top-10 lg:self-start">
+              <div className="inline-flex items-center gap-3">
+                <div className="h-px w-10" style={{ backgroundColor: C.line }} />
+                <Users className="h-5 w-5" style={{ color: "#FF6D1F" }} />
+                <div className="h-px w-10" style={{ backgroundColor: C.line }} />
+              </div>
+
+              <h2
+                className="mt-6 text-4xl font-bold md:text-5xl"
+                style={{ color: C.text, fontFamily: "Clash Display, sans-serif", letterSpacing: "-0.03em" }}
+              >
+                Meet the team
+                <br />
+                behind AfricaFX.
+              </h2>
+
+              <p className="mt-5 max-w-md text-lg leading-8" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
+                We kept this section minimal on purpose. No photo placeholders, no visual clutter, just the people
+                shaping the platform and the role each person plays.
+              </p>
+
+              <Link
+                href="/signup"
+                className="mt-8 inline-flex items-center gap-2 text-sm font-semibold"
+                style={{ color: "#FF6D1F", fontFamily: "General Sans, sans-serif", textDecoration: "none" }}
+              >
+                Explore AfricaFX
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {teamMembers.map((member, index) => (
+                <motion.article
+                  key={member.name}
+                  variants={itemMotion}
+                  transition={{ delay: index * 0.04 }}
+                  className="rounded-[1.75rem] border p-6 md:p-7"
+                  style={{
+                    background: C.panelBg,
+                    border: `1px solid ${C.panelBorder}`,
+                    boxShadow: C.panelShadow,
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <p
+                      className="text-[0.68rem] font-semibold uppercase tracking-[0.28em]"
+                      style={{ color: "#FF6D1F", fontFamily: "General Sans, sans-serif" }}
+                    >
+                      {member.role}
+                    </p>
+                    <span className="text-sm" style={{ color: C.muted, fontFamily: "General Sans, sans-serif" }}>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+
+                  <h3
+                    className="mt-6 text-xl font-semibold leading-snug md:text-2xl"
+                    style={{ color: C.text, fontFamily: "Clash Display, sans-serif" }}
+                  >
+                    {member.name}
+                  </h3>
+
+                  <p className="mt-4 text-sm leading-7 md:text-base" style={{ color: C.muted, fontFamily: "Satoshi, sans-serif" }}>
+                    {member.bio}
+                  </p>
+
+                  <div className="mt-6 border-t pt-5" style={{ borderColor: C.line }}>
+                    <p
+                      className="text-[0.68rem] font-semibold uppercase tracking-[0.24em]"
+                      style={{ color: C.muted, fontFamily: "General Sans, sans-serif" }}
+                    >
+                      Focus
+                    </p>
+                    <p className="mt-2 text-sm leading-6" style={{ color: C.text, fontFamily: "Satoshi, sans-serif" }}>
+                      {member.focus}
+                    </p>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
           </motion.div>
         </div>
       </motion.section>

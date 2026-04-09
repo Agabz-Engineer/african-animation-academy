@@ -86,7 +86,7 @@ export default async function RootLayout({
       <head>
         <link rel="preload" as="image" href="/images/bg-mobile-web.jpg" media="(max-width: 767px)" />
         <link rel="preload" as="image" href="/images/bg-desktop-web.jpg" media="(min-width: 768px)" />
-        <link rel="preload" as="image" href="/images/visual-storytelling-workshop-web.jpg" />
+        <link rel="preload" as="image" href="/images/about-hero-character.png" />
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body
